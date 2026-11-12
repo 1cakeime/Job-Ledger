@@ -1,5 +1,5 @@
-// Job Ledger service worker: makes the app open offline. Bump VERSION on each release.
-const VERSION = 'jl-v1';
+// Contractor Mainframe service worker: makes the app open offline. Bump VERSION on each release.
+const VERSION = 'cm-v2';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

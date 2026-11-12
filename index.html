@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Job Ledger</title>
+<title>Contractor Mainframe</title>
 <meta name="description" content="Organize every job, track expenses, purchases, photos and crew hours, and see the real profit on each job.">
-<meta name="theme-color" content="#1c2024">
+<meta name="theme-color" content="#0c0e11">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Job Ledger">
+<meta name="apple-mobile-web-app-title" content="Contractor Mainframe">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -17,218 +17,270 @@
 *,*::before,*::after{box-sizing:border-box}
 [hidden]{display:none!important}
 :root{
-  --bg:#f2f1ec;--surface:#fff;--surface2:#f7f6f2;--ink:#1c2024;--muted:#5d666e;--line:#dedbd2;
-  --hi:#f4a300;--hi-ink:#1c2024;--hi-soft:#fdf0d2;
-  --good:#1e7a4c;--good-bg:#e3f2e9;--bad:#b42318;--bad-bg:#fbe7e5;--warn:#9a5800;--warn-bg:#fdf0d2;
-  --nav:#1c2024;--nav-ink:#f2f1ec;--nav-muted:#9aa3ab;
-  --r:10px;--shadow:0 1px 2px rgba(0,0,0,.05),0 2px 8px rgba(0,0,0,.04);
-  color-scheme:light;
+  --bg:#0c0e11;--surface:#15181c;--surface2:#1c2025;--surface3:#262b32;--ink:#eef0f3;--muted:#98a1ac;
+  --line:rgba(255,255,255,.07);--line2:rgba(255,255,255,.13);
+  --hi:#e5383b;--hi-dk:#a91e22;--hi-ink:#fff;--hi-soft:rgba(229,56,59,.16);--glow:rgba(229,56,59,.38);
+  --good:#45cc8f;--good-bg:rgba(69,204,143,.12);--bad:#ff7a7a;--bad-bg:rgba(255,92,92,.12);--warn:#f2b44c;--warn-bg:rgba(242,180,76,.12);
+  --nav:rgba(12,14,17,.82);--nav-ink:#eef0f3;--nav-muted:#98a1ac;
+  --r:20px;--r-sm:12px;--ease:cubic-bezier(.2,.7,.2,1);
+  --shadow:0 1px 0 rgba(255,255,255,.04) inset,0 12px 32px rgba(0,0,0,.32);
+  color-scheme:dark;
 }
-@media (prefers-color-scheme:dark){:root{
-  --bg:#121416;--surface:#1b1e21;--surface2:#22262a;--ink:#eceae4;--muted:#9aa3ab;--line:#2e3338;
-  --hi:#f4b232;--hi-ink:#1c2024;--hi-soft:#3a2e14;
-  --good:#4cc38a;--good-bg:#12301f;--bad:#f07167;--bad-bg:#3a1714;--warn:#f4b232;--warn-bg:#3a2e14;
-  --nav:#0b0c0d;--shadow:none;color-scheme:dark;
-}}
-html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+html{-webkit-text-size-adjust:100%;background:var(--bg)}
+body{margin:0;color:var(--ink);font:15px/1.5 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  background:radial-gradient(1100px 520px at 0% -8%,rgba(229,56,59,.11),transparent 62%),radial-gradient(900px 480px at 105% -5%,rgba(120,140,170,.07),transparent 60%),var(--bg);
+  min-height:100vh;padding-bottom:calc(84px + env(safe-area-inset-bottom,0px));-webkit-font-smoothing:antialiased}
 img{max-width:100%}
 .num,td.n,.kpi b{font-variant-numeric:tabular-nums}
 a{color:inherit}
-h1,h2,h3{margin:0;line-height:1.2;letter-spacing:-.01em}
-h1{font-size:24px;font-weight:800}
-h2{font-size:17px;font-weight:750}
-h3{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+h1,h2,h3{margin:0;line-height:1.2;letter-spacing:-.015em}
+h1{font-size:26px;font-weight:800}
+h2{font-size:17px;font-weight:700}
+h3{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
 p{margin:0}
 .muted{color:var(--muted)}
 .small{font-size:13px}
+button,a,input,select,textarea{transition:background-color .18s var(--ease),border-color .18s var(--ease),color .18s var(--ease),box-shadow .18s var(--ease),transform .18s var(--ease)}
 
-/* Header + nav */
-.top{position:sticky;top:0;z-index:20;background:var(--nav);color:var(--nav-ink);padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;
-  display:flex;align-items:center;gap:14px;border-bottom:3px solid var(--hi)}
-.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;text-decoration:none;min-width:0}
-.brand svg{flex:none}
+/* Header */
+.top{position:sticky;top:0;z-index:20;background:var(--nav);-webkit-backdrop-filter:saturate(1.5) blur(16px);backdrop-filter:saturate(1.5) blur(16px);color:var(--nav-ink);
+  padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid rgba(229,56,59,.6);box-shadow:0 1px 14px -2px var(--glow),0 10px 30px rgba(0,0,0,.35)}
+.menu-wrap{position:relative;flex:none}
+.icon-btn{appearance:none;border:1px solid var(--line);background:var(--surface2);color:var(--ink);width:42px;height:42px;border-radius:14px;display:grid;place-items:center;cursor:pointer}
+.icon-btn:hover,.icon-btn[aria-expanded="true"]{background:var(--surface3);border-color:var(--line2)}
+.icon-btn svg{width:22px;height:22px}
+.menu{position:absolute;top:calc(100% + 12px);left:0;width:260px;background:var(--surface);border:1px solid var(--line2);border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,.55);padding:8px;z-index:50;
+  transform-origin:top left;animation:pop .16s var(--ease)}
+@keyframes pop{from{opacity:0;transform:scale(.96) translateY(-4px)}to{opacity:1;transform:none}}
+.menu .who{display:flex;gap:12px;align-items:center;padding:10px 10px 12px;border-bottom:1px solid var(--line);margin-bottom:6px;text-decoration:none;border-radius:12px 12px 0 0}
+.menu .who b{display:block;font-size:15px}
+.menu .who small{display:block;color:var(--muted);font-size:13px}
+.menu a.item,.menu button.item{display:flex;width:100%;gap:12px;align-items:center;padding:11px 12px;border-radius:12px;text-decoration:none;color:var(--ink);font:inherit;font-weight:600;background:none;border:0;cursor:pointer;text-align:left}
+.menu .item:hover,.menu .item[aria-current="page"]{background:var(--surface2)}
+.menu .item[aria-current="page"]{box-shadow:inset 3px 0 0 var(--hi)}
+.menu .item svg{width:19px;height:19px;color:var(--muted);flex:none}
+.menu .sep{height:1px;background:var(--line);margin:6px 4px}
+.avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--hi),var(--hi-dk));color:#fff;display:grid;place-items:center;font-weight:800;font-size:15px;flex:none;box-shadow:0 4px 14px var(--glow)}
+.avatar.lg{width:64px;height:64px;font-size:22px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;letter-spacing:-.01em;text-decoration:none;min-width:0;margin-right:6px}
+.brand svg{flex:none;filter:drop-shadow(0 2px 8px var(--glow))}
 .brand span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.top .sp{flex:1}
-.nav{display:flex;gap:4px}
-.nav a{display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:8px;color:var(--nav-muted);text-decoration:none;font-weight:650;font-size:14px}
-.nav a svg{width:20px;height:20px}
-.nav a[aria-current="page"]{color:var(--hi-ink);background:var(--hi)}
-.nav a:hover:not([aria-current="page"]){color:var(--nav-ink)}
+.brand em{font-style:normal;color:var(--hi)}
+.nav{display:contents}
+.nav a{display:flex;align-items:center;gap:7px;padding:9px 15px;border-radius:999px;color:var(--nav-muted);text-decoration:none;font-weight:650;font-size:14px;white-space:nowrap}
+.nav a svg{width:19px;height:19px}
+.nav a[data-nav="jobs"]{margin-left:auto}
+.nav a[aria-current="page"]{color:#fff;background:linear-gradient(180deg,var(--hi),var(--hi-dk));box-shadow:0 6px 18px -4px var(--glow)}
+.nav a:hover:not([aria-current="page"]){color:var(--nav-ink);background:var(--surface2)}
 @media (max-width:820px){
-  .top .nav{position:fixed;left:0;right:0;bottom:0;top:auto;background:var(--nav);justify-content:space-around;gap:0;
-    padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));border-top:1px solid #2e3338;z-index:30}
-  .nav a{flex-direction:column;gap:2px;font-size:11px;padding:6px 4px;flex:1;justify-content:center}
-  .nav a[aria-current="page"]{background:none;color:var(--hi)}
+  .nav{display:flex;position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));background:rgba(21,24,28,.88);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+    justify-content:space-around;gap:0;padding:6px;border:1px solid var(--line2);border-radius:22px;box-shadow:0 12px 34px rgba(0,0,0,.5);z-index:30}
+  .nav a{flex-direction:column;gap:3px;font-size:11px;padding:7px 4px;flex:1;justify-content:center;border-radius:16px}
+  .top{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(12,14,17,.97)}
+  .nav a[data-nav="jobs"]{margin-left:0}
+  .nav a[aria-current="page"]{background:var(--hi-soft);color:var(--hi);box-shadow:none}
+  .brand{font-size:16px}
 }
-@media (min-width:821px){body{padding-bottom:40px}}
+@media (min-width:821px){body{padding-bottom:48px}}
 
-main{max-width:1180px;margin:0 auto;padding:20px 16px}
-.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-.page-head .sub{color:var(--muted);margin-top:4px}
-.stack{display:flex;flex-direction:column;gap:16px}
-.grid2{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+main{max-width:1180px;margin:0 auto;padding:24px 16px}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.page-head .sub{color:var(--muted);margin-top:5px}
+.stack{display:flex;flex-direction:column;gap:18px}
+.grid2{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:18px;align-items:start}
 @media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}}
 
-.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:16px}
-.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.028),rgba(255,255,255,0) 140px),var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 
 /* Buttons + inputs */
-.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-weight:650;font-size:14px;
-  padding:9px 14px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;white-space:nowrap;min-height:40px}
-.btn:hover{border-color:var(--muted)}
-.btn.primary{background:var(--hi);border-color:var(--hi);color:var(--hi-ink)}
-.btn.primary:hover{filter:brightness(.95)}
-.btn.dark{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.btn{appearance:none;border:1px solid var(--line2);background:var(--surface2);color:var(--ink);font:inherit;font-weight:650;font-size:14px;
+  padding:9px 16px;border-radius:999px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;white-space:nowrap;min-height:40px}
+.btn:hover{background:var(--surface3)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:linear-gradient(180deg,var(--hi),var(--hi-dk));border-color:transparent;color:#fff;box-shadow:0 6px 18px -6px var(--glow)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.dark{background:var(--surface3);border-color:var(--line2)}
 .btn.ghost{background:none;border-color:transparent}
+.btn.ghost:hover{background:var(--surface2)}
 .btn.danger{color:var(--bad)}
-.btn.danger.armed{background:var(--bad);border-color:var(--bad);color:#fff}
-.btn.sm{padding:5px 10px;font-size:13px;min-height:32px}
+.btn.danger.armed{background:#c62828;border-color:#c62828;color:#fff}
+.btn.sm{padding:5px 12px;font-size:13px;min-height:32px}
 .btn svg{width:18px;height:18px}
 .btns{display:flex;gap:8px;flex-wrap:wrap}
-label{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:650;color:var(--muted)}
-input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%;min-height:42px}
-input:focus,select:focus,textarea:focus{outline:2px solid var(--hi);outline-offset:0;border-color:var(--hi)}
-textarea{min-height:90px;resize:vertical}
-label.check{flex-direction:row;align-items:center;gap:8px;font-weight:600;color:var(--ink)}
-label.check input{width:20px;height:20px;min-height:0}
-.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.fields.times{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 84px!important}
+label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}
+input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 13px;width:100%;min-height:44px}
+input::placeholder,textarea::placeholder{color:#6d7680}
+input:hover,select:hover,textarea:hover{border-color:var(--line2)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--hi);box-shadow:0 0 0 3px var(--hi-soft)}
+textarea{min-height:96px;resize:vertical}
+label.check{flex-direction:row;align-items:center;gap:10px;font-weight:600;color:var(--ink)}
+label.check input{width:20px;height:20px;min-height:0;accent-color:var(--hi)}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .fields .full{grid-column:1/-1}
 .fields.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.fields.times{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 84px!important}
 @media (max-width:560px){.fields,.fields.three{grid-template-columns:minmax(0,1fr)}.fields.three.keep{grid-template-columns:repeat(3,minmax(0,1fr))}}
-fieldset{border:1px solid var(--line);border-radius:8px;padding:12px;margin:0}
-legend{font-size:13px;font-weight:700;padding:0 4px}
-.seg{display:inline-flex;background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:3px;gap:2px;flex-wrap:wrap}
-.seg button{appearance:none;border:0;background:none;font:inherit;font-size:13px;font-weight:650;padding:6px 11px;border-radius:6px;color:var(--muted);cursor:pointer}
-.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+fieldset{border:1px solid var(--line);border-radius:16px;padding:14px;margin:0;background:rgba(255,255,255,.015)}
+legend{font-size:13px;font-weight:700;padding:0 6px;color:var(--ink)}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px;gap:2px;flex-wrap:wrap}
+.seg button{appearance:none;border:0;background:none;font:inherit;font-size:13px;font-weight:650;padding:7px 14px;border-radius:999px;color:var(--muted);cursor:pointer}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--surface3);color:var(--ink);box-shadow:inset 0 -2px 0 var(--hi)}
 
 /* KPIs */
-.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
 @media (max-width:760px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;box-shadow:var(--shadow)}
-.kpi span{display:block;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
-.kpi b{display:block;font-size:26px;font-weight:800;margin-top:4px;line-height:1.1}
-.kpi small{display:block;color:var(--muted);font-size:13px;margin-top:4px}
+.kpi{position:relative;overflow:hidden;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,0)),var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:var(--shadow)}
+.kpi span{display:block;font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.kpi b{display:block;font-size:27px;font-weight:800;margin-top:6px;line-height:1.1;letter-spacing:-.02em}
+.kpi small{display:block;color:var(--muted);font-size:13px;margin-top:5px}
 .pos{color:var(--good)}.neg{color:var(--bad)}
-.kpi.lead{border-top:4px solid var(--hi)}
+.kpi.lead{background:radial-gradient(240px 120px at 0% 0%,rgba(229,56,59,.22),transparent 70%),var(--surface);border-color:rgba(229,56,59,.35)}
+.kpi.lead::before{content:"";position:absolute;left:16px;right:16px;top:0;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--hi),transparent)}
 
 /* Tables */
 .table-wrap{position:relative;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px}
 table{width:100%;border-collapse:collapse;font-size:14px}
-th{text-align:left;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:8px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
-td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{text-align:left;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line2);white-space:nowrap}
+td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
 th.n,td.n{text-align:right;white-space:nowrap}
 tr.click{cursor:pointer}
-tr.click:hover td{background:var(--surface2)}
-tfoot td{font-weight:750;border-bottom:0}
+tr.click:hover td{background:rgba(255,255,255,.035)}
+tr.click:hover td:first-child{border-radius:12px 0 0 12px}
+tr.click:hover td:last-child{border-radius:0 12px 12px 0}
+tfoot td{font-weight:750;border-bottom:0;border-top:1px solid var(--line2)}
 
-.badge{display:inline-block;font-size:11px;font-weight:750;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--surface2);border:1px solid var(--line);color:var(--muted);white-space:nowrap}
-.badge.active{background:var(--hi-soft);border-color:transparent;color:var(--warn)}
-.badge.done{background:var(--good-bg);border-color:transparent;color:var(--good)}
-.badge.bid{background:var(--surface2)}
+.badge{display:inline-block;font-size:11px;font-weight:750;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:var(--surface3);color:var(--muted);white-space:nowrap}
+.badge.active{background:var(--warn-bg);color:var(--warn)}
+.badge.done{background:var(--good-bg);color:var(--good)}
 
 /* Bars */
-.bar{height:8px;background:var(--surface2);border:1px solid var(--line);border-radius:4px;overflow:hidden;min-width:60px}
-.bar i{display:block;height:100%;background:var(--ink);border-radius:3px}
-.bar i.over{background:var(--bad)}
-.bar i.ok{background:var(--good)}
+.bar{height:8px;background:var(--surface3);border-radius:999px;overflow:hidden;min-width:60px}
+.bar i{display:block;height:100%;background:#c9d0d8;border-radius:999px}
+.bar i.over{background:linear-gradient(90deg,var(--hi-dk),var(--bad))}
+.bar i.ok{background:linear-gradient(90deg,#2f9e6c,var(--good))}
 .mbar{display:grid;grid-template-columns:1fr 1fr;align-items:center;height:14px;min-width:120px}
-.mbar .l{display:flex;justify-content:flex-end;border-right:1px solid var(--muted);height:100%;align-items:center}
+.mbar .l{display:flex;justify-content:flex-end;border-right:1px solid var(--line2);height:100%;align-items:center}
 .mbar .r{display:flex;height:100%;align-items:center}
-.mbar i{display:block;height:10px;border-radius:3px}
-.mbar .l i{background:var(--bad);border-radius:3px 0 0 3px}
-.mbar .r i{background:var(--good);border-radius:0 3px 3px 0}
+.mbar i{display:block;height:10px}
+.mbar .l i{background:var(--bad);border-radius:999px 0 0 999px}
+.mbar .r i{background:var(--good);border-radius:0 999px 999px 0}
 
 /* Job cards */
-.jobs{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
-.job{display:flex;flex-direction:column;gap:10px;text-decoration:none;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;box-shadow:var(--shadow);border-left:5px solid var(--jc,var(--line))}
-.job:hover{border-color:var(--muted);border-left-color:var(--jc,var(--muted))}
+.jobs{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.job{position:relative;display:flex;flex-direction:column;gap:10px;text-decoration:none;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0) 120px),var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 16px 16px 20px;box-shadow:var(--shadow);overflow:hidden}
+.job::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:4px;border-radius:0 4px 4px 0;background:var(--jc,var(--line2))}
+.job:hover{border-color:var(--line2);transform:translateY(-2px)}
 .job .t{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
 .job .t b{font-size:16px}
 .job .row{display:flex;justify-content:space-between;gap:8px;font-size:14px}
 .job .row span{color:var(--muted)}
-.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
-.filters input{max-width:260px}
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.filters input{max-width:280px;border-radius:999px;padding-left:16px}
 
 /* Lists */
 .list{list-style:none;margin:0;padding:0}
-.list li{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.list li{display:flex;align-items:center;gap:12px;padding:11px 8px;border-bottom:1px solid var(--line);border-radius:12px}
 .list li:last-child{border-bottom:0}
 .list .grow{flex:1;min-width:0}
 .list .grow b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .list .grow small{display:block;color:var(--muted);font-size:13px}
 .list li.click{cursor:pointer}
-.list li.click:hover{background:var(--surface2)}
-.thumb{width:44px;height:44px;border-radius:6px;object-fit:cover;background:var(--surface2);border:1px solid var(--line);flex:none}
-.empty{padding:20px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:var(--r)}
-.empty .btns{justify-content:center;margin-top:12px}
-.insight{display:flex;gap:10px;padding:10px 12px;border-radius:8px;background:var(--surface2);font-size:14px;align-items:flex-start}
+.list li.click:hover{background:rgba(255,255,255,.04)}
+.thumb{width:44px;height:44px;border-radius:12px;object-fit:cover;background:var(--surface3);flex:none}
+.empty{padding:22px;text-align:center;color:var(--muted);background:rgba(255,255,255,.02);border:1px dashed var(--line2);border-radius:var(--r)}
+.empty .btns{justify-content:center;margin-top:14px}
+.insight{display:flex;gap:10px;padding:12px 14px;border-radius:14px;background:var(--surface2);font-size:14px;align-items:flex-start}
 .insight.warn{background:var(--warn-bg)}
-.insight.bad{background:var(--bad-bg)}
+.insight.bad{background:var(--bad-bg);box-shadow:inset 3px 0 0 var(--hi)}
 .insight.good{background:var(--good-bg)}
 .insight b{white-space:nowrap}
 .dot{width:10px;height:10px;border-radius:50%;flex:none;display:inline-block}
 
 /* Photos */
-.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
-.photos button{appearance:none;border:0;padding:0;background:var(--surface2);border-radius:8px;overflow:hidden;aspect-ratio:1;cursor:pointer;position:relative}
+.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+.photos button{appearance:none;border:0;padding:0;background:var(--surface3);border-radius:14px;overflow:hidden;aspect-ratio:1;cursor:pointer;position:relative}
+.photos button:hover{transform:scale(1.02)}
 .photos img{width:100%;height:100%;object-fit:cover;display:block}
-.photos small{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(0,0,0,.7));color:#fff;font-size:11px;padding:12px 6px 4px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.viewer img{width:100%;max-height:60vh;object-fit:contain;background:#000;border-radius:8px}
+.photos small{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(0,0,0,.75));color:#fff;font-size:11px;padding:14px 8px 6px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.viewer img{width:100%;max-height:60vh;object-fit:contain;background:#000;border-radius:14px}
 
 /* Schedule */
 .week-nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.sched{min-width:900px;table-layout:fixed}
-.sched th,.sched td{border:1px solid var(--line);vertical-align:top;padding:6px}
-.sched th{background:var(--surface2);text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink)}
-.sched th.today{background:var(--hi-soft)}
-.sched td.today{background:color-mix(in srgb,var(--hi-soft) 45%,transparent)}
+.sched{min-width:900px;table-layout:fixed;border-collapse:separate;border-spacing:0}
+.sched th,.sched td{border:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line);vertical-align:top;padding:8px}
+.sched tr>*:last-child{border-right:0}
+.sched tbody tr:last-child td{border-bottom:1px solid var(--line2)}
+.sched th{background:none;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);border-bottom:1px solid var(--line2)}
+.sched th.today{color:var(--hi)}
+.sched th.today::after{content:"";display:block;height:2px;border-radius:2px;background:var(--hi);margin-top:6px;width:24px}
+.sched td.today{background:rgba(229,56,59,.05)}
 .sched th:first-child,.sched td:first-child{width:150px}
+.sched tfoot td{border-top:0}
 .emp-cell{display:flex;gap:8px;align-items:flex-start}
 .emp-cell small{display:block;color:var(--muted);font-size:12px}
-.chip{display:block;width:100%;text-align:left;appearance:none;font:inherit;font-size:12px;line-height:1.3;background:var(--surface);color:var(--ink);border:1px solid var(--line);
-  border-left:4px solid var(--jc,var(--muted));border-radius:6px;padding:5px 6px;margin-bottom:4px;cursor:pointer}
+.chip{display:block;width:100%;text-align:left;appearance:none;font:inherit;font-size:12px;line-height:1.35;background:var(--surface2);color:var(--ink);border:1px solid var(--line);
+  border-radius:10px;padding:6px 8px 6px 10px;margin-bottom:5px;cursor:pointer;position:relative;overflow:hidden}
+.chip::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--jc,var(--muted))}
+.chip:hover{background:var(--surface3)}
 .chip b{display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.chip.scheduled{border-style:dashed;border-left-style:solid}
-.chip.missed{opacity:.55;text-decoration:line-through}
-.add-cell{appearance:none;width:100%;border:1px dashed transparent;background:none;color:var(--muted);border-radius:6px;font-size:18px;line-height:1;padding:4px;cursor:pointer}
-td:hover .add-cell{border-color:var(--line)}
-.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);align-items:center}
-.legend .chip{display:inline-block;width:auto;margin:0;padding:2px 8px}
+.chip.scheduled{border-style:dashed;border-color:var(--line2);background:transparent}
+.chip.missed{opacity:.5;text-decoration:line-through}
+.add-cell{appearance:none;width:100%;border:1px dashed transparent;background:none;color:var(--muted);border-radius:10px;font-size:18px;line-height:1;padding:5px;cursor:pointer}
+td:hover .add-cell{border-color:var(--line2);color:var(--ink)}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--muted);align-items:center}
+.legend .chip{display:inline-block;width:auto;margin:0;padding:3px 10px 3px 12px}
+
+/* Profile */
+.profile-head{display:flex;gap:16px;align-items:center}
 
 /* Dialog */
-dialog{border:0;border-radius:14px;padding:0;width:min(560px,calc(100vw - 24px));max-height:calc(100dvh - 24px);background:var(--surface);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.35)}
-dialog::backdrop{background:rgba(10,12,14,.55)}
+dialog{border:1px solid var(--line2);border-radius:22px;padding:0;width:min(560px,calc(100vw - 24px));max-height:calc(100dvh - 24px);background:var(--surface);color:var(--ink);box-shadow:0 30px 80px rgba(0,0,0,.6)}
+dialog[open]{animation:pop .18s var(--ease)}
+dialog::backdrop{background:rgba(5,6,8,.65);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
 .dlg-form{display:flex;flex-direction:column;max-height:calc(100dvh - 24px)}
-.dlg-form header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line)}
-.dlg-form .x{appearance:none;border:0;background:none;font-size:26px;line-height:1;color:var(--muted);cursor:pointer;padding:0 4px}
-.dlg-body{padding:16px;overflow:auto;display:flex;flex-direction:column;gap:12px}
-.dlg-form footer{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line);align-items:center;flex-wrap:wrap}
+.dlg-form header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}
+.dlg-form .x{appearance:none;border:0;background:var(--surface2);width:34px;height:34px;border-radius:50%;font-size:22px;line-height:1;color:var(--muted);cursor:pointer}
+.dlg-form .x:hover{color:var(--ink);background:var(--surface3)}
+.dlg-body{padding:18px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.dlg-form footer{display:flex;gap:8px;padding:14px 18px;border-top:1px solid var(--line);align-items:center;flex-wrap:wrap}
 .dlg-form footer .sp{flex:1}
 
-.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;z-index:100;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:calc(100vw - 32px)}
-@media (min-width:821px){.toast{bottom:24px}}
+.toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--surface3);color:var(--ink);border:1px solid var(--line2);padding:11px 18px;border-radius:999px;font-weight:600;z-index:100;box-shadow:0 12px 30px rgba(0,0,0,.5);max-width:calc(100vw - 32px)}
+@media (min-width:821px){.toast{bottom:28px}}
 .note{font-size:13px;color:var(--muted)}
 .hr{height:1px;background:var(--line);margin:4px 0}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .split{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+:focus-visible{outline:2px solid var(--hi);outline-offset:2px}
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="#/dashboard" aria-label="Job Ledger home">
-    <svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#f4a300"/><rect x="15" y="12" width="34" height="42" rx="4" fill="#1c2024"/><rect x="24" y="8" width="16" height="9" rx="3" fill="#1c2024" stroke="#f4a300" stroke-width="3"/><path d="M21 42l7-8 6 5 10-12" fill="none" stroke="#f4a300" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 24h12" stroke="#f2f1ec" stroke-width="3" stroke-linecap="round"/></svg>
-    <span id="brand-name">Job Ledger</span>
+  <div class="menu-wrap">
+    <button class="icon-btn" id="menu-btn" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <div class="menu" id="menu" hidden>
+      <a class="who" href="#/profile" id="menu-who"></a>
+      <a class="item" href="#/profile" data-menu="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profile</a>
+      <a class="item" href="#/settings" data-menu="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</a>
+      <div class="sep"></div>
+      <button class="item" type="button" data-act="export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>Export backup</button>
+    </div>
+  </div>
+  <a class="brand" href="#/schedule" aria-label="Contractor Mainframe home">
+    <svg width="32" height="32" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#16191d"/><rect x="15" y="12" width="34" height="42" rx="6" fill="none" stroke="#e5383b" stroke-width="4"/><rect x="24" y="7" width="16" height="10" rx="4" fill="#e5383b"/><path d="M22 42l7-8 6 5 9-11" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Contractor <em>Mainframe</em></span>
   </a>
-  <span class="sp"></span>
   <nav class="nav" aria-label="Main">
-    <a href="#/dashboard" data-nav="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Profit</a>
-    <a href="#/jobs" data-nav="jobs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></svg>Jobs</a>
-    <a href="#/schedule" data-nav="schedule"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Schedule</a>
+    <a href="#/schedule" data-nav="schedule"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Schedule</a>
+    <a href="#/jobs" data-nav="jobs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="3"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></svg>Jobs</a>
     <a href="#/crew" data-nav="crew"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M17 4a4 4 0 0 1 0 8M22 21a7 7 0 0 0-4-6.3"/></svg>Crew &amp; Pay</a>
-    <a href="#/settings" data-nav="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</a>
+    <a href="#/dashboard" data-nav="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg>Profit</a>
   </nav>
 </header>
 <main id="view" tabindex="-1"></main>
@@ -275,7 +327,7 @@ const DB={db:null,
   put(store,k,v){return this.tx(store,'readwrite',s=>s.put(v,k))},
   del(store,k){return this.tx(store,'readwrite',s=>s.delete(k))},
   clear(store){return this.tx(store,'readwrite',s=>s.clear())}};
-const blank=()=>({v:1,settings:{company:'',burden:15,ot:true,otThreshold:40},jobs:[],expenses:[],employees:[],shifts:[],photos:[]});
+const blank=()=>({v:1,profile:{},settings:{company:'',burden:15,ot:true,otThreshold:40},jobs:[],expenses:[],employees:[],shifts:[],photos:[]});
 let S=blank(), saveT=null, memOnly=false;
 function save(){clearTimeout(saveT);saveT=setTimeout(()=>{if(!memOnly)DB.put('kv','state',S).catch(()=>toast('Could not save on this device'))},250)}
 const memPhotos=new Map();
@@ -348,7 +400,7 @@ function jobForm(j){const isNew=!j;j=j||{status:'active',est:{},start:today()};c
       ${field('Start',inp('start',j.start,'date'))}${field('Finish',inp('end',j.end,'date'))}</div>
       <fieldset><legend>Your estimate (what you bid it at)</legend><div class="fields three keep">
       ${EST.map(([k,l])=>field(l,moneyInp('est_'+k,e[k]))).join('')}</div>
-      <p class="note" style="margin-top:8px">Fill these in from your bid. Job Ledger compares them to what you actually spend, so you can see where your estimates run high or low.</p></fieldset>
+      <p class="note" style="margin-top:8px">Fill these in from your bid. Contractor Mainframe compares them to what you actually spend, so you can see where your estimates run high or low.</p></fieldset>
       ${field('Notes',`<textarea name="notes">${esc(j.notes)}</textarea>`)}`,
     onDelete:isNew?null:async()=>{for(const p of S.photos.filter(p=>p.jobId===j.id))await photoDel(p.id);
       S.photos=S.photos.filter(p=>p.jobId!==j.id);S.expenses=S.expenses.filter(x=>x.jobId!==j.id);S.shifts=S.shifts.filter(x=>x.jobId!==j.id);S.jobs=S.jobs.filter(x=>x.id!==j.id);save();toast('Job deleted');location.hash='#/jobs'},
@@ -440,8 +492,8 @@ const emptyBox=(msg,btns='')=>`<div class="empty"><p>${msg}</p>${btns?`<div clas
 
 function pageDashboard(){
   const L=laborCalc();
-  if(!S.jobs.length)return `<div class="page-head"><div><h1>Welcome to Job Ledger</h1><p class="sub">Every job's money in one place: what you bid, what you spent, what you kept.</p></div></div>
-    <div class="card stack"><p>Add your jobs, log purchases and expenses (snap a photo of the receipt), schedule your crew and log their hours. Job Ledger works out the real profit on every job and shows where your estimates are off.</p>
+  if(!S.jobs.length)return `<div class="page-head"><div><h1>Welcome to Contractor Mainframe</h1><p class="sub">Every job's money in one place: what you bid, what you spent, what you kept.</p></div></div>
+    <div class="card stack"><p>Add your jobs, log purchases and expenses (snap a photo of the receipt), schedule your crew and log their hours. Contractor Mainframe works out the real profit on every job and shows where your estimates are off.</p>
     <div class="btns"><button class="btn primary" data-act="job-new">Add your first job</button><button class="btn" data-act="sample">Try it with sample data</button></div>
     <p class="note">Your data is saved on this device only. Export a backup from Settings now and then.</p></div>`;
   const now=today(),y=now.slice(0,4),from={all:'',ytd:y+'-01-01','12m':addDays(now,-365)}[UI.dash];
@@ -609,12 +661,25 @@ function pageCrew(){const L=laborCalc(),R=payRange(),[from,to]=R[UI.pay];
     :emptyBox('Add the people who work for you, with their hourly pay.','<button class="btn primary" data-act="emp-new">+ Add employee</button>')}</div>
   </div></div>`}
 
+const initials=n=>(String(n||'').trim().split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join(''))||'CM';
+function pageProfile(){const p=S.profile||{};
+  return `<div class="page-head"><div class="profile-head"><span class="avatar lg">${esc(initials(p.name||p.company))}</span><div><h1>${esc(p.name||'Your profile')}</h1><p class="sub">${esc([p.title,p.company].filter(Boolean).join(' · ')||'Add your details. They stay on this device.')}</p></div></div></div>
+  <div class="grid2"><form class="card stack" id="profile-form"><h2>Owner &amp; business</h2><div class="fields">
+    ${field('Your name',inp('name',p.name,'text','autocomplete="name"'))}${field('Title',inp('title',p.title,'text','placeholder="Owner, GC, project manager…"'))}
+    ${field('Company name',inp('company',p.company,'text','autocomplete="organization"'),'full')}
+    ${field('Phone',inp('phone',p.phone,'tel','autocomplete="tel"'))}${field('Email',inp('email',p.email,'email','autocomplete="email"'))}
+    ${field('Contractor license #',inp('license',p.license))}${field('Website',inp('website',p.website,'url','placeholder="https://"'))}
+    ${field('Business address',inp('address',p.address,'text','autocomplete="street-address"'),'full')}</div>
+    <div><button class="btn primary" type="submit">Save profile</button></div></form>
+  <div class="stack"><div class="card stack"><h2>Your business at a glance</h2>
+    <ul class="list"><li><div class="grow"><b>${S.jobs.filter(j=>j.status==='active').length} active jobs</b><small>${S.jobs.filter(j=>j.status==='bid').length} bids out · ${S.jobs.filter(j=>j.status==='done').length} finished</small></div><a class="btn sm" href="#/jobs">Jobs</a></li>
+    <li><div class="grow"><b>${S.employees.filter(e=>e.active!==false).length} on the crew</b><small>${S.shifts.filter(x=>x.date>=weekStart(today())&&x.date<=addDays(weekStart(today()),6)).length} shifts this week</small></div><a class="btn sm" href="#/schedule">Schedule</a></li></ul></div>
+    <p class="note">Profile details are saved only on this device and included in your backup file.</p></div></div>`}
 let deferredInstall=null;
 function pageSettings(){const st=S.settings;const iOS=/iphone|ipad|ipod/i.test(navigator.userAgent);const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
-  return `<div class="page-head"><div><h1>Settings</h1><p class="sub">Company defaults, backups and installing the app.</p></div></div>
+  return `<div class="page-head"><div><h1>Settings</h1><p class="sub">Labor defaults, backups and installing the app. Your name and company are under <a href="#/profile">Profile</a>.</p></div></div>
   <div class="grid2"><div class="stack">
-  <form class="card stack" id="settings-form"><h2>Company</h2><div class="fields">
-    ${field('Company name',inp('company',st.company,'text','placeholder="Shown in the header"'),'full')}
+  <form class="card stack" id="settings-form"><h2>Labor &amp; overtime</h2><div class="fields">
     ${field('Default labor burden %',moneyInp('burden',st.burden))}
     ${field('Overtime after (hours / week)',moneyInp('otThreshold',st.otThreshold))}
     <label class="check full"><input type="checkbox" name="ot" ${st.ot!==false?'checked':''}> Pay overtime at 1.5× (counts in job labor cost)</label></div>
@@ -624,19 +689,25 @@ function pageSettings(){const st=S.settings;const iOS=/iphone|ipad|ipod/i.test(n
     <p class="note">${S.jobs.length} jobs · ${S.expenses.length} expenses · ${S.photos.length} photos · ${S.employees.length} employees · ${S.shifts.length} shifts</p></div>
   </div><div class="stack">
   <div class="card stack"><h2>Install the app</h2>
-    ${standalone?'<p>You\'re using the installed app.</p>':iOS?'<p>On iPhone or iPad: open this page in <b>Safari</b>, tap the <b>Share</b> button, then <b>Add to Home Screen</b>.</p>':`<p>Install Job Ledger to get its own icon and open it full-screen, even offline.</p>${deferredInstall?'<div><button class="btn primary" data-act="install">Install app</button></div>':'<p class="note">In Chrome or Edge, use the install icon in the address bar, or the browser menu → <b>Install Job Ledger</b> / <b>Add to Home screen</b>.</p>'}`}</div>
+    ${standalone?'<p>You\'re using the installed app.</p>':iOS?'<p>On iPhone or iPad: open this page in <b>Safari</b>, tap the <b>Share</b> button, then <b>Add to Home Screen</b>.</p>':`<p>Install Contractor Mainframe to get its own icon and open it full-screen, even offline.</p>${deferredInstall?'<div><button class="btn primary" data-act="install">Install app</button></div>':'<p class="note">In Chrome or Edge, use the install icon in the address bar, or the browser menu → <b>Install Contractor Mainframe</b> / <b>Add to Home screen</b>.</p>'}`}</div>
   <div class="card stack"><h2>Sample data</h2><p class="note">Load a sample company to see how everything works. It replaces what's on this device, so export a backup first if you have real data.</p>
     <div class="btns"><button class="btn" data-act="sample">Load sample data</button><button class="btn danger" data-act="erase">Erase all data</button></div></div>
   </div></div>`}
 
 /* ---------- router ---------- */
-function route(){const h=(location.hash||'#/dashboard').slice(2),[page,id]=h.split('/');const v=$('#view');
-  const P={dashboard:pageDashboard,jobs:pageJobs,job:()=>pageJob(id),schedule:pageSchedule,crew:pageCrew,settings:pageSettings}[page]||pageDashboard;
+function route(){const h=(location.hash||(S.jobs.length?'#/schedule':'#/dashboard')).slice(2),[page,id]=h.split('/');const v=$('#view');
+  const P={dashboard:pageDashboard,jobs:pageJobs,job:()=>pageJob(id),schedule:pageSchedule,crew:pageCrew,settings:pageSettings,profile:pageProfile}[page]||pageDashboard;
   const keepScroll=route.last===h;const y=scrollY;v.innerHTML=P();route.last=h;
-  $$('[data-nav]').forEach(a=>a.toggleAttribute('aria-current',false));const cur=$(`[data-nav="${page==='job'?'jobs':page}"]`)||$('[data-nav="dashboard"]');cur.setAttribute('aria-current','page');
-  $('#brand-name').textContent=S.settings.company||'Job Ledger';document.title=(S.settings.company?S.settings.company+' · ':'')+'Job Ledger';
+  const navKey=page==='job'?'jobs':(P===pageDashboard?'dashboard':page);
+  $$('[data-nav],[data-menu]').forEach(a=>a.removeAttribute('aria-current'));$$(`[data-nav="${navKey}"],[data-menu="${navKey}"]`).forEach(a=>a.setAttribute('aria-current','page'));
+  const pr=S.profile||{};$('#menu-who').innerHTML=`<span class="avatar">${esc(initials(pr.name||pr.company))}</span><span><b>${esc(pr.name||'Set up your profile')}</b><small>${esc(pr.company||'Name, company, license')}</small></span>`;
+  closeMenu();document.title='Contractor Mainframe';
   hydratePhotos(v);if(keepScroll)scrollTo(0,y);else scrollTo(0,0)}
 window.addEventListener('hashchange',route);
+function closeMenu(){const m=$('#menu');if(m)m.hidden=true;$('#menu-btn')?.setAttribute('aria-expanded','false')}
+$('#menu-btn').addEventListener('click',e=>{e.stopPropagation();const m=$('#menu'),open=m.hidden;m.hidden=!open;e.currentTarget.setAttribute('aria-expanded',String(open));if(open&&e.detail===0)$('.item',m).focus()});
+document.addEventListener('click',e=>{if(!e.target.closest('.menu-wrap'))closeMenu()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#menu').hidden){closeMenu();$('#menu-btn').focus()}});
 
 /* ---------- actions ---------- */
 const curJob=()=>{const[p,id]=location.hash.slice(2).split('/');return p==='job'?job(id):null};
@@ -657,9 +728,9 @@ const ACT={
     for(const s of src){const d=addDays(s.date,7);if(S.shifts.some(x=>x.empId===s.empId&&x.jobId===s.jobId&&x.date===d))continue;const j=job(s.jobId);if(!j||j.status==='done')continue;const e=emp(s.empId);if(!e||e.active===false)continue;
       S.shifts.push({...s,id:uid(),date:d,status:'scheduled',rate:e.rate,burden:e.burden});n++}
     save();toast(n?`Copied ${n} shift${n>1?'s':''} from last week`:'Nothing new to copy from last week');route()},
-  'export':async()=>{toast('Preparing backup…');const photos={};for(const p of S.photos){const b=await photoGet(p.id);if(b)photos[p.id]=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(b)})}
+  'export':async()=>{closeMenu();toast('Preparing backup…');const photos={};for(const p of S.photos){const b=await photoGet(p.id);if(b)photos[p.id]=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(b)})}
     const blob=new Blob([JSON.stringify({app:'job-ledger',exportedAt:new Date().toISOString(),state:S,photos})],{type:'application/json'});
-    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`job-ledger-backup-${today()}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('Backup downloaded')},
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`contractor-mainframe-backup-${today()}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('Backup downloaded')},
   'install':async()=>{if(!deferredInstall)return;deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;route()},
   'sample':a=>{if(S.jobs.length&&!armTwoStep(a,'Replaces your data. Tap again'))return;loadSample()},
   'erase':async a=>{if(!armTwoStep(a,'Erases everything. Tap again'))return;if(!memOnly)await DB.clear('photos');memPhotos.clear();S=blank();save();toast('All data erased');location.hash='#/dashboard';route()},
@@ -674,8 +745,9 @@ document.addEventListener('change',async e=>{const t=e.target;
   else if(t.id==='import-file'){const f=t.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(d.app!=='job-ledger'||!d.state)throw 0;
       openForm({title:'Restore backup?',body:`<p>This replaces everything on this device with the backup from <b>${esc(d.exportedAt?new Date(d.exportedAt).toLocaleString():'the file')}</b>: ${d.state.jobs.length} jobs, ${d.state.expenses.length} expenses, ${Object.keys(d.photos||{}).length} photos.</p>`,submit:'Replace and restore',
         onSubmit:async()=>{if(!memOnly)await DB.clear('photos');memPhotos.clear();urlCache.clear();for(const[id,u] of Object.entries(d.photos||{})){const b=await (await fetch(u)).blob();await photoPut(id,b)}S=Object.assign(blank(),d.state);S.settings=Object.assign(blank().settings,d.state.settings);save();toast('Backup restored')}})}
-    catch(err){toast('That file isn\'t a Job Ledger backup')}t.value=''}});
-document.addEventListener('submit',e=>{if(e.target.id==='settings-form'){e.preventDefault();const fd=new FormData(e.target);Object.assign(S.settings,{company:fd.get('company').trim(),burden:num(fd.get('burden')),otThreshold:num(fd.get('otThreshold'))||40,ot:!!fd.get('ot')});save();toast('Settings saved');route()}});
+    catch(err){toast('That file isn\'t a Contractor Mainframe backup')}t.value=''}});
+document.addEventListener('submit',e=>{if(e.target.id==='profile-form'){e.preventDefault();const fd=new FormData(e.target);S.profile=Object.fromEntries(['name','title','company','phone','email','license','website','address'].map(k=>[k,String(fd.get(k)||'').trim()]));save();toast('Profile saved');route();return}
+  if(e.target.id==='settings-form'){e.preventDefault();const fd=new FormData(e.target);Object.assign(S.settings,{burden:num(fd.get('burden')),otThreshold:num(fd.get('otThreshold'))||40,ot:!!fd.get('ot')});save();toast('Settings saved');route()}});
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;if(location.hash.startsWith('#/settings'))route()});
 
 /* ---------- sample data ---------- */
@@ -701,12 +773,12 @@ function loadSample(){const T=today(),D=n=>addDays(T,n);
   add(0,0,-63,-36);add(1,0,-63,-36);add(2,0,-60,-45);add(0,0,-63,-36,{days:[6],end:'11:30',start:'07:00'});
   add(0,1,-30,-21);add(1,1,-30,-17);add(2,1,-30,-17);
   add(0,2,-12,13);add(1,2,-12,13);add(2,2,-5,6);
-  S=blank();Object.assign(S,{settings:{company:'',burden:18,ot:true,otThreshold:40},jobs:J,expenses:X,employees:E,shifts:Sh,photos:[]});
+  const keepProfile=S.profile||{};S=blank();Object.assign(S,{profile:keepProfile,settings:{company:'',burden:18,ot:true,otThreshold:40},jobs:J,expenses:X,employees:E,shifts:Sh,photos:[]});
   if(!memOnly)DB.clear('photos').catch(()=>{});save();toast('Sample data loaded');location.hash='#/dashboard';route()}
 
 /* ---------- start ---------- */
-(async()=>{const slow=setTimeout(()=>{$('#view').innerHTML=emptyBox('Still opening your saved data… If this doesn\'t clear in a few seconds, close any other Job Ledger tabs or windows and reload.')},4000);
-  try{await DB.open();const st=await DB.get('kv','state');if(st)S=Object.assign(blank(),st,{settings:Object.assign(blank().settings,st.settings||{})})}
+(async()=>{const slow=setTimeout(()=>{$('#view').innerHTML=emptyBox('Still opening your saved data… If this doesn\'t clear in a few seconds, close any other Contractor Mainframe tabs or windows and reload.')},4000);
+  try{await DB.open();const st=await DB.get('kv','state');if(st){S=Object.assign(blank(),st,{settings:Object.assign(blank().settings,st.settings||{}),profile:st.profile||{}});if(S.settings.company&&!S.profile.company)S.profile.company=S.settings.company}}
   catch(e){memOnly=true;setTimeout(()=>toast('Storage is blocked here, so changes won\'t be kept'),400)}
   clearTimeout(slow);route();
   if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
