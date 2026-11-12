@@ -19,7 +19,7 @@
 :root{
   --bg:#f6f6f7;--surface:#ffffff;--surface2:#f3f4f6;--surface3:#e9ebee;--ink:#16191d;--muted:#5f6873;
   --line:rgba(16,24,40,.08);--line2:rgba(16,24,40,.14);
-  --hi:#dc2f33;--hi-dk:#a91e22;--hi-ink:#fff;--hi-soft:rgba(220,47,51,.10);--glow:rgba(220,47,51,.28);
+  --hi:#17804a;--hi-dk:#0f5c34;--hi-ink:#fff;--hi-soft:rgba(23,128,74,.10);--glow:rgba(23,128,74,.28);
   --good:#1a7f4e;--good-bg:#e7f6ee;--bad:#c42b2b;--bad-bg:#fdeceb;--warn:#9a5b00;--warn-bg:#fff4dc;
   --nav:rgba(255,255,255,.88);--nav-ink:#16191d;--nav-muted:#5f6873;
   --r:20px;--r-sm:12px;--ease:cubic-bezier(.2,.7,.2,1);
@@ -28,7 +28,7 @@
 }
 html{-webkit-text-size-adjust:100%;background:var(--bg)}
 body{margin:0;color:var(--ink);font:15px/1.5 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  background:radial-gradient(1100px 420px at 0% -8%,rgba(220,47,51,.06),transparent 62%),var(--bg);
+  background:radial-gradient(1100px 420px at 0% -8%,rgba(23,128,74,.07),transparent 62%),var(--bg);
   min-height:100vh;padding-bottom:calc(84px + env(safe-area-inset-bottom,0px));-webkit-font-smoothing:antialiased}
 img{max-width:100%}
 .num,td.n,.kpi b{font-variant-numeric:tabular-nums}
@@ -137,7 +137,7 @@ legend{font-size:13px;font-weight:700;padding:0 6px;color:var(--ink)}
 .kpi b{display:block;font-size:27px;font-weight:800;margin-top:6px;line-height:1.1;letter-spacing:-.02em}
 .kpi small{display:block;color:var(--muted);font-size:13px;margin-top:5px}
 .pos{color:var(--good)}.neg{color:var(--bad)}
-.kpi.lead{background:radial-gradient(240px 120px at 0% 0%,rgba(220,47,51,.08),transparent 70%),var(--surface);border-color:rgba(220,47,51,.35)}
+.kpi.lead{background:radial-gradient(240px 120px at 0% 0%,rgba(23,128,74,.09),transparent 70%),var(--surface);border-color:rgba(23,128,74,.35)}
 .kpi.lead::before{content:"";position:absolute;left:16px;right:16px;top:0;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--hi),transparent)}
 
 /* Tables */
@@ -160,7 +160,7 @@ tfoot td{font-weight:750;border-bottom:0;border-top:1px solid var(--line2)}
 /* Bars */
 .bar{height:8px;background:var(--surface3);border-radius:999px;overflow:hidden;min-width:60px}
 .bar i{display:block;height:100%;background:#3b424b;border-radius:999px}
-.bar i.over{background:linear-gradient(90deg,var(--hi-dk),var(--bad))}
+.bar i.over{background:linear-gradient(90deg,#9b1c1c,var(--bad))}
 .bar i.ok{background:linear-gradient(90deg,#2f9e6c,var(--good))}
 .mbar{display:grid;grid-template-columns:1fr 1fr;align-items:center;height:14px;min-width:120px}
 .mbar .l{display:flex;justify-content:flex-end;border-right:1px solid var(--line2);height:100%;align-items:center}
@@ -195,7 +195,7 @@ tfoot td{font-weight:750;border-bottom:0;border-top:1px solid var(--line2)}
 .empty .btns{justify-content:center;margin-top:14px}
 .insight{display:flex;gap:10px;padding:12px 14px;border-radius:14px;background:var(--surface2);font-size:14px;align-items:flex-start}
 .insight.warn{background:var(--warn-bg)}
-.insight.bad{background:var(--bad-bg);box-shadow:inset 3px 0 0 var(--hi)}
+.insight.bad{background:var(--bad-bg);box-shadow:inset 3px 0 0 var(--bad)}
 .insight.good{background:var(--good-bg)}
 .insight b{white-space:nowrap}
 .dot{width:10px;height:10px;border-radius:50%;flex:none;display:inline-block}
@@ -217,7 +217,7 @@ tfoot td{font-weight:750;border-bottom:0;border-top:1px solid var(--line2)}
 .sched th{background:none;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);border-bottom:1px solid var(--line2)}
 .sched th.today{color:var(--hi)}
 .sched th.today::after{content:"";display:block;height:2px;border-radius:2px;background:var(--hi);margin-top:6px;width:24px}
-.sched td.today{background:rgba(220,47,51,.04)}
+.sched td.today{background:rgba(23,128,74,.05)}
 .sched th:first-child,.sched td:first-child{width:150px}
 .sched tfoot td{border-top:0}
 .emp-cell{display:flex;gap:8px;align-items:flex-start}
@@ -273,7 +273,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none}
     </div>
   </div>
   <a class="brand" href="#/schedule" aria-label="Contractor Mainframe home">
-    <svg width="32" height="32" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#16191d"/><rect x="15" y="12" width="34" height="42" rx="6" fill="none" stroke="#e5383b" stroke-width="4"/><rect x="24" y="7" width="16" height="10" rx="4" fill="#e5383b"/><path d="M22 42l7-8 6 5 9-11" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <svg width="32" height="32" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#16191d"/><rect x="15" y="12" width="34" height="42" rx="6" fill="none" stroke="#1f9d5a" stroke-width="4"/><rect x="24" y="7" width="16" height="10" rx="4" fill="#1f9d5a"/><path d="M22 42l7-8 6 5 9-11" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
     <span>Contractor <em>Mainframe</em></span>
   </a>
   <nav class="nav" aria-label="Main">
