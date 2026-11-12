@@ -1,0 +1,16 @@
+{
+  "name": "Job Ledger",
+  "short_name": "Job Ledger",
+  "description": "Organize every job, track expenses, photos and crew hours, and see the real profit on each job.",
+  "start_url": "./#/dashboard",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f2f1ec",
+  "theme_color": "#1c2024",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+    {"src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml"}
+  ]
+}

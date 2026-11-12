@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Job Ledger</title>
+<meta name="description" content="Organize every job, track expenses, purchases, photos and crew hours, and see the real profit on each job.">
+<meta name="theme-color" content="#1c2024">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Job Ledger">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+:root{
+  --bg:#f2f1ec;--surface:#fff;--surface2:#f7f6f2;--ink:#1c2024;--muted:#5d666e;--line:#dedbd2;
+  --hi:#f4a300;--hi-ink:#1c2024;--hi-soft:#fdf0d2;
+  --good:#1e7a4c;--good-bg:#e3f2e9;--bad:#b42318;--bad-bg:#fbe7e5;--warn:#9a5800;--warn-bg:#fdf0d2;
+  --nav:#1c2024;--nav-ink:#f2f1ec;--nav-muted:#9aa3ab;
+  --r:10px;--shadow:0 1px 2px rgba(0,0,0,.05),0 2px 8px rgba(0,0,0,.04);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#121416;--surface:#1b1e21;--surface2:#22262a;--ink:#eceae4;--muted:#9aa3ab;--line:#2e3338;
+  --hi:#f4b232;--hi-ink:#1c2024;--hi-soft:#3a2e14;
+  --good:#4cc38a;--good-bg:#12301f;--bad:#f07167;--bad-bg:#3a1714;--warn:#f4b232;--warn-bg:#3a2e14;
+  --nav:#0b0c0d;--shadow:none;color-scheme:dark;
+}}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+img{max-width:100%}
+.num,td.n,.kpi b{font-variant-numeric:tabular-nums}
+a{color:inherit}
+h1,h2,h3{margin:0;line-height:1.2;letter-spacing:-.01em}
+h1{font-size:24px;font-weight:800}
+h2{font-size:17px;font-weight:750}
+h3{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+
+/* Header + nav */
+.top{position:sticky;top:0;z-index:20;background:var(--nav);color:var(--nav-ink);padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;
+  display:flex;align-items:center;gap:14px;border-bottom:3px solid var(--hi)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;text-decoration:none;min-width:0}
+.brand svg{flex:none}
+.brand span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .sp{flex:1}
+.nav{display:flex;gap:4px}
+.nav a{display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:8px;color:var(--nav-muted);text-decoration:none;font-weight:650;font-size:14px}
+.nav a svg{width:20px;height:20px}
+.nav a[aria-current="page"]{color:var(--hi-ink);background:var(--hi)}
+.nav a:hover:not([aria-current="page"]){color:var(--nav-ink)}
+@media (max-width:820px){
+  .top .nav{position:fixed;left:0;right:0;bottom:0;top:auto;background:var(--nav);justify-content:space-around;gap:0;
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));border-top:1px solid #2e3338;z-index:30}
+  .nav a{flex-direction:column;gap:2px;font-size:11px;padding:6px 4px;flex:1;justify-content:center}
+  .nav a[aria-current="page"]{background:none;color:var(--hi)}
+}
+@media (min-width:821px){body{padding-bottom:40px}}
+
+main{max-width:1180px;margin:0 auto;padding:20px 16px}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.page-head .sub{color:var(--muted);margin-top:4px}
+.stack{display:flex;flex-direction:column;gap:16px}
+.grid2{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:16px}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+
+/* Buttons + inputs */
+.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-weight:650;font-size:14px;
+  padding:9px 14px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;white-space:nowrap;min-height:40px}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--hi);border-color:var(--hi);color:var(--hi-ink)}
+.btn.primary:hover{filter:brightness(.95)}
+.btn.dark{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.btn.ghost{background:none;border-color:transparent}
+.btn.danger{color:var(--bad)}
+.btn.danger.armed{background:var(--bad);border-color:var(--bad);color:#fff}
+.btn.sm{padding:5px 10px;font-size:13px;min-height:32px}
+.btn svg{width:18px;height:18px}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+label{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:650;color:var(--muted)}
+input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%;min-height:42px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--hi);outline-offset:0;border-color:var(--hi)}
+textarea{min-height:90px;resize:vertical}
+label.check{flex-direction:row;align-items:center;gap:8px;font-weight:600;color:var(--ink)}
+label.check input{width:20px;height:20px;min-height:0}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.fields.times{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 84px!important}
+.fields .full{grid-column:1/-1}
+.fields.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:560px){.fields,.fields.three{grid-template-columns:minmax(0,1fr)}.fields.three.keep{grid-template-columns:repeat(3,minmax(0,1fr))}}
+fieldset{border:1px solid var(--line);border-radius:8px;padding:12px;margin:0}
+legend{font-size:13px;font-weight:700;padding:0 4px}
+.seg{display:inline-flex;background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{appearance:none;border:0;background:none;font:inherit;font-size:13px;font-weight:650;padding:6px 11px;border-radius:6px;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;box-shadow:var(--shadow)}
+.kpi span{display:block;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.kpi b{display:block;font-size:26px;font-weight:800;margin-top:4px;line-height:1.1}
+.kpi small{display:block;color:var(--muted);font-size:13px;margin-top:4px}
+.pos{color:var(--good)}.neg{color:var(--bad)}
+.kpi.lead{border-top:4px solid var(--hi)}
+
+/* Tables */
+.table-wrap{position:relative;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:8px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+th.n,td.n{text-align:right;white-space:nowrap}
+tr.click{cursor:pointer}
+tr.click:hover td{background:var(--surface2)}
+tfoot td{font-weight:750;border-bottom:0}
+
+.badge{display:inline-block;font-size:11px;font-weight:750;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--surface2);border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.badge.active{background:var(--hi-soft);border-color:transparent;color:var(--warn)}
+.badge.done{background:var(--good-bg);border-color:transparent;color:var(--good)}
+.badge.bid{background:var(--surface2)}
+
+/* Bars */
+.bar{height:8px;background:var(--surface2);border:1px solid var(--line);border-radius:4px;overflow:hidden;min-width:60px}
+.bar i{display:block;height:100%;background:var(--ink);border-radius:3px}
+.bar i.over{background:var(--bad)}
+.bar i.ok{background:var(--good)}
+.mbar{display:grid;grid-template-columns:1fr 1fr;align-items:center;height:14px;min-width:120px}
+.mbar .l{display:flex;justify-content:flex-end;border-right:1px solid var(--muted);height:100%;align-items:center}
+.mbar .r{display:flex;height:100%;align-items:center}
+.mbar i{display:block;height:10px;border-radius:3px}
+.mbar .l i{background:var(--bad);border-radius:3px 0 0 3px}
+.mbar .r i{background:var(--good);border-radius:0 3px 3px 0}
+
+/* Job cards */
+.jobs{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.job{display:flex;flex-direction:column;gap:10px;text-decoration:none;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;box-shadow:var(--shadow);border-left:5px solid var(--jc,var(--line))}
+.job:hover{border-color:var(--muted);border-left-color:var(--jc,var(--muted))}
+.job .t{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.job .t b{font-size:16px}
+.job .row{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.job .row span{color:var(--muted)}
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.filters input{max-width:260px}
+
+/* Lists */
+.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.list li:last-child{border-bottom:0}
+.list .grow{flex:1;min-width:0}
+.list .grow b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.list .grow small{display:block;color:var(--muted);font-size:13px}
+.list li.click{cursor:pointer}
+.list li.click:hover{background:var(--surface2)}
+.thumb{width:44px;height:44px;border-radius:6px;object-fit:cover;background:var(--surface2);border:1px solid var(--line);flex:none}
+.empty{padding:20px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:var(--r)}
+.empty .btns{justify-content:center;margin-top:12px}
+.insight{display:flex;gap:10px;padding:10px 12px;border-radius:8px;background:var(--surface2);font-size:14px;align-items:flex-start}
+.insight.warn{background:var(--warn-bg)}
+.insight.bad{background:var(--bad-bg)}
+.insight.good{background:var(--good-bg)}
+.insight b{white-space:nowrap}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;display:inline-block}
+
+/* Photos */
+.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.photos button{appearance:none;border:0;padding:0;background:var(--surface2);border-radius:8px;overflow:hidden;aspect-ratio:1;cursor:pointer;position:relative}
+.photos img{width:100%;height:100%;object-fit:cover;display:block}
+.photos small{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(0,0,0,.7));color:#fff;font-size:11px;padding:12px 6px 4px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.viewer img{width:100%;max-height:60vh;object-fit:contain;background:#000;border-radius:8px}
+
+/* Schedule */
+.week-nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sched{min-width:900px;table-layout:fixed}
+.sched th,.sched td{border:1px solid var(--line);vertical-align:top;padding:6px}
+.sched th{background:var(--surface2);text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink)}
+.sched th.today{background:var(--hi-soft)}
+.sched td.today{background:color-mix(in srgb,var(--hi-soft) 45%,transparent)}
+.sched th:first-child,.sched td:first-child{width:150px}
+.emp-cell{display:flex;gap:8px;align-items:flex-start}
+.emp-cell small{display:block;color:var(--muted);font-size:12px}
+.chip{display:block;width:100%;text-align:left;appearance:none;font:inherit;font-size:12px;line-height:1.3;background:var(--surface);color:var(--ink);border:1px solid var(--line);
+  border-left:4px solid var(--jc,var(--muted));border-radius:6px;padding:5px 6px;margin-bottom:4px;cursor:pointer}
+.chip b{display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip.scheduled{border-style:dashed;border-left-style:solid}
+.chip.missed{opacity:.55;text-decoration:line-through}
+.add-cell{appearance:none;width:100%;border:1px dashed transparent;background:none;color:var(--muted);border-radius:6px;font-size:18px;line-height:1;padding:4px;cursor:pointer}
+td:hover .add-cell{border-color:var(--line)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);align-items:center}
+.legend .chip{display:inline-block;width:auto;margin:0;padding:2px 8px}
+
+/* Dialog */
+dialog{border:0;border-radius:14px;padding:0;width:min(560px,calc(100vw - 24px));max-height:calc(100dvh - 24px);background:var(--surface);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(10,12,14,.55)}
+.dlg-form{display:flex;flex-direction:column;max-height:calc(100dvh - 24px)}
+.dlg-form header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line)}
+.dlg-form .x{appearance:none;border:0;background:none;font-size:26px;line-height:1;color:var(--muted);cursor:pointer;padding:0 4px}
+.dlg-body{padding:16px;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.dlg-form footer{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line);align-items:center;flex-wrap:wrap}
+.dlg-form footer .sp{flex:1}
+
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;z-index:100;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:calc(100vw - 32px)}
+@media (min-width:821px){.toast{bottom:24px}}
+.note{font-size:13px;color:var(--muted)}
+.hr{height:1px;background:var(--line);margin:4px 0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.split{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="#/dashboard" aria-label="Job Ledger home">
+    <svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#f4a300"/><rect x="15" y="12" width="34" height="42" rx="4" fill="#1c2024"/><rect x="24" y="8" width="16" height="9" rx="3" fill="#1c2024" stroke="#f4a300" stroke-width="3"/><path d="M21 42l7-8 6 5 10-12" fill="none" stroke="#f4a300" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 24h12" stroke="#f2f1ec" stroke-width="3" stroke-linecap="round"/></svg>
+    <span id="brand-name">Job Ledger</span>
+  </a>
+  <span class="sp"></span>
+  <nav class="nav" aria-label="Main">
+    <a href="#/dashboard" data-nav="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Profit</a>
+    <a href="#/jobs" data-nav="jobs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></svg>Jobs</a>
+    <a href="#/schedule" data-nav="schedule"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Schedule</a>
+    <a href="#/crew" data-nav="crew"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M17 4a4 4 0 0 1 0 8M22 21a7 7 0 0 0-4-6.3"/></svg>Crew &amp; Pay</a>
+    <a href="#/settings" data-nav="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</a>
+  </nav>
+</header>
+<main id="view" tabindex="-1"></main>
+<dialog id="dlg"></dialog>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+'use strict';
+/* ---------- helpers ---------- */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num=v=>{const n=parseFloat(String(v??'').replace(/[$,\s]/g,''));return isFinite(n)?n:0};
+const sum=(a,f=x=>x)=>a.reduce((t,x)=>t+(+f(x)||0),0);
+const money=n=>(n<0?'-':'')+'$'+Math.abs(Math.round(n)).toLocaleString('en-US');
+const money2=n=>(n<0?'-':'')+'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct=(n,d=0)=>isFinite(n)?(n*100).toFixed(d)+'%':'–';
+const hrs=h=>(Math.round(h*100)/100).toLocaleString('en-US',{maximumFractionDigits:2})+'h';
+const pad=n=>String(n).padStart(2,'0');
+const ds=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const pd=s=>{const[y,m,d]=String(s).split('-').map(Number);return new Date(y,(m||1)-1,d||1)};
+const today=()=>ds(new Date());
+const addDays=(s,n)=>{const d=pd(s);d.setDate(d.getDate()+n);return ds(d)};
+const weekStart=s=>{const d=pd(s);d.setDate(d.getDate()-((d.getDay()+6)%7));return ds(d)};
+const fmtDate=s=>s?pd(s).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+const fmtDateY=s=>s?pd(s).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
+const toMin=t=>{const[h,m]=String(t||'0:0').split(':').map(Number);return (h||0)*60+(m||0)};
+const fmtTime=t=>{if(!t)return'';let m=toMin(t),h=Math.floor(m/60)%24,mm=m%60;const ap=h<12?'a':'p';h=h%12||12;return h+(mm?':'+pad(mm):'')+ap};
+const JOB_COLORS=['#2f6fb0','#c2571a','#2e8b57','#8a4fb5','#b8860b','#c03a5b','#1f8a8a','#6b7280'];
+const EMP_COLORS=['#2f6fb0','#2e8b57','#c2571a','#8a4fb5','#c03a5b','#1f8a8a','#b8860b','#6b7280'];
+const CATS=[['materials','Materials'],['subs','Subcontractor'],['equipment','Equipment & rentals'],['permits','Permits & fees'],['fuel','Fuel & travel'],['disposal','Dumpster & disposal'],['other','Other']];
+const CAT_NAME=Object.fromEntries(CATS);
+const EST=[['materials','Materials'],['labor','Labor'],['subs','Subcontractors'],['equipment','Equipment'],['other','Other / fees']];
+const estKey=c=>({materials:'materials',subs:'subs',equipment:'equipment'})[c]||'other';
+const STATUS={bid:'Bid',active:'Active',done:'Done'};
+
+/* ---------- storage (IndexedDB) ---------- */
+const DB={db:null,
+  open(){return new Promise((res,rej)=>{const r=indexedDB.open('job-ledger',1);
+    r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains('kv'))d.createObjectStore('kv');if(!d.objectStoreNames.contains('photos'))d.createObjectStore('photos')};
+    r.onsuccess=()=>{this.db=r.result;this.db.onversionchange=()=>this.db.close();res()};r.onerror=()=>rej(r.error)})},
+  tx(store,mode,fn){return new Promise((res,rej)=>{const t=this.db.transaction(store,mode),s=t.objectStore(store);const q=fn(s);t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)})},
+  get(store,k){return this.tx(store,'readonly',s=>s.get(k))},
+  put(store,k,v){return this.tx(store,'readwrite',s=>s.put(v,k))},
+  del(store,k){return this.tx(store,'readwrite',s=>s.delete(k))},
+  clear(store){return this.tx(store,'readwrite',s=>s.clear())}};
+const blank=()=>({v:1,settings:{company:'',burden:15,ot:true,otThreshold:40},jobs:[],expenses:[],employees:[],shifts:[],photos:[]});
+let S=blank(), saveT=null, memOnly=false;
+function save(){clearTimeout(saveT);saveT=setTimeout(()=>{if(!memOnly)DB.put('kv','state',S).catch(()=>toast('Could not save on this device'))},250)}
+const memPhotos=new Map();
+async function photoPut(id,blob){if(memOnly)memPhotos.set(id,blob);else await DB.put('photos',id,blob)}
+async function photoGet(id){return memOnly?memPhotos.get(id):DB.get('photos',id)}
+async function photoDel(id){if(memOnly)memPhotos.delete(id);else await DB.del('photos',id);const u=urlCache.get(id);if(u){URL.revokeObjectURL(u);urlCache.delete(id)}}
+const urlCache=new Map();
+async function photoURL(id){if(urlCache.has(id))return urlCache.get(id);const b=await photoGet(id);if(!b)return'';const u=URL.createObjectURL(b);urlCache.set(id,u);return u}
+function hydratePhotos(root=document){$$('img[data-photo]',root).forEach(async img=>{const u=await photoURL(img.dataset.photo);if(u)img.src=u})}
+async function downscale(file,max=1600){
+  try{const bmp=await createImageBitmap(file,{imageOrientation:'from-image'});const k=Math.min(1,max/Math.max(bmp.width,bmp.height));
+    const c=document.createElement('canvas');c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
+    return await new Promise(r=>c.toBlob(b=>r(b||file),'image/jpeg',.82))}catch(e){return file}}
+async function addPhoto(file,jobId,kind='job'){const id=uid();await photoPut(id,await downscale(file));S.photos.push({id,jobId,kind,date:today(),caption:''});return id}
+
+/* ---------- calculations ---------- */
+const job=id=>S.jobs.find(j=>j.id===id), emp=id=>S.employees.find(e=>e.id===id);
+const jobColor=j=>j?JOB_COLORS[(S.jobs.indexOf(j)%JOB_COLORS.length+JOB_COLORS.length)%JOB_COLORS.length]:'#6b7280';
+function shiftHours(s){let m=toMin(s.end)-toMin(s.start);if(m<0)m+=1440;return Math.max(0,m-(+s.breakMin||0))/60}
+function laborCalc(){
+  const map=new Map(),acc={},ot=S.settings.ot!==false,th=num(S.settings.otThreshold)||40;
+  const worked=S.shifts.filter(s=>s.status==='worked').sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start));
+  for(const s of worked){const h=shiftHours(s),k=s.empId+'|'+weekStart(s.date),before=acc[k]||0;acc[k]=before+h;
+    let reg=h,o=0;if(ot){reg=Math.max(0,Math.min(h,th-before));o=h-reg}
+    const wage=(+s.rate||0)*(reg+1.5*o);map.set(s.id,{h,reg,ot:o,wage,cost:wage*(1+(+s.burden||0)/100)})}
+  return map}
+const plannedCost=s=>shiftHours(s)*(+s.rate||0)*(1+(+s.burden||0)/100);
+function jobStats(j,L){
+  const rev=(+j.price||0)+sum(j.changeOrders||[],c=>c.amount);
+  const cost={materials:0,labor:0,subs:0,equipment:0,other:0};let hours=0,planned=0,plannedH=0;
+  for(const e of S.expenses)if(e.jobId===j.id)cost[estKey(e.cat)]+=+e.amount||0;
+  for(const s of S.shifts){if(s.jobId!==j.id)continue;
+    if(s.status==='worked'){const l=L.get(s.id);if(l){cost.labor+=l.cost;hours+=l.h}}
+    else if(s.status==='scheduled'){planned+=plannedCost(s);plannedH+=shiftHours(s)}}
+  const total=sum(Object.values(cost)),est=j.est||{},estTotal=sum(EST,([k])=>est[k]);
+  // Projection for unfinished jobs: each category ends at the larger of what's spent (labor: plus what's scheduled) and its estimate.
+  const done=j.status==='done';
+  const projTotal=done?total:sum(EST,([k])=>Math.max(cost[k]+(k==='labor'?planned:0),+est[k]||0));
+  return{rev,cost,total,hours,planned,plannedH,profit:rev-total,margin:rev?(rev-total)/rev:NaN,estTotal,estProfit:rev-estTotal,estMargin:rev?(rev-estTotal)/rev:NaN,used:estTotal?total/estTotal:NaN,
+    projTotal,projProfit:rev-projTotal,projMargin:rev?(rev-projTotal)/rev:NaN}}
+
+/* ---------- UI primitives ---------- */
+let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600)}
+function openForm({title,body,submit='Save',onSubmit,onDelete,deleteLabel='Delete',onOpen}){
+  const d=$('#dlg');
+  d.innerHTML=`<form class="dlg-form" novalidate><header><h2>${esc(title)}</h2><button type="button" class="x" data-close aria-label="Close">×</button></header>
+  <div class="dlg-body">${body}</div><footer>${onDelete?`<button type="button" class="btn danger" data-del>${esc(deleteLabel)}</button>`:''}<span class="sp"></span>
+  <button type="button" class="btn ghost" data-close>Cancel</button>${onSubmit?`<button class="btn primary" type="submit">${esc(submit)}</button>`:''}</footer></form>`;
+  const f=d.querySelector('form');
+  f.addEventListener('submit',async ev=>{ev.preventDefault();for(const el of $$('[required]',f)){if(!String(el.value).trim()){el.focus();toast('Please fill in '+(el.closest('label')?.firstChild?.textContent||'the required field').trim().toLowerCase());return}}
+    const btn=$('[type=submit]',f);btn.disabled=true;try{const r=await onSubmit(new FormData(f),f);if(r!==false){d.close();route()}}finally{btn.disabled=false}});
+  $$('[data-close]',d).forEach(b=>b.onclick=()=>d.close());
+  const del=$('[data-del]',d);if(del)del.onclick=async()=>{if(!del.classList.contains('armed')){del.classList.add('armed');del.textContent='Tap again to delete';return}await onDelete();d.close();route()};
+  d.showModal();onOpen&&onOpen(f);const first=$('input:not([type=hidden]):not([type=file]),select,textarea',f);if(first&&matchMedia('(min-width:821px)').matches)first.focus()}
+const opt=(v,l,sel)=>`<option value="${esc(v)}"${String(v)===String(sel)?' selected':''}>${esc(l)}</option>`;
+const field=(label,inner,cls='')=>`<label class="${cls}">${label}${inner}</label>`;
+const inp=(name,val='',type='text',extra='')=>`<input name="${name}" type="${type}" value="${esc(val)}" ${extra}>`;
+const moneyInp=(name,val,extra='')=>`<input name="${name}" type="text" inputmode="decimal" value="${val===''||val==null?'':esc(val)}" placeholder="0" ${extra}>`;
+function armTwoStep(btn,label='Tap again to confirm'){if(btn.classList.contains('armed'))return true;btn.classList.add('armed');const t=btn.textContent;btn.textContent=label;setTimeout(()=>{btn.classList.remove('armed');btn.textContent=t},4000);return false}
+
+/* ---------- forms ---------- */
+function jobForm(j){const isNew=!j;j=j||{status:'active',est:{},start:today()};const e=j.est||{};
+  openForm({title:isNew?'New job':'Edit job',submit:isNew?'Create job':'Save',
+    body:`<div class="fields">
+      ${field('Job name',inp('name',j.name,'text','required placeholder="e.g. Smith kitchen remodel"'),'full')}
+      ${field('Client',inp('client',j.client))}${field('Phone',inp('phone',j.phone,'tel'))}
+      ${field('Address',inp('address',j.address),'full')}
+      ${field('Status',`<select name="status">${Object.entries(STATUS).map(([k,v])=>opt(k,v,j.status)).join('')}</select>`)}
+      ${field('Contract price (revenue)',moneyInp('price',j.price))}
+      ${field('Start',inp('start',j.start,'date'))}${field('Finish',inp('end',j.end,'date'))}</div>
+      <fieldset><legend>Your estimate (what you bid it at)</legend><div class="fields three keep">
+      ${EST.map(([k,l])=>field(l,moneyInp('est_'+k,e[k]))).join('')}</div>
+      <p class="note" style="margin-top:8px">Fill these in from your bid. Job Ledger compares them to what you actually spend, so you can see where your estimates run high or low.</p></fieldset>
+      ${field('Notes',`<textarea name="notes">${esc(j.notes)}</textarea>`)}`,
+    onDelete:isNew?null:async()=>{for(const p of S.photos.filter(p=>p.jobId===j.id))await photoDel(p.id);
+      S.photos=S.photos.filter(p=>p.jobId!==j.id);S.expenses=S.expenses.filter(x=>x.jobId!==j.id);S.shifts=S.shifts.filter(x=>x.jobId!==j.id);S.jobs=S.jobs.filter(x=>x.id!==j.id);save();toast('Job deleted');location.hash='#/jobs'},
+    deleteLabel:'Delete job',
+    onSubmit:fd=>{const o=isNew?{id:uid(),createdAt:Date.now(),changeOrders:[]}:j;
+      Object.assign(o,{name:fd.get('name').trim(),client:fd.get('client').trim(),phone:fd.get('phone').trim(),address:fd.get('address').trim(),status:fd.get('status'),price:num(fd.get('price')),start:fd.get('start'),end:fd.get('end'),notes:fd.get('notes'),
+        est:Object.fromEntries(EST.map(([k])=>[k,num(fd.get('est_'+k))]))});
+      if(isNew){S.jobs.push(o);save();location.hash='#/job/'+o.id;toast('Job created');return}save();toast('Saved')}})}
+
+function expenseForm(x,jobId){const isNew=!x;x=x||{date:today(),cat:'materials',jobId};
+  const rec=x.photoId?`<img class="thumb" style="width:72px;height:72px" data-photo="${x.photoId}" alt="Receipt">`:'';
+  openForm({title:isNew?'Add purchase or expense':'Edit expense',
+    body:`<div class="fields">
+      ${field('Job',`<select name="jobId">${S.jobs.map(j=>opt(j.id,j.name,x.jobId)).join('')}</select>`,'full')}
+      ${field('Amount',moneyInp('amount',x.amount,'required'))}${field('Date',inp('date',x.date,'date'))}
+      ${field('Category',`<select name="cat">${CATS.map(([k,l])=>opt(k,l,x.cat)).join('')}</select>`)}
+      ${field('Vendor / store',inp('vendor',x.vendor,'text','placeholder="Where you bought it"'))}
+      ${field('What was it for',`<textarea name="desc" placeholder="e.g. 40 sheets 1/2&quot; drywall, screws, mud">${esc(x.desc)}</textarea>`,'full')}
+      ${field('Paid with',`<select name="paid">${['Company card','Cash','Check','Account / invoice','Employee (reimburse)'].map(v=>opt(v,v,x.paid||'Company card')).join('')}</select>`)}
+      <label>Receipt photo<div style="display:flex;gap:8px;align-items:center">${rec}<input name="receipt" type="file" accept="image/*" capture="environment"></div></label></div>`,
+    onOpen:f=>hydratePhotos(f),
+    onDelete:isNew?null:async()=>{if(x.photoId){await photoDel(x.photoId);S.photos=S.photos.filter(p=>p.id!==x.photoId)}S.expenses=S.expenses.filter(e=>e.id!==x.id);save();toast('Expense deleted')},
+    onSubmit:async fd=>{const amt=num(fd.get('amount'));if(!amt){toast('Enter the amount');return false}
+      const o=isNew?{id:uid()}:x;Object.assign(o,{jobId:fd.get('jobId'),amount:amt,date:fd.get('date')||today(),cat:fd.get('cat'),vendor:fd.get('vendor').trim(),desc:fd.get('desc').trim(),paid:fd.get('paid')});
+      const file=fd.get('receipt');if(file&&file.size){if(o.photoId){await photoDel(o.photoId);S.photos=S.photos.filter(p=>p.id!==o.photoId)}o.photoId=await addPhoto(file,o.jobId,'receipt')}
+      if(isNew)S.expenses.push(o);save();toast(isNew?'Expense added':'Saved')}})}
+
+function coForm(j,c){const isNew=!c;c=c||{date:today()};
+  openForm({title:isNew?'Add change order':'Edit change order',
+    body:`<div class="fields">${field('Description',inp('desc',c.desc,'text','required placeholder="e.g. Add can lights in hallway"'),'full')}
+      ${field('Amount added to contract',moneyInp('amount',c.amount))}${field('Date',inp('date',c.date,'date'))}</div>
+      <p class="note">Use a negative amount for a credit back to the client.</p>`,
+    onDelete:isNew?null:()=>{j.changeOrders=j.changeOrders.filter(x=>x.id!==c.id);save()},
+    onSubmit:fd=>{const o=isNew?{id:uid()}:c;Object.assign(o,{desc:fd.get('desc').trim(),amount:num(fd.get('amount')),date:fd.get('date')});
+      if(isNew)(j.changeOrders=j.changeOrders||[]).push(o);save();toast('Change order saved')}})}
+
+function empForm(e){const isNew=!e;e=e||{burden:S.settings.burden,active:true,color:EMP_COLORS[S.employees.length%EMP_COLORS.length]};
+  openForm({title:isNew?'Add employee':'Edit employee',
+    body:`<div class="fields">${field('Name',inp('name',e.name,'text','required'),'full')}
+      ${field('Role',inp('role',e.role,'text','placeholder="e.g. Lead carpenter"'))}${field('Phone',inp('phone',e.phone,'tel'))}
+      ${field('Hourly pay',moneyInp('rate',e.rate,'required'))}${field('Labor burden %',moneyInp('burden',e.burden))}
+      ${field('Color',`<select name="color">${EMP_COLORS.map((c,i)=>opt(c,['Blue','Green','Orange','Purple','Rose','Teal','Gold','Gray'][i],e.color)).join('')}</select>`)}
+      <label class="check" style="align-self:end;min-height:42px"><input type="checkbox" name="active" ${e.active!==false?'checked':''}> Active on the crew</label></div>
+      <p class="note">Labor burden covers payroll taxes, workers' comp and other costs on top of wages (often 15–30%). It's added to job costs so profit is real. A new pay rate applies to shifts added from now on.</p>`,
+    onDelete:isNew?null:()=>{if(S.shifts.some(s=>s.empId===e.id)){e.active=false;toast('Marked inactive (they have hours on record)')}else S.employees=S.employees.filter(x=>x.id!==e.id);save()},
+    deleteLabel:'Remove',
+    onSubmit:fd=>{const rate=num(fd.get('rate'));if(!rate){toast('Enter an hourly pay rate');return false}
+      const o=isNew?{id:uid()}:e;Object.assign(o,{name:fd.get('name').trim(),role:fd.get('role').trim(),phone:fd.get('phone').trim(),rate,burden:num(fd.get('burden')),color:fd.get('color'),active:!!fd.get('active')});
+      if(isNew)S.employees.push(o);save();toast('Saved')}})}
+
+function shiftForm(s,pre={}){const isNew=!s;
+  const past=d=>d<today();
+  s=s||{empId:pre.empId||S.employees.find(e=>e.active!==false)?.id,jobId:pre.jobId||S.jobs.find(j=>j.status==='active')?.id||S.jobs[0]?.id,date:pre.date||today(),start:'07:00',end:'15:30',breakMin:30,status:pre.status||(past(pre.date||today())?'worked':'scheduled')};
+  if(!S.employees.length){toast('Add an employee first');location.hash='#/crew';return}
+  if(!S.jobs.length){toast('Add a job first');location.hash='#/jobs';return}
+  const jobs=S.jobs.filter(j=>j.status!=='done'||j.id===s.jobId);
+  openForm({title:isNew?'Add shift':'Edit shift',
+    body:`<div class="fields">
+      ${field('Employee',`<select name="empId">${S.employees.filter(e=>e.active!==false||e.id===s.empId).map(e=>opt(e.id,e.name,s.empId)).join('')}</select>`)}
+      ${field('Job',`<select name="jobId">${(jobs.length?jobs:S.jobs).map(j=>opt(j.id,j.name,s.jobId)).join('')}</select>`)}
+      ${field('Date',inp('date',s.date,'date'),'full')}</div>
+      <div class="fields three keep times">${field('Start',inp('start',s.start,'time'))}${field('End',inp('end',s.end,'time'))}${field('Break (min)',inp('breakMin',s.breakMin,'number','min="0" step="5" inputmode="numeric"'))}</div>
+      <p class="note" id="sh-hours"></p>
+      ${field('Status',`<select name="status">${[['scheduled','Scheduled'],['worked','Worked (counts toward pay & job cost)'],['missed','Missed / called off']].map(([k,l])=>opt(k,l,s.status)).join('')}</select>`)}
+      ${field('Note',inp('note',s.note,'text','placeholder="Task, materials to bring…"'))}
+      ${isNew?`<label class="check"><input type="checkbox" name="repeat"> Also add for the rest of this work week (Mon–Fri)</label>`:''}`,
+    onOpen:f=>{const upd=()=>{const h=shiftHours({start:f.start.value,end:f.end.value,breakMin:f.breakMin.value});const e=emp(f.empId.value);
+        $('#sh-hours').textContent=`${hrs(h)} · about ${money2(h*(e?.rate||0))} in wages`};f.addEventListener('input',upd);upd()},
+    onDelete:isNew?null:()=>{S.shifts=S.shifts.filter(x=>x.id!==s.id);save();toast('Shift deleted')},
+    onSubmit:fd=>{const e=emp(fd.get('empId'));const base={empId:fd.get('empId'),jobId:fd.get('jobId'),start:fd.get('start')||'07:00',end:fd.get('end')||'15:30',breakMin:num(fd.get('breakMin')),status:fd.get('status'),note:fd.get('note').trim()};
+      const date=fd.get('date')||today();
+      if(isNew){const dates=[date];if(fd.get('repeat')){let d=addDays(date,1);while(pd(d).getDay()!==6&&pd(d).getDay()!==0){dates.push(d);d=addDays(d,1)}}
+        for(const d of dates)S.shifts.push({id:uid(),...base,date:d,rate:e.rate,burden:e.burden,status:fd.get('status')==='worked'&&d>today()?'scheduled':base.status});
+        save();toast(dates.length>1?`${dates.length} shifts added`:'Shift added');return}
+      if(s.empId!==base.empId){s.rate=e.rate;s.burden=e.burden}Object.assign(s,base,{date});save();toast('Saved')}})}
+
+function photoViewer(p){const j=job(p.jobId);
+  openForm({title:p.kind==='receipt'?'Receipt':'Photo',submit:'Save caption',
+    body:`<div class="viewer"><img data-photo="${p.id}" alt="${esc(p.caption||'Job photo')}"></div>
+      <p class="note">${esc(j?.name||'')} · ${fmtDateY(p.date)}</p>${field('Caption',inp('caption',p.caption,'text','placeholder="e.g. Rough-in before drywall"'))}`,
+    onOpen:f=>hydratePhotos(f),
+    onDelete:async()=>{await photoDel(p.id);S.photos=S.photos.filter(x=>x.id!==p.id);S.expenses.forEach(x=>{if(x.photoId===p.id)delete x.photoId});save();toast('Photo deleted')},
+    onSubmit:fd=>{p.caption=fd.get('caption').trim();save()}})}
+
+/* ---------- pages ---------- */
+const UI={jobsFilter:'open',jobsQ:'',week:weekStart(today()),pay:'this-week',dash:'all'};
+const statusBadge=s=>`<span class="badge ${s}">${STATUS[s]||s}</span>`;
+const emptyBox=(msg,btns='')=>`<div class="empty"><p>${msg}</p>${btns?`<div class="btns">${btns}</div>`:''}</div>`;
+
+function pageDashboard(){
+  const L=laborCalc();
+  if(!S.jobs.length)return `<div class="page-head"><div><h1>Welcome to Job Ledger</h1><p class="sub">Every job's money in one place: what you bid, what you spent, what you kept.</p></div></div>
+    <div class="card stack"><p>Add your jobs, log purchases and expenses (snap a photo of the receipt), schedule your crew and log their hours. Job Ledger works out the real profit on every job and shows where your estimates are off.</p>
+    <div class="btns"><button class="btn primary" data-act="job-new">Add your first job</button><button class="btn" data-act="sample">Try it with sample data</button></div>
+    <p class="note">Your data is saved on this device only. Export a backup from Settings now and then.</p></div>`;
+  const now=today(),y=now.slice(0,4),from={all:'',ytd:y+'-01-01','12m':addDays(now,-365)}[UI.dash];
+  const done=S.jobs.filter(j=>j.status==='done'&&(!from||(j.end||'')>=from)).map(j=>({j,s:jobStats(j,L)}));
+  const active=S.jobs.filter(j=>j.status==='active').map(j=>({j,s:jobStats(j,L)}));
+  const rev=sum(done,x=>x.s.rev),cost=sum(done,x=>x.s.total),prof=rev-cost,estProf=sum(done,x=>x.s.estProfit);
+  const wk=weekStart(now),wkShifts=S.shifts.filter(s=>s.date>=wk&&s.date<=addDays(wk,6));
+  const wkH=sum(wkShifts.filter(s=>s.status!=='missed'),shiftHours);
+  const wkCost=sum(wkShifts,s=>s.status==='worked'?(L.get(s.id)?.cost||0):s.status==='scheduled'?plannedCost(s):0);
+  // estimating accuracy
+  const acc=EST.map(([k,l])=>{const rows=done.filter(x=>(+x.j.est?.[k]||0)>0);const e=sum(rows,x=>x.j.est[k]),a=sum(rows,x=>x.s.cost[k]);return{k,l,n:rows.length,e,a,v:e?(a-e)/e:NaN}}).filter(r=>r.n);
+  const insights=[];
+  for(const r of acc){if(r.v>0.05)insights.push(['bad',`<b>${r.l} +${pct(r.v)}</b><span>${r.l} came in ${pct(r.v)} over your estimates across ${r.n} finished job${r.n>1?'s':''} (${money(r.a-r.e)}). Raise ${r.l.toLowerCase()} in your bids by about ${pct(r.v)}, or find out what's driving it.</span>`]);
+    else if(r.v<-0.10)insights.push(['warn',`<b>${r.l} ${pct(r.v)}</b><span>You're estimating ${r.l.toLowerCase()} high (${pct(-r.v)} under on ${r.n} job${r.n>1?'s':''}). That padding could be costing you bids.</span>`])}
+  const dm=rev?prof/rev:NaN,em=rev?estProf/rev:NaN;
+  if(done.length&&isFinite(dm)&&isFinite(em)&&Math.abs(dm-em)>0.02)insights.unshift([dm<em?'bad':'good',`<b>Margin ${pct(dm)}</b><span>You bid these jobs at a ${pct(em)} margin and actually made ${pct(dm)}. ${dm<em?`That gap is ${money(estProf-prof)} you planned to keep but didn't.`:'Your jobs are beating their estimates.'}</span>`]);
+  if(done.length&&!insights.length)insights.push(['good','<b>On target</b><span>Your finished jobs are landing close to their estimates.</span>']);
+  const maxM=Math.max(.3,...done.map(x=>Math.abs(x.s.margin)||0));
+  return `<div class="page-head"><div><h1>Profit</h1><p class="sub">Real revenue and profit on finished jobs, and how your estimates hold up.</p></div>
+    <div class="seg" role="group" aria-label="Period">${[['all','All time'],['ytd','This year'],['12m','Last 12 months']].map(([k,l])=>`<button data-act="dash" data-v="${k}" aria-pressed="${UI.dash===k}">${l}</button>`).join('')}</div></div>
+  <div class="stack">
+  <div class="kpis">
+    <div class="kpi lead"><span>Revenue</span><b>${money(rev)}</b><small>${done.length} finished job${done.length===1?'':'s'}</small></div>
+    <div class="kpi"><span>Job costs</span><b>${money(cost)}</b><small>materials, labor, subs &amp; fees</small></div>
+    <div class="kpi"><span>Gross profit</span><b class="${prof<0?'neg':'pos'}">${money(prof)}</b><small>${isFinite(em)?`bid for ${money(estProf)}`:'&nbsp;'}</small></div>
+    <div class="kpi"><span>Margin</span><b class="${dm<0?'neg':''}">${pct(dm,1)}</b><small>${isFinite(em)?`estimated ${pct(em,1)}`:'&nbsp;'}</small></div>
+  </div>
+  <div class="grid2">
+    <div class="stack">
+      <div class="card"><div class="card-head"><h2>Profit by job</h2><span class="note">finished jobs</span></div>
+      ${done.length?`<div class="table-wrap"><table><thead><tr><th>Job</th><th class="n">Revenue</th><th class="n">Cost</th><th class="n">Profit</th><th class="n">Margin</th><th style="min-width:130px"><span class="sr">Margin bar</span></th><th class="n">vs bid</th></tr></thead><tbody>
+        ${done.sort((a,b)=>(b.j.end||'').localeCompare(a.j.end||'')).map(({j,s})=>{const w=Math.min(1,Math.abs(s.margin||0)/maxM)*100;const vb=s.profit-s.estProfit;return `<tr class="click" data-href="#/job/${j.id}"><td><b>${esc(j.name)}</b><br><small class="muted">${fmtDateY(j.end)}</small></td><td class="n">${money(s.rev)}</td><td class="n">${money(s.total)}</td><td class="n ${s.profit<0?'neg':''}">${money(s.profit)}</td><td class="n">${pct(s.margin,1)}</td>
+        <td><div class="mbar" title="${pct(s.margin,1)}"><div class="l">${s.margin<0?`<i style="width:${w}%"></i>`:''}</div><div class="r">${s.margin>0?`<i style="width:${w}%"></i>`:''}</div></div></td><td class="n ${s.estTotal?(vb<0?'neg':'pos'):''}">${s.estTotal?(vb>=0?'+':'')+money(vb):'–'}</td></tr>`}).join('')}
+        </tbody></table></div>`:emptyBox('No finished jobs in this period yet. Mark a job <b>Done</b> to see its final profit here.')}</div>
+      <div class="card"><div class="card-head"><h2>Estimating accuracy</h2><span class="note">estimate vs actual, finished jobs</span></div>
+      ${acc.length?`<div class="table-wrap"><table><thead><tr><th>Category</th><th class="n">Estimated</th><th class="n">Actual</th><th class="n">Over / under</th></tr></thead><tbody>
+        ${acc.map(r=>`<tr><td>${r.l} <small class="muted">· ${r.n} job${r.n>1?'s':''}</small></td><td class="n">${money(r.e)}</td><td class="n">${money(r.a)}</td><td class="n ${r.v>0.05?'neg':r.v<-0.05?'':'pos'}">${r.v>=0?'+':''}${pct(r.v,1)}</td></tr>`).join('')}</tbody></table></div>
+        <div class="stack" style="gap:8px;margin-top:12px">${insights.map(([c,h])=>`<div class="insight ${c}">${h}</div>`).join('')}</div>`
+        :emptyBox('Enter your estimate on each job (Edit job → Your estimate). Once jobs are finished, this shows which costs you under- or over-estimate.')}</div>
+    </div>
+    <div class="stack">
+      <div class="card"><div class="card-head"><h2>Jobs in progress</h2><a class="btn sm" href="#/jobs">All jobs</a></div>
+      ${active.length?`<ul class="list">${active.map(({j,s})=>`<li class="click" data-href="#/job/${j.id}"><span class="dot" style="background:${jobColor(j)}"></span><div class="grow"><b>${esc(j.name)}</b><small>${money(s.total)} spent of ${s.estTotal?money(s.estTotal)+' budget':'no budget set'} · ${money(s.rev)} contract${s.estTotal?` · projected profit <b class="${s.projProfit<0?'neg':''}">${money(s.projProfit)}</b>`:''}</small>
+        ${s.estTotal?`<div class="bar" style="margin-top:6px"><i class="${s.used>1?'over':s.used>.85?'':'ok'}" style="width:${Math.min(100,s.used*100)}%"></i></div>`:''}</div><span class="num ${s.used>1?'neg':''}">${isFinite(s.used)?pct(s.used):''}</span></li>`).join('')}</ul>`:emptyBox('No active jobs.')}</div>
+      <div class="card"><div class="card-head"><h2>This week's crew</h2><a class="btn sm" href="#/schedule">Schedule</a></div>
+        <div class="kpis" style="grid-template-columns:1fr 1fr"><div><span class="note">Hours</span><div style="font-size:22px;font-weight:800" class="num">${hrs(wkH)}</div></div><div><span class="note">Labor cost</span><div style="font-size:22px;font-weight:800" class="num">${money(wkCost)}</div></div></div>
+        <p class="note" style="margin-top:8px">Worked shifts at actual cost (with overtime and burden), scheduled shifts at their planned cost.</p></div>
+    </div>
+  </div></div>`}
+
+function pageJobs(){const L=laborCalc();const q=UI.jobsQ.toLowerCase();
+  const list=S.jobs.filter(j=>(UI.jobsFilter==='all'||(UI.jobsFilter==='open'?j.status!=='done':j.status===UI.jobsFilter))&&(!q||(j.name+' '+(j.client||'')+' '+(j.address||'')).toLowerCase().includes(q)))
+    .sort((a,b)=>({active:0,bid:1,done:2}[a.status]-{active:0,bid:1,done:2}[b.status])||(b.start||'').localeCompare(a.start||''));
+  return `<div class="page-head"><div><h1>Jobs</h1><p class="sub">${S.jobs.length} job${S.jobs.length===1?'':'s'} · tap one to see its money, photos and crew</p></div><button class="btn primary" data-act="job-new">+ New job</button></div>
+  <div class="filters"><div class="seg" role="group" aria-label="Filter">${[['open','Open'],['active','Active'],['bid','Bids'],['done','Done'],['all','All']].map(([k,l])=>`<button data-act="jobs-filter" data-v="${k}" aria-pressed="${UI.jobsFilter===k}">${l}</button>`).join('')}</div>
+    <input type="search" id="jobs-q" placeholder="Search jobs, clients, addresses" value="${esc(UI.jobsQ)}" aria-label="Search jobs"></div>
+  ${list.length?`<div class="jobs">${list.map(j=>{const s=jobStats(j,L);return `<a class="job" href="#/job/${j.id}" style="--jc:${jobColor(j)}">
+    <div class="t"><div><b>${esc(j.name)}</b><div class="small muted">${esc(j.client||'')}${j.client&&j.address?' · ':''}${esc(j.address||'')}</div></div>${statusBadge(j.status)}</div>
+    <div class="row"><span>Contract</span><b class="num">${money(s.rev)}</b></div>
+    <div class="row"><span>Spent so far</span><b class="num">${money(s.total)}</b></div>
+    ${j.status==='done'?`<div class="row"><span>Profit</span><b class="num ${s.profit<0?'neg':'pos'}">${money(s.profit)} <small class="muted">${pct(s.margin)}</small></b></div>`
+      :s.estTotal?`<div class="row"><span>Projected profit</span><b class="num ${s.projProfit<0?'neg':'pos'}">${money(s.projProfit)} <small class="muted">${pct(s.projMargin)}</small></b></div>`:''}
+    ${s.estTotal?`<div><div class="row small"><span>Budget used</span><span class="num">${pct(s.used)} of ${money(s.estTotal)}</span></div><div class="bar" style="margin-top:4px"><i class="${s.used>1?'over':''}" style="width:${Math.min(100,s.used*100)}%"></i></div></div>`:''}
+    </a>`}).join('')}</div>`:emptyBox(S.jobs.length?'No jobs match.':'No jobs yet.',`<button class="btn primary" data-act="job-new">+ New job</button>${S.jobs.length?'':'<button class="btn" data-act="sample">Load sample data</button>'}`)}`}
+
+function pageJob(id){const j=job(id);if(!j)return emptyBox('That job was not found.','<a class="btn" href="#/jobs">Back to jobs</a>');
+  const L=laborCalc(),s=jobStats(j,L);
+  const exps=S.expenses.filter(e=>e.jobId===j.id).sort((a,b)=>b.date.localeCompare(a.date));
+  const photos=S.photos.filter(p=>p.jobId===j.id&&p.kind!=='receipt').sort((a,b)=>b.date.localeCompare(a.date));
+  const shifts=S.shifts.filter(x=>x.jobId===j.id);
+  const byEmp={};for(const x of shifts){const r=byEmp[x.empId]=byEmp[x.empId]||{h:0,cost:0,wage:0,ph:0,pc:0};if(x.status==='worked'){const l=L.get(x.id);r.h+=l.h;r.cost+=l.cost;r.wage+=l.wage}else if(x.status==='scheduled'){r.ph+=shiftHours(x);r.pc+=plannedCost(x)}}
+  const e=j.est||{};const isDone=j.status==='done';
+  const mapUrl=j.address?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(j.address):'';
+  const ins=[];
+  for(const [k,l] of EST){const est=+e[k]||0,a=s.cost[k];if(est&&a>est*1.05)ins.push(['bad',`<b>${l}</b><span>${money(a-est)} over the estimate (${pct((a-est)/est)}).</span>`]);
+    else if(est&&!isDone&&a>est*.85)ins.push(['warn',`<b>${l}</b><span>${pct(a/est)} of the ${l.toLowerCase()} budget used.</span>`])}
+  if(!isDone&&s.planned){const le=+e.labor||0,lt=s.cost.labor+s.planned;ins.push([le&&lt>le?'bad':'',`<b>Scheduled</b><span>${hrs(s.plannedH)} of crew time still on the calendar (about ${money(s.planned)}). Labor so far plus scheduled: ${money(lt)}${le?` of the ${money(le)} labor estimate`:''}.</span>`])}
+  if(!isDone&&s.estTotal)ins.push(['',`<b>Projection</b><span>Assumes each category ends at its estimate, or at what's already spent and scheduled if that's higher.</span>`]);
+  return `<div class="page-head"><div><a href="#/jobs" class="note" style="text-decoration:none">← Jobs</a><h1 style="margin-top:4px">${esc(j.name)}</h1>
+    <p class="sub">${esc(j.client||'')}${j.phone?' · <a href="tel:'+esc(j.phone)+'">'+esc(j.phone)+'</a>':''}${j.address?` · <a href="${mapUrl}" target="_blank" rel="noopener">${esc(j.address)}</a>`:''}</p>
+    <p class="sub">${statusBadge(j.status)} ${j.start?fmtDateY(j.start):''}${j.end?' – '+fmtDateY(j.end):''}</p></div>
+    <div class="btns"><select id="job-status" aria-label="Job status" style="width:auto">${Object.entries(STATUS).map(([k,v])=>opt(k,v,j.status)).join('')}</select><button class="btn" data-act="job-edit">Edit job</button></div></div>
+  <div class="stack">
+  <div class="kpis">
+    <div class="kpi lead"><span>Revenue</span><b>${money(s.rev)}</b><small>contract${(j.changeOrders||[]).length?' + '+j.changeOrders.length+' change order'+(j.changeOrders.length>1?'s':''):''}</small></div>
+    <div class="kpi"><span>Costs ${isDone?'':'so far'}</span><b>${money(s.total)}</b><small>${s.estTotal?pct(s.used)+' of '+money(s.estTotal)+' estimate':'no estimate entered'}</small></div>
+    ${isDone?`<div class="kpi"><span>Profit</span><b class="${s.profit<0?'neg':'pos'}">${money(s.profit)}</b><small>${s.estTotal?'bid for '+money(s.estProfit):'&nbsp;'}</small></div>
+    <div class="kpi"><span>Margin</span><b class="${s.margin<0?'neg':''}">${pct(s.margin,1)}</b><small>${s.estTotal?'estimated '+pct(s.estMargin,1):'&nbsp;'}</small></div>`
+    :`<div class="kpi"><span>Projected profit</span><b class="${s.projProfit<0?'neg':'pos'}">${money(s.projProfit)}</b><small>${s.estTotal?'bid for '+money(s.estProfit):'enter an estimate to project'}</small></div>
+    <div class="kpi"><span>Projected margin</span><b class="${s.projMargin<0?'neg':''}">${pct(s.projMargin,1)}</b><small>${s.estTotal?'estimated '+pct(s.estMargin,1):'&nbsp;'}</small></div>`}
+  </div>
+  <div class="grid2"><div class="stack">
+    <div class="card"><div class="card-head"><h2>Estimate vs actual</h2>${s.estTotal?'':'<button class="btn sm" data-act="job-edit">Add your estimate</button>'}</div>
+      <div class="table-wrap"><table><thead><tr><th>Category</th><th class="n">Estimate</th><th class="n">Actual</th><th class="n">${isDone?'Difference':'Left in budget'}</th><th style="min-width:90px">Used</th></tr></thead><tbody>
+      ${EST.map(([k,l])=>{const est=+e[k]||0,a=s.cost[k],u=est?a/est:NaN;return `<tr><td>${l}${k==='labor'&&s.hours?` <small class="muted">· ${hrs(s.hours)}</small>`:''}</td><td class="n">${est?money(est):'–'}</td><td class="n">${money(a)}</td><td class="n ${est&&a>est?'neg':''}">${!est?'–':isDone?(a-est>=0?'+':'')+money(a-est):money(est-a)}</td>
+        <td>${est?`<div class="bar"><i class="${u>1?'over':''}" style="width:${Math.min(100,u*100)}%"></i></div>`:''}</td></tr>`}).join('')}</tbody>
+      <tfoot><tr><td>Total</td><td class="n">${s.estTotal?money(s.estTotal):'–'}</td><td class="n">${money(s.total)}</td><td class="n ${s.estTotal&&s.total>s.estTotal?'neg':''}">${!s.estTotal?'–':isDone?(s.total-s.estTotal>=0?'+':'')+money(s.total-s.estTotal):money(s.estTotal-s.total)}</td><td></td></tr></tfoot></table></div>
+      ${ins.length?`<div class="stack" style="gap:8px;margin-top:12px">${ins.map(([c,h])=>`<div class="insight ${c}">${h}</div>`).join('')}</div>`:''}</div>
+
+    <div class="card"><div class="card-head"><h2>Purchases &amp; expenses</h2><button class="btn primary sm" data-act="exp-new">+ Add expense</button></div>
+      ${exps.length?`<ul class="list">${exps.map(x=>`<li class="click" data-act="exp-edit" data-id="${x.id}">${x.photoId?`<img class="thumb" data-photo="${x.photoId}" alt="Receipt">`:`<span class="thumb" aria-hidden="true"></span>`}
+        <div class="grow"><b>${esc(x.vendor||CAT_NAME[x.cat])}</b><small>${fmtDate(x.date)} · ${esc(CAT_NAME[x.cat]||'Other')}${x.desc?' · '+esc(x.desc):''}</small></div><b class="num">${money2(+x.amount)}</b></li>`).join('')}</ul>
+        <div class="split" style="margin-top:10px"><span class="note">${exps.length} item${exps.length>1?'s':''} · ${exps.filter(x=>x.photoId).length} with receipts</span><b class="num">${money2(sum(exps,x=>x.amount))}</b></div>`
+        :emptyBox('Log every purchase and expense for this job. Snap the receipt so it\'s on file.')}</div>
+
+    <div class="card"><div class="card-head"><h2>Photos</h2><div class="btns"><label class="btn sm" style="flex-direction:row;color:var(--ink)">Take photo<input type="file" accept="image/*" capture="environment" data-photo-input hidden></label><label class="btn sm" style="flex-direction:row;color:var(--ink)">Upload<input type="file" accept="image/*" multiple data-photo-input hidden></label></div></div>
+      ${photos.length?`<div class="photos">${photos.map(p=>`<button data-act="photo" data-id="${p.id}"><img data-photo="${p.id}" alt="${esc(p.caption||'Job photo')}" loading="lazy"><small>${esc(p.caption||fmtDate(p.date))}</small></button>`).join('')}</div>`:emptyBox('Before, during and after photos, damage, rough-ins and inspections all in one place.')}</div>
+  </div><div class="stack">
+    <div class="card"><div class="card-head"><h2>Crew on this job</h2><button class="btn sm" data-act="shift-new-job">+ Log hours</button></div>
+      ${Object.keys(byEmp).length?`<div class="table-wrap"><table><thead><tr><th>Employee</th><th class="n">Hours</th><th class="n">Wages</th><th class="n">Cost</th></tr></thead><tbody>
+      ${Object.entries(byEmp).map(([eid,r])=>{const em=emp(eid);return `<tr><td><span class="dot" style="background:${em?.color||'#999'}"></span> ${esc(em?.name||'Removed')}${r.ph?`<br><small class="muted">+${hrs(r.ph)} scheduled</small>`:''}</td><td class="n">${hrs(r.h)}</td><td class="n">${money(r.wage)}</td><td class="n">${money(r.cost)}</td></tr>`}).join('')}</tbody>
+      <tfoot><tr><td>Total</td><td class="n">${hrs(s.hours)}</td><td class="n">${money(sum(Object.values(byEmp),r=>r.wage))}</td><td class="n">${money(s.cost.labor)}</td></tr></tfoot></table></div>
+      <p class="note" style="margin-top:8px">Cost includes labor burden and overtime. Only shifts marked Worked count.</p>`:emptyBox('No hours logged yet. Schedule the crew or log hours worked.')}</div>
+
+    <div class="card"><div class="card-head"><h2>Change orders</h2><button class="btn sm" data-act="co-new">+ Add</button></div>
+      ${(j.changeOrders||[]).length?`<ul class="list">${j.changeOrders.map(c=>`<li class="click" data-act="co-edit" data-id="${c.id}"><div class="grow"><b>${esc(c.desc)}</b><small>${fmtDate(c.date)}</small></div><b class="num ${c.amount<0?'neg':''}">${c.amount>=0?'+':''}${money(c.amount)}</b></li>`).join('')}</ul>`:'<p class="note">Extra work the client approved. It\'s added to the job\'s revenue.</p>'}</div>
+
+    <div class="card"><div class="card-head"><h2>Notes</h2></div><textarea id="job-notes" placeholder="Gate code, client preferences, punch list…">${esc(j.notes)}</textarea></div>
+  </div></div></div>`}
+
+function pageSchedule(){const wk=UI.week,days=[...Array(7)].map((_,i)=>addDays(wk,i)),now=today(),L=laborCalc();
+  const inWeek=S.shifts.filter(s=>s.date>=wk&&s.date<=days[6]);
+  const emps=S.employees.filter(e=>e.active!==false||inWeek.some(s=>s.empId===e.id));
+  const pastSched=inWeek.filter(s=>s.status==='scheduled'&&s.date<now).length;
+  const byJob={};for(const s of inWeek){if(s.status==='missed')continue;const r=byJob[s.jobId]=byJob[s.jobId]||{h:0,c:0};r.h+=shiftHours(s);r.c+=s.status==='worked'?(L.get(s.id)?.cost||0):plannedCost(s)}
+  const label=`${pd(wk).toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${pd(days[6]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+  return `<div class="page-head"><div><h1>Schedule</h1><p class="sub">Who's working where, and the hours that turn into pay and job cost.</p></div>
+    <div class="week-nav"><button class="btn sm" data-act="week" data-v="-7" aria-label="Previous week">‹</button><button class="btn sm" data-act="week" data-v="0">This week</button><button class="btn sm" data-act="week" data-v="7" aria-label="Next week">›</button><b style="margin-left:6px">${label}</b></div></div>
+  ${!S.employees.length?emptyBox('Add your crew first, then schedule them on jobs.','<a class="btn primary" href="#/crew">Add employees</a>'):`
+  <div class="stack">
+  <div class="split"><div class="legend"><span class="chip scheduled">Scheduled</span><span class="chip">Worked</span><span class="chip missed">Missed</span></div>
+    <div class="btns">${pastSched?`<button class="btn sm dark" data-act="confirm-past">Mark ${pastSched} past shift${pastSched>1?'s':''} as worked</button>`:''}<button class="btn sm" data-act="copy-week">Copy last week</button><button class="btn sm primary" data-act="shift-new">+ Add shift</button></div></div>
+  <div class="card" style="padding:8px"><div class="table-wrap"><table class="sched"><thead><tr><th>Crew</th>${days.map(d=>`<th class="${d===now?'today':''}">${pd(d).toLocaleDateString('en-US',{weekday:'short'})} <span class="muted">${pd(d).getDate()}</span></th>`).join('')}</tr></thead><tbody>
+  ${emps.map(e=>{const mine=inWeek.filter(s=>s.empId===e.id);const h=sum(mine.filter(s=>s.status!=='missed'),shiftHours);const ot=S.settings.ot!==false&&h>(num(S.settings.otThreshold)||40);
+    return `<tr><td><div class="emp-cell"><span class="dot" style="background:${e.color};margin-top:5px"></span><div><b>${esc(e.name)}</b><small class="${ot?'neg':''}">${hrs(h)}${ot?' · overtime':''}</small></div></div></td>
+    ${days.map(d=>`<td class="${d===now?'today':''}">${mine.filter(s=>s.date===d).sort((a,b)=>a.start.localeCompare(b.start)).map(s=>{const j=job(s.jobId);return `<button class="chip ${s.status}" style="--jc:${jobColor(j)}" data-act="shift-edit" data-id="${s.id}"><b>${esc(j?.name||'Job removed')}</b>${fmtTime(s.start)}–${fmtTime(s.end)} · ${hrs(shiftHours(s))}</button>`}).join('')}
+      <button class="add-cell" data-act="shift-new" data-emp="${e.id}" data-date="${d}" aria-label="Add shift for ${esc(e.name)} on ${fmtDate(d)}">+</button></td>`).join('')}</tr>`}).join('')}
+  </tbody><tfoot><tr><td>Day total</td>${days.map(d=>`<td class="num">${hrs(sum(inWeek.filter(s=>s.date===d&&s.status!=='missed'),shiftHours))}</td>`).join('')}</tr></tfoot></table></div></div>
+  <div class="card"><div class="card-head"><h2>This week by job</h2></div>
+  ${Object.keys(byJob).length?`<div class="table-wrap"><table><thead><tr><th>Job</th><th class="n">Hours</th><th class="n">Labor cost</th></tr></thead><tbody>${Object.entries(byJob).map(([jid,r])=>{const j=job(jid);return `<tr class="click" data-href="#/job/${jid}"><td><span class="dot" style="background:${jobColor(j)}"></span> ${esc(j?.name||'Job removed')}</td><td class="n">${hrs(r.h)}</td><td class="n">${money(r.c)}</td></tr>`}).join('')}</tbody>
+  <tfoot><tr><td>Total</td><td class="n">${hrs(sum(Object.values(byJob),r=>r.h))}</td><td class="n">${money(sum(Object.values(byJob),r=>r.c))}</td></tr></tfoot></table></div>`:emptyBox('Nothing scheduled this week.')}</div></div>`}`}
+
+function payRange(){const now=today(),wk=weekStart(now),d=pd(now);
+  const mStart=ds(new Date(d.getFullYear(),d.getMonth(),1)),lmStart=ds(new Date(d.getFullYear(),d.getMonth()-1,1)),lmEnd=ds(new Date(d.getFullYear(),d.getMonth(),0));
+  return{'this-week':[wk,addDays(wk,6),'This week'],'last-week':[addDays(wk,-7),addDays(wk,-1),'Last week'],'this-month':[mStart,ds(new Date(d.getFullYear(),d.getMonth()+1,0)),'This month'],'last-month':[lmStart,lmEnd,'Last month']}}
+function pageCrew(){const L=laborCalc(),R=payRange(),[from,to]=R[UI.pay];
+  const sh=S.shifts.filter(s=>s.status==='worked'&&s.date>=from&&s.date<=to);
+  const per={},perJob={};for(const s of sh){const l=L.get(s.id);if(!l)continue;const p=per[s.empId]=per[s.empId]||{reg:0,ot:0,wage:0,cost:0};p.reg+=l.reg;p.ot+=l.ot;p.wage+=l.wage;p.cost+=l.cost;
+    const q=perJob[s.jobId]=perJob[s.jobId]||{h:0,wage:0,cost:0};q.h+=l.h;q.wage+=l.wage;q.cost+=l.cost}
+  const wk=weekStart(today());
+  return `<div class="page-head"><div><h1>Crew &amp; Pay</h1><p class="sub">Your team, their rates, and what you paid out, by person and by job.</p></div><button class="btn primary" data-act="emp-new">+ Add employee</button></div>
+  <div class="grid2"><div class="stack">
+  <div class="card"><div class="card-head"><h2>Payroll</h2><div class="seg" role="group" aria-label="Pay period">${Object.entries(R).map(([k,[, ,l]])=>`<button data-act="pay" data-v="${k}" aria-pressed="${UI.pay===k}">${l}</button>`).join('')}</div></div>
+    <p class="note" style="margin-bottom:8px">${fmtDateY(from)} – ${fmtDateY(to)} · worked shifts only${S.settings.ot!==false?` · overtime at 1.5× over ${num(S.settings.otThreshold)||40}h/week`:''}</p>
+    ${Object.keys(per).length?`<div class="table-wrap"><table><thead><tr><th>Employee</th><th class="n">Regular</th><th class="n">Overtime</th><th class="n">Gross pay</th><th class="n">With burden</th></tr></thead><tbody>
+    ${Object.entries(per).map(([id,p])=>{const e=emp(id);return `<tr><td><span class="dot" style="background:${e?.color||'#999'}"></span> ${esc(e?.name||'Removed')}</td><td class="n">${hrs(p.reg)}</td><td class="n ${p.ot?'neg':''}">${p.ot?hrs(p.ot):'–'}</td><td class="n"><b>${money2(p.wage)}</b></td><td class="n">${money(p.cost)}</td></tr>`}).join('')}</tbody>
+    <tfoot><tr><td>Total</td><td class="n">${hrs(sum(Object.values(per),p=>p.reg))}</td><td class="n">${hrs(sum(Object.values(per),p=>p.ot))}</td><td class="n">${money2(sum(Object.values(per),p=>p.wage))}</td><td class="n">${money(sum(Object.values(per),p=>p.cost))}</td></tr></tfoot></table></div>`:emptyBox('No worked hours in this period.')}</div>
+  <div class="card"><div class="card-head"><h2>Pay by job</h2><span class="note">${R[UI.pay][2].toLowerCase()}</span></div>
+    ${Object.keys(perJob).length?`<div class="table-wrap"><table><thead><tr><th>Job</th><th class="n">Hours</th><th class="n">Wages</th><th class="n">Labor cost</th></tr></thead><tbody>
+    ${Object.entries(perJob).map(([id,p])=>{const j=job(id);return `<tr class="click" data-href="#/job/${id}"><td><span class="dot" style="background:${jobColor(j)}"></span> ${esc(j?.name||'Job removed')}</td><td class="n">${hrs(p.h)}</td><td class="n">${money(p.wage)}</td><td class="n">${money(p.cost)}</td></tr>`}).join('')}</tbody></table></div>`:emptyBox('No worked hours in this period.')}</div>
+  </div><div class="stack">
+  <div class="card"><div class="card-head"><h2>Crew</h2></div>
+  ${S.employees.length?`<ul class="list">${S.employees.slice().sort((a,b)=>(a.active===false)-(b.active===false)||a.name.localeCompare(b.name)).map(e=>{const h=sum(S.shifts.filter(s=>s.empId===e.id&&s.date>=wk&&s.date<=addDays(wk,6)&&s.status!=='missed'),shiftHours);
+    return `<li class="click" data-act="emp-edit" data-id="${e.id}" style="${e.active===false?'opacity:.55':''}"><span class="dot" style="background:${e.color};width:14px;height:14px"></span><div class="grow"><b>${esc(e.name)}${e.active===false?' <span class="badge">Inactive</span>':''}</b><small>${esc(e.role||'Crew')} · ${money2(e.rate)}/hr · +${num(e.burden)}% burden</small></div><span class="num small muted">${hrs(h)} this wk</span></li>`}).join('')}</ul>`
+    :emptyBox('Add the people who work for you, with their hourly pay.','<button class="btn primary" data-act="emp-new">+ Add employee</button>')}</div>
+  </div></div>`}
+
+let deferredInstall=null;
+function pageSettings(){const st=S.settings;const iOS=/iphone|ipad|ipod/i.test(navigator.userAgent);const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+  return `<div class="page-head"><div><h1>Settings</h1><p class="sub">Company defaults, backups and installing the app.</p></div></div>
+  <div class="grid2"><div class="stack">
+  <form class="card stack" id="settings-form"><h2>Company</h2><div class="fields">
+    ${field('Company name',inp('company',st.company,'text','placeholder="Shown in the header"'),'full')}
+    ${field('Default labor burden %',moneyInp('burden',st.burden))}
+    ${field('Overtime after (hours / week)',moneyInp('otThreshold',st.otThreshold))}
+    <label class="check full"><input type="checkbox" name="ot" ${st.ot!==false?'checked':''}> Pay overtime at 1.5× (counts in job labor cost)</label></div>
+    <div><button class="btn primary" type="submit">Save settings</button></div></form>
+  <div class="card stack"><h2>Backup</h2><p>Your jobs, expenses, photos and crew are saved <b>on this device only</b>. Export a backup file regularly and keep it somewhere safe (email it to yourself or save it to cloud storage). Restore it here on a new phone or computer.</p>
+    <div class="btns"><button class="btn dark" data-act="export">Export backup</button><label class="btn" style="flex-direction:row;color:var(--ink)">Restore from backup<input type="file" accept="application/json,.json" id="import-file" hidden></label></div>
+    <p class="note">${S.jobs.length} jobs · ${S.expenses.length} expenses · ${S.photos.length} photos · ${S.employees.length} employees · ${S.shifts.length} shifts</p></div>
+  </div><div class="stack">
+  <div class="card stack"><h2>Install the app</h2>
+    ${standalone?'<p>You\'re using the installed app.</p>':iOS?'<p>On iPhone or iPad: open this page in <b>Safari</b>, tap the <b>Share</b> button, then <b>Add to Home Screen</b>.</p>':`<p>Install Job Ledger to get its own icon and open it full-screen, even offline.</p>${deferredInstall?'<div><button class="btn primary" data-act="install">Install app</button></div>':'<p class="note">In Chrome or Edge, use the install icon in the address bar, or the browser menu → <b>Install Job Ledger</b> / <b>Add to Home screen</b>.</p>'}`}</div>
+  <div class="card stack"><h2>Sample data</h2><p class="note">Load a sample company to see how everything works. It replaces what's on this device, so export a backup first if you have real data.</p>
+    <div class="btns"><button class="btn" data-act="sample">Load sample data</button><button class="btn danger" data-act="erase">Erase all data</button></div></div>
+  </div></div>`}
+
+/* ---------- router ---------- */
+function route(){const h=(location.hash||'#/dashboard').slice(2),[page,id]=h.split('/');const v=$('#view');
+  const P={dashboard:pageDashboard,jobs:pageJobs,job:()=>pageJob(id),schedule:pageSchedule,crew:pageCrew,settings:pageSettings}[page]||pageDashboard;
+  const keepScroll=route.last===h;const y=scrollY;v.innerHTML=P();route.last=h;
+  $$('[data-nav]').forEach(a=>a.toggleAttribute('aria-current',false));const cur=$(`[data-nav="${page==='job'?'jobs':page}"]`)||$('[data-nav="dashboard"]');cur.setAttribute('aria-current','page');
+  $('#brand-name').textContent=S.settings.company||'Job Ledger';document.title=(S.settings.company?S.settings.company+' · ':'')+'Job Ledger';
+  hydratePhotos(v);if(keepScroll)scrollTo(0,y);else scrollTo(0,0)}
+window.addEventListener('hashchange',route);
+
+/* ---------- actions ---------- */
+const curJob=()=>{const[p,id]=location.hash.slice(2).split('/');return p==='job'?job(id):null};
+const ACT={
+  'job-new':()=>jobForm(),'job-edit':()=>jobForm(curJob()),
+  'exp-new':()=>expenseForm(null,curJob()?.id),'exp-edit':a=>expenseForm(S.expenses.find(x=>x.id===a.dataset.id)),
+  'co-new':()=>coForm(curJob()),'co-edit':a=>{const j=curJob();coForm(j,j.changeOrders.find(c=>c.id===a.dataset.id))},
+  'emp-new':()=>empForm(),'emp-edit':a=>empForm(emp(a.dataset.id)),
+  'shift-new':a=>shiftForm(null,{empId:a.dataset.emp,date:a.dataset.date}),
+  'shift-new-job':()=>shiftForm(null,{jobId:curJob().id,status:'worked'}),
+  'shift-edit':a=>shiftForm(S.shifts.find(s=>s.id===a.dataset.id)),
+  'photo':a=>photoViewer(S.photos.find(p=>p.id===a.dataset.id)),
+  'jobs-filter':a=>{UI.jobsFilter=a.dataset.v;route()},
+  'dash':a=>{UI.dash=a.dataset.v;route()},'pay':a=>{UI.pay=a.dataset.v;route()},
+  'week':a=>{const v=+a.dataset.v;UI.week=v?addDays(UI.week,v):weekStart(today());route()},
+  'confirm-past':()=>{const now=today(),end=addDays(UI.week,6);let n=0;S.shifts.forEach(s=>{if(s.status==='scheduled'&&s.date<now&&s.date>=UI.week&&s.date<=end){s.status='worked';n++}});save();toast(`${n} shift${n>1?'s':''} marked worked`);route()},
+  'copy-week':()=>{const prev=addDays(UI.week,-7);const src=S.shifts.filter(s=>s.date>=prev&&s.date<UI.week&&s.status!=='missed');let n=0;
+    for(const s of src){const d=addDays(s.date,7);if(S.shifts.some(x=>x.empId===s.empId&&x.jobId===s.jobId&&x.date===d))continue;const j=job(s.jobId);if(!j||j.status==='done')continue;const e=emp(s.empId);if(!e||e.active===false)continue;
+      S.shifts.push({...s,id:uid(),date:d,status:'scheduled',rate:e.rate,burden:e.burden});n++}
+    save();toast(n?`Copied ${n} shift${n>1?'s':''} from last week`:'Nothing new to copy from last week');route()},
+  'export':async()=>{toast('Preparing backup…');const photos={};for(const p of S.photos){const b=await photoGet(p.id);if(b)photos[p.id]=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(b)})}
+    const blob=new Blob([JSON.stringify({app:'job-ledger',exportedAt:new Date().toISOString(),state:S,photos})],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`job-ledger-backup-${today()}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('Backup downloaded')},
+  'install':async()=>{if(!deferredInstall)return;deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;route()},
+  'sample':a=>{if(S.jobs.length&&!armTwoStep(a,'Replaces your data. Tap again'))return;loadSample()},
+  'erase':async a=>{if(!armTwoStep(a,'Erases everything. Tap again'))return;if(!memOnly)await DB.clear('photos');memPhotos.clear();S=blank();save();toast('All data erased');location.hash='#/dashboard';route()},
+};
+document.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(a&&!a.closest('dialog')){e.preventDefault();ACT[a.dataset.act]?.(a,e);return}
+  const r=e.target.closest('[data-href]');if(r&&!e.target.closest('a,button,input,select,textarea'))location.hash=r.dataset.href});
+document.addEventListener('input',e=>{if(e.target.id==='jobs-q'){UI.jobsQ=e.target.value;const pos=e.target.selectionStart;route();const i=$('#jobs-q');i.focus();i.setSelectionRange(pos,pos)}});
+document.addEventListener('change',async e=>{const t=e.target;
+  if(t.id==='job-status'){const j=curJob();j.status=t.value;if(t.value==='done'&&!j.end)j.end=today();save();toast('Marked '+STATUS[t.value]);route()}
+  else if(t.id==='job-notes'){curJob().notes=t.value;save();toast('Notes saved')}
+  else if(t.matches('[data-photo-input]')){const j=curJob();const files=[...t.files];if(!files.length)return;toast(`Saving ${files.length} photo${files.length>1?'s':''}…`);for(const f of files)await addPhoto(f,j.id);save();toast('Photos saved');route()}
+  else if(t.id==='import-file'){const f=t.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(d.app!=='job-ledger'||!d.state)throw 0;
+      openForm({title:'Restore backup?',body:`<p>This replaces everything on this device with the backup from <b>${esc(d.exportedAt?new Date(d.exportedAt).toLocaleString():'the file')}</b>: ${d.state.jobs.length} jobs, ${d.state.expenses.length} expenses, ${Object.keys(d.photos||{}).length} photos.</p>`,submit:'Replace and restore',
+        onSubmit:async()=>{if(!memOnly)await DB.clear('photos');memPhotos.clear();urlCache.clear();for(const[id,u] of Object.entries(d.photos||{})){const b=await (await fetch(u)).blob();await photoPut(id,b)}S=Object.assign(blank(),d.state);S.settings=Object.assign(blank().settings,d.state.settings);save();toast('Backup restored')}})}
+    catch(err){toast('That file isn\'t a Job Ledger backup')}t.value=''}});
+document.addEventListener('submit',e=>{if(e.target.id==='settings-form'){e.preventDefault();const fd=new FormData(e.target);Object.assign(S.settings,{company:fd.get('company').trim(),burden:num(fd.get('burden')),otThreshold:num(fd.get('otThreshold'))||40,ot:!!fd.get('ot')});save();toast('Settings saved');route()}});
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;if(location.hash.startsWith('#/settings'))route()});
+
+/* ---------- sample data ---------- */
+function loadSample(){const T=today(),D=n=>addDays(T,n);
+  const E=[{id:uid(),name:'Marco Diaz',role:'Lead carpenter',rate:34,burden:18,color:EMP_COLORS[0],active:true},
+    {id:uid(),name:'Jess Park',role:'Carpenter',rate:27,burden:18,color:EMP_COLORS[1],active:true},
+    {id:uid(),name:'Tyler Brooks',role:'Laborer',rate:21,burden:18,color:EMP_COLORS[2],active:true}];
+  const J=[{id:uid(),name:'Henderson kitchen remodel',client:'Amy Henderson',address:'412 Maple Ave',status:'done',price:48500,start:D(-63),end:D(-36),
+      est:{materials:16500,labor:14000,subs:7800,equipment:900,other:1200},changeOrders:[{id:uid(),desc:'Upgrade to quartz countertops',amount:2400,date:D(-50)}],notes:'Client wants soft-close everything.'},
+    {id:uid(),name:'Oak St deck & pergola',client:'Ray Ortiz',address:'88 Oak St',status:'done',price:26800,start:D(-30),end:D(-17),est:{materials:9200,labor:7600,subs:0,equipment:600,other:400},changeOrders:[],notes:''},
+    {id:uid(),name:'Garcia basement finish',client:'Luis Garcia',address:'1520 Ridge Rd',status:'active',price:39200,start:D(-12),end:D(18),est:{materials:11800,labor:13500,subs:6200,equipment:500,other:900},changeOrders:[],notes:'Dog in backyard. Use side door.'},
+    {id:uid(),name:'Lakeview bath remodel',client:'Dana Whitfield',address:'7 Lakeview Ct',status:'bid',price:22400,start:D(21),end:'',est:{materials:7400,labor:7200,subs:3600,equipment:200,other:600},changeOrders:[],notes:'Bid sent. Follow up next week.'}];
+  const X=[];const ex=(j,dd,cat,vendor,amount,desc)=>X.push({id:uid(),jobId:J[j].id,date:D(dd),cat,vendor,amount,desc,paid:'Company card'});
+  ex(0,-62,'permits','City building dept',480,'Remodel permit');ex(0,-61,'disposal','Ace Roll-Off',520,'20-yd dumpster');ex(0,-60,'materials','Valley Lumber',2150,'Framing lumber, plywood, blocking');
+  ex(0,-58,'materials','Cabinet Supply Co',9800,'Shaker cabinets, 22 boxes');ex(0,-55,'subs','Bright Line Electric',3200,'Rewire, 8 cans, circuits');ex(0,-54,'subs','Flow Right Plumbing',2900,'Relocate sink, gas line');
+  ex(0,-48,'materials','Home center',1960,'Drywall, mud, tape, paint');ex(0,-45,'materials','Tile Depot',2380,'Backsplash tile, thinset, grout');ex(0,-44,'subs','Stone Works',2300,'Countertop template & install');
+  ex(0,-40,'materials','Valley Lumber',2610,'Trim, doors, hardware');ex(0,-41,'equipment','Rent-All',650,'Floor sander & dust extractor');
+  ex(1,-30,'permits','City building dept',260,'Deck permit');ex(1,-29,'equipment','Rent-All',720,'Auger & mini excavator');ex(1,-29,'materials','Valley Lumber',7900,'Treated framing, composite decking');
+  ex(1,-27,'materials','Home center',380,'Concrete, post bases');ex(1,-24,'materials','Hardware Barn',1150,'Hidden fasteners, hangers, screws');ex(1,-20,'materials','Paint Pro',520,'Stain for pergola');ex(1,-18,'disposal','Ace Roll-Off',180,'Haul-off');
+  ex(2,-12,'materials','Valley Lumber',3100,'Framing, insulation');ex(2,-8,'subs','Bright Line Electric',1800,'Rough-in electrical');ex(2,-5,'materials','Home center',3300,'Drywall, mud, tape');
+  const Sh=[];const add=(ei,j,from,to,o={})=>{for(let i=from;i<=to;i++){const d=D(i),wd=pd(d).getDay();const days=o.days||[1,2,3,4,5];if(!days.includes(wd))continue;const e=E[ei];
+    Sh.push({id:uid(),empId:e.id,jobId:J[j].id,date:d,start:o.start||'07:00',end:o.end||'15:30',breakMin:30,status:d<T?'worked':'scheduled',rate:e.rate,burden:e.burden,note:''})}};
+  add(0,0,-63,-36);add(1,0,-63,-36);add(2,0,-60,-45);add(0,0,-63,-36,{days:[6],end:'11:30',start:'07:00'});
+  add(0,1,-30,-21);add(1,1,-30,-17);add(2,1,-30,-17);
+  add(0,2,-12,13);add(1,2,-12,13);add(2,2,-5,6);
+  S=blank();Object.assign(S,{settings:{company:'',burden:18,ot:true,otThreshold:40},jobs:J,expenses:X,employees:E,shifts:Sh,photos:[]});
+  if(!memOnly)DB.clear('photos').catch(()=>{});save();toast('Sample data loaded');location.hash='#/dashboard';route()}
+
+/* ---------- start ---------- */
+(async()=>{const slow=setTimeout(()=>{$('#view').innerHTML=emptyBox('Still opening your saved data… If this doesn\'t clear in a few seconds, close any other Job Ledger tabs or windows and reload.')},4000);
+  try{await DB.open();const st=await DB.get('kv','state');if(st)S=Object.assign(blank(),st,{settings:Object.assign(blank().settings,st.settings||{})})}
+  catch(e){memOnly=true;setTimeout(()=>toast('Storage is blocked here, so changes won\'t be kept'),400)}
+  clearTimeout(slow);route();
+  if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{})})();
+</script>
+</body>
+</html>
