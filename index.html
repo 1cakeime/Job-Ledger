@@ -657,7 +657,7 @@ function pageSchedule(){const wk=UI.week,days=[...Array(7)].map((_,i)=>addDays(w
   const label=`${pd(wk).toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${pd(days[6]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
   return `<div class="page-head"><div><h1>Schedule</h1><p class="sub">Who's working where, and the hours that turn into pay and job cost.</p></div>
     <div class="week-nav"><button class="btn sm" data-act="week" data-v="-7" aria-label="Previous week">‹</button><button class="btn sm" data-act="week" data-v="0">This week</button><button class="btn sm" data-act="week" data-v="7" aria-label="Next week">›</button><b style="margin-left:6px">${label}</b></div></div>
-  ${!S.employees.length?emptyBox('Add your crew first, then schedule them on jobs.','<a class="btn primary" href="#/crew">Add employees</a>'):`
+  ${!S.employees.length?`<div class="stack">${emptyBox('Add your crew first, then schedule them on jobs. Or load the sample company to see how it works.','<a class="btn primary" href="#/crew">Add employees</a>'+(S.jobs.length?'':'<button class="btn" data-act="sample">Load sample data</button>'))}${monthCal()}</div>`:`
   <div class="stack">
   <div class="split"><div class="legend"><span class="chip scheduled">Scheduled</span><span class="chip">Worked</span><span class="chip missed">Missed</span></div>
     <div class="btns">${pastSched?`<button class="btn sm dark" data-act="confirm-past">Mark ${pastSched} past shift${pastSched>1?'s':''} as worked</button>`:''}<button class="btn sm" data-act="copy-week">Copy last week</button><button class="btn sm primary" data-act="shift-new">+ Add shift</button></div></div>
