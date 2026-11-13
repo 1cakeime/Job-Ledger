@@ -992,18 +992,20 @@ function pageSettings(){const st=S.settings;const iOS=/iphone|ipad|ipod/i.test(n
   <div class="card stack"><h2>Install the app</h2>
     ${standalone?'<p>You\'re using the installed app.</p>':iOS?'<p>On iPhone or iPad: open this page in <b>Safari</b>, tap the <b>Share</b> button, then <b>Add to Home Screen</b>.</p>':`<p>Install Contractor Mainframe to get its own icon and open it full-screen, even offline.</p>${deferredInstall?'<div><button class="btn primary" data-act="install">Install app</button></div>':'<p class="note">In Chrome or Edge, use the install icon in the address bar, or the browser menu → <b>Install Contractor Mainframe</b> / <b>Add to Home screen</b>.</p>'}`}</div>
   <div class="card stack"><h2>Sample data</h2><p class="note">Load a sample company to see how everything works. It replaces what's on this device, so export a backup first if you have real data.</p>
-    <div class="btns"><button class="btn" data-act="sample">Load sample data</button><button class="btn danger" data-act="erase">Erase all data</button></div></div>
+    <div class="btns"><button class="btn" data-act="sample">Load sample data</button><button class="btn danger" data-act="erase">Erase all data</button></div>
+    <p class="note"><a href="#/reset">Start over on this device</a> signs out and resets the app to its first screen.</p></div>
   </div></div>`}
 
 /* ---------- router ---------- */
 function route(){const h=(location.hash||'#/schedule').slice(2),[page,id]=h.split('/');const v=$('#view');
   if(page==='join'&&id){LS.set('invite',id.toUpperCase().replace(/[^A-Z0-9]/g,''));if(!CLOUD.user){CLOUD.mode='signedout';UI.authTab='up'}else if(CLOUD.mode==='onboard'){acceptPending().then(ok=>ok&&loadMembership()).then(()=>route())}location.hash='#/schedule';return}
   let P;
-  if(CLOUD.mode==='signedout'||(page==='signin'&&!CLOUD.user))P=pageAuth;
+  if(page==='reset')P=pageReset;
+  else if(CLOUD.mode==='signedout'||(page==='signin'&&!CLOUD.user))P=pageAuth;
   else if(CLOUD.mode==='onboard')P=pageOnboard;
   else if(isEmp())P={schedule:pageSchedule,crew:pageEmpCrew,pay:pageMyPay,profile:pageEmpAccount}[page]||pageSchedule;
   else P={dashboard:pageDashboard,jobs:pageJobs,job:()=>pageJob(id),schedule:pageSchedule,crew:pageCrew,settings:pageSettings,profile:pageProfile}[page]||pageSchedule;
-  document.body.classList.toggle('emp',isEmp());document.body.classList.toggle('gate',P===pageAuth||P===pageOnboard);
+  document.body.classList.toggle('emp',isEmp());document.body.classList.toggle('gate',P===pageAuth||P===pageOnboard||P===pageReset);
   $('#crew-label').textContent=isEmp()?'My crew':'Crew & Pay';renderMenu();
   const keepScroll=route.last===h;const y=scrollY;v.innerHTML=P();route.last=h;
   const navKey=page==='job'?'jobs':P===pageSchedule?'schedule':P===pageMyPay?'pay':P===pageEmpCrew?'crew':P===pageEmpAccount?'profile':page;
@@ -1268,6 +1270,12 @@ function inviteDialog(e){const linked=onApp(e.id);
       $('#inv-status').textContent=error?'Could not create the code: '+errMsg(error):'Code ready.';
       $('#copy-invite').onclick=async()=>{try{await navigator.clipboard.writeText(msg);toast('Invite copied. Paste it in a text.')}catch(err){$('#inv-status').textContent=msg}}}})}
 
+function pageReset(){return `<div class="auth"><div class="card auth-card stack">
+    <div class="auth-logo">${$('.brand svg').outerHTML.replace('width="32" height="32"','width="44" height="44"')}<div><h1>Start over</h1><p class="note">Reset Contractor Mainframe on this device.</p></div></div>
+    <p>This signs you out and clears everything the app saved in this browser: jobs, crew, photos, schedule and settings that live only on this device.</p>
+    <div class="insight good"><b>Safe</b><span>Your account and anything already synced to it stay in the cloud. Sign back in to get it back.</span></div>
+    <button class="btn primary big" data-act="reset-device">Start over</button>
+    <a class="btn ghost" href="#/schedule">Cancel</a></div></div>`}
 /* ----- actions & forms ----- */
 Object.assign(ACT,{
   'auth-tab':a=>{UI.authTab=a.dataset.v;route()},
@@ -1288,6 +1296,11 @@ Object.assign(ACT,{
     if(error){a.disabled=false;a.textContent='Clock out';return toast(errMsg(error))}CLOUD.punches=CLOUD.punches.map(p=>p.id===data.id?data:p);
     toast(`Clocked out · ${hrs((new Date(data.out_at)-new Date(data.in_at))/36e5)}`);route()},
   'invite':a=>inviteDialog(emp(a.dataset.id)),
+  'reset-device':async a=>{if(!armTwoStep(a,'Tap again to erase this device'))return;a.disabled=true;
+    try{if(CLOUD.sb&&CLOUD.user)await CLOUD.sb.auth.signOut()}catch(e){}
+    try{Object.keys(localStorage).filter(k=>k.startsWith('cm.')||/^sb-.*-auth-token/.test(k)).forEach(k=>localStorage.removeItem(k))}catch(e){}
+    if(!memOnly){await DB.clear('kv').catch(()=>{});await DB.clear('photos').catch(()=>{})}
+    location.hash='#/schedule';location.reload()},
 });
 document.addEventListener('submit',async e=>{const f=e.target;
   if(f.id==='auth-form'){e.preventDefault();const sb=sbClient(),err=$('#auth-err'),btn=$('[type=submit]',f);if(!sb){err.hidden=false;err.textContent='Can\'t reach the sign-in service. Check your connection.';return}
