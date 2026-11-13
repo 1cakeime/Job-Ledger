@@ -286,6 +286,24 @@ td:hover .add-cell{border-color:var(--line2);color:var(--ink)}
   .cal-job i{width:7px;height:7px}
   .cal-wd{font-size:10.5px;letter-spacing:.04em}
 }
+/* Accounts & employee app */
+body.emp [data-owner-only]{display:none!important}
+body:not(.emp) [data-emp-only]{display:none!important}
+body.gate .nav,body.gate .menu-wrap,body.gate .co-top,body.gate .co-name{display:none!important}
+.auth{min-height:calc(100vh - 160px);display:grid;place-items:center}
+.auth-card{width:min(440px,100%);padding:26px}
+.auth-logo{display:flex;align-items:center;gap:14px}
+.auth-logo h1{font-size:22px}
+.onb{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start}
+@media (max-width:760px){.onb{grid-template-columns:minmax(0,1fr)}}
+.clock{border-color:color-mix(in srgb,var(--hi) 30%,transparent)}
+.clock.on{background:radial-gradient(420px 160px at 0% 0%,color-mix(in srgb,var(--hi) 13%,transparent),transparent 70%),var(--surface)}
+.clock-row{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.clock-act{display:flex;gap:10px;flex-wrap:wrap;align-items:center;flex:1;justify-content:flex-end;min-width:min(100%,280px)}
+.clock-act select,.clock-act input{flex:1;min-width:180px}
+.btn.big{min-height:52px;padding:12px 28px;font-size:17px}
+.invite-code{font:800 30px/1.1 ui-monospace,Menlo,monospace;letter-spacing:.12em;text-align:center;padding:16px;border-radius:14px;background:var(--surface2);border:1px dashed var(--line2)}
+.menu-sync{font-size:12px;color:var(--muted);padding:8px 12px 4px}
 /* Profile */
 .swatches{display:flex;gap:10px;flex-wrap:wrap}
 .swatch{appearance:none;width:36px;height:36px;border-radius:50%;background:var(--c);border:3px solid var(--surface);box-shadow:0 0 0 1px var(--line2);cursor:pointer;padding:0}
@@ -325,10 +343,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none}
     <button class="icon-btn" id="menu-btn" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <div class="menu" id="menu" hidden>
       <a class="who" href="#/profile" id="menu-who"></a>
-      <a class="item" href="#/profile" data-menu="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profile</a>
-      <a class="item" href="#/settings" data-menu="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</a>
-      <div class="sep"></div>
-      <button class="item" type="button" data-act="export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>Export backup</button>
+      <div id="menu-items"></div>
     </div>
   </div>
   <a class="brand" href="#/schedule" aria-label="Contractor Mainframe home">
@@ -339,15 +354,17 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none}
   <nav class="nav" aria-label="Main">
     <a href="#/schedule" data-nav="schedule"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Schedule</a>
     <a class="co-name" id="co-name" href="#/profile"></a>
-    <a href="#/jobs" data-nav="jobs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="3"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></svg>Jobs</a>
-    <a href="#/crew" data-nav="crew"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M17 4a4 4 0 0 1 0 8M22 21a7 7 0 0 0-4-6.3"/></svg>Crew &amp; Pay</a>
-    <a href="#/dashboard" data-nav="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg>Profit</a>
+    <a href="#/jobs" data-nav="jobs" data-owner-only><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="3"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></svg>Jobs</a>
+    <a href="#/crew" data-nav="crew"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M17 4a4 4 0 0 1 0 8M22 21a7 7 0 0 0-4-6.3"/></svg><span id="crew-label">Crew &amp; Pay</span></a>
+    <a href="#/dashboard" data-nav="dashboard" data-owner-only><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg>Profit</a>
+    <a href="#/pay" data-nav="pay" data-emp-only><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="13" rx="3"/><circle cx="12" cy="12.5" r="2.5"/><path d="M6 10v5M18 10v5"/></svg>My Pay</a>
   </nav>
 </header>
 <main id="view" tabindex="-1"></main>
 <dialog id="dlg"></dialog>
 <div class="toast" id="toast" role="status" hidden></div>
 
+<script src="vendor/supabase.js"></script>
 <script>
 'use strict';
 /* ---------- helpers ---------- */
@@ -390,23 +407,24 @@ const DB={db:null,
   clear(store){return this.tx(store,'readwrite',s=>s.clear())}};
 const blank=()=>({v:1,profile:{},settings:{company:'',burden:15,ot:true,otThreshold:40},jobs:[],expenses:[],employees:[],shifts:[],photos:[]});
 let S=blank(), saveT=null, memOnly=false;
-function save(){clearTimeout(saveT);saveT=setTimeout(()=>{if(!memOnly)DB.put('kv','state',S).catch(()=>toast('Could not save on this device'))},250)}
+function save(){if(isEmp())return;if(isOwnerCloud())cloudQueue();clearTimeout(saveT);saveT=setTimeout(()=>{if(!memOnly)DB.put('kv','state',S).catch(()=>toast('Could not save on this device'))},250)}
 const memPhotos=new Map();
-async function photoPut(id,blob){if(memOnly)memPhotos.set(id,blob);else await DB.put('photos',id,blob)}
-async function photoGet(id){return memOnly?memPhotos.get(id):DB.get('photos',id)}
-async function photoDel(id){if(memOnly)memPhotos.delete(id);else await DB.del('photos',id);const u=urlCache.get(id);if(u){URL.revokeObjectURL(u);urlCache.delete(id)}}
+async function photoPut(id,blob){if(memOnly)memPhotos.set(id,blob);else await DB.put('photos',id,blob);uploadPhoto(id,blob)}
+async function photoGet(id){let b=memOnly?memPhotos.get(id):await DB.get('photos',id).catch(()=>null);
+  if(!b&&isOwnerCloud()){try{const {data}=await CLOUD.sb.storage.from('photos').download(photoPath(id));if(data){b=data;if(memOnly)memPhotos.set(id,b);else DB.put('photos',id,b).catch(()=>{})}}catch(e){}}return b}
+async function photoDel(id){if(memOnly)memPhotos.delete(id);else await DB.del('photos',id);if(isOwnerCloud())CLOUD.sb.storage.from('photos').remove([photoPath(id)]).catch(()=>{});const u=urlCache.get(id);if(u){URL.revokeObjectURL(u);urlCache.delete(id)}}
 const urlCache=new Map();
 async function photoURL(id){if(urlCache.has(id))return urlCache.get(id);const b=await photoGet(id);if(!b)return'';const u=URL.createObjectURL(b);urlCache.set(id,u);return u}
 function hydratePhotos(root=document){$$('img[data-photo]',root).forEach(async img=>{const u=await photoURL(img.dataset.photo);if(u)img.src=u})}
 async function downscale(file,max=1600){
   try{const bmp=await createImageBitmap(file,{imageOrientation:'from-image'});const k=Math.min(1,max/Math.max(bmp.width,bmp.height));
     const c=document.createElement('canvas');c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
-    return await new Promise(r=>c.toBlob(b=>r(b||file),'image/jpeg',.82))}catch(e){return file}}
+    return await Promise.race([new Promise(r=>c.toBlob(b=>r(b||file),'image/jpeg',.82)),new Promise(r=>setTimeout(()=>r(file),8000))])}catch(e){return file}}
 async function addPhoto(file,jobId,kind='job'){const id=uid();await photoPut(id,await downscale(file));S.photos.push({id,jobId,kind,date:today(),caption:''});return id}
 
 /* ---------- calculations ---------- */
 const job=id=>S.jobs.find(j=>j.id===id), emp=id=>S.employees.find(e=>e.id===id);
-const jobColor=j=>j?JOB_COLORS[(S.jobs.indexOf(j)%JOB_COLORS.length+JOB_COLORS.length)%JOB_COLORS.length]:'#6b7280';
+const jobColor=j=>j?j.color||JOB_COLORS[(S.jobs.indexOf(j)%JOB_COLORS.length+JOB_COLORS.length)%JOB_COLORS.length]:'#6b7280';
 function shiftHours(s){let m=toMin(s.end)-toMin(s.start);if(m<0)m+=1440;return Math.max(0,m-(+s.breakMin||0))/60}
 function laborCalc(){
   const map=new Map(),acc={},ot=S.settings.ot!==false,th=num(S.settings.otThreshold)||40;
@@ -527,10 +545,11 @@ function shiftForm(s,pre={}){const isNew=!s;
       <p class="note" id="sh-hours"></p>
       ${field('Status',`<select name="status">${[['scheduled','Scheduled'],['worked','Worked (counts toward pay & job cost)'],['missed','Missed / called off']].map(([k,l])=>opt(k,l,s.status)).join('')}</select>`)}
       ${field('Note',inp('note',s.note,'text','placeholder="Task, materials to bring…"'))}
+      ${s.source==='clock'?`<div class="insight good"><b>From the clock</b><span>Clocked in and out on the app. ${pins(s.loc?.in?.[0],s.loc?.in?.[1],'In')}${pins(s.loc?.out?.[0],s.loc?.out?.[1],'Out')}</span></div>`:''}
       ${isNew?`<label class="check"><input type="checkbox" name="repeat"> Also add for the rest of this work week (Mon–Fri)</label>`:''}`,
     onOpen:f=>{const upd=()=>{const h=shiftHours({start:f.start.value,end:f.end.value,breakMin:f.breakMin.value});const e=emp(f.empId.value);
         $('#sh-hours').textContent=`${hrs(h)} · about ${money2(h*(e?.rate||0))} in wages`};f.addEventListener('input',upd);upd()},
-    onDelete:isNew?null:()=>{S.shifts=S.shifts.filter(x=>x.id!==s.id);save();toast('Shift deleted')},
+    onDelete:isNew?null:async()=>{if(s.punchId&&isOwnerCloud()){await CLOUD.sb.from('punches').delete().eq('id',s.punchId);CLOUD.punches=CLOUD.punches.filter(p=>p.id!==s.punchId)}S.shifts=S.shifts.filter(x=>x.id!==s.id);save();toast('Shift deleted')},
     onSubmit:fd=>{const e=emp(fd.get('empId'));const base={empId:fd.get('empId'),jobId:fd.get('jobId'),start:fd.get('start')||'07:00',end:fd.get('end')||'15:30',breakMin:num(fd.get('breakMin')),status:fd.get('status'),note:fd.get('note').trim()};
       const date=fd.get('date')||today();
       if(isNew){const dates=[date];if(fd.get('repeat')){let d=addDays(date,1);while(pd(d).getDay()!==6&&pd(d).getDay()!==0){dates.push(d);d=addDays(d,1)}}
@@ -675,27 +694,27 @@ function pageJob(id){const j=job(id);if(!j)return emptyBox('That job was not fou
     <div class="card"><div class="card-head"><h2>Notes</h2></div><textarea id="job-notes" placeholder="Gate code, client preferences, punch list…">${esc(j.notes)}</textarea></div>
   </div></div></div>`}
 
-function pageSchedule(){const wk=UI.week,days=[...Array(7)].map((_,i)=>addDays(wk,i)),now=today(),L=laborCalc();
+function pageSchedule(){const RO=isEmp(),wk=UI.week,days=[...Array(7)].map((_,i)=>addDays(wk,i)),now=today(),L=laborCalc();
   const inWeek=S.shifts.filter(s=>s.date>=wk&&s.date<=days[6]);
   const emps=S.employees.filter(e=>e.active!==false||inWeek.some(s=>s.empId===e.id));
   const pastSched=inWeek.filter(s=>s.status==='scheduled'&&s.date<now).length;
   const byJob={};for(const s of inWeek){if(s.status==='missed')continue;const r=byJob[s.jobId]=byJob[s.jobId]||{h:0,c:0};r.h+=shiftHours(s);r.c+=s.status==='worked'?(L.get(s.id)?.cost||0):plannedCost(s)}
   const label=`${pd(wk).toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${pd(days[6]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
-  return `<div class="page-head"><div><h1>Schedule</h1><p class="sub">Who's working where, and the hours that turn into pay and job cost.</p></div>
+  return `<div class="page-head"><div><h1>Schedule</h1><p class="sub">${RO?'Where you and your crew are working.':'Who\'s working where, and the hours that turn into pay and job cost.'}</p></div>
     <div class="week-nav"><button class="btn sm" data-act="week" data-v="-7" aria-label="Previous week">‹</button><button class="btn sm" data-act="week" data-v="0">This week</button><button class="btn sm" data-act="week" data-v="7" aria-label="Next week">›</button><b style="margin-left:6px">${label}</b></div></div>
   ${!S.employees.length?`<div class="stack">${emptyBox('Add your crew first, then schedule them on jobs. Or load the sample company to see how it works.','<a class="btn primary" href="#/crew">Add employees</a>'+(S.jobs.length?'':'<button class="btn" data-act="sample">Load sample data</button>'))}${monthCal()}</div>`:`
-  <div class="stack">
+  <div class="stack">${RO?clockCard():''}
   <div class="split"><div class="legend"><span class="chip scheduled">Scheduled</span><span class="chip">Worked</span><span class="chip missed">Missed</span></div>
-    <div class="btns">${pastSched?`<button class="btn sm dark" data-act="confirm-past">Mark ${pastSched} past shift${pastSched>1?'s':''} as worked</button>`:''}<button class="btn sm" data-act="copy-week">Copy last week</button><button class="btn sm primary" data-act="shift-new">+ Add shift</button></div></div>
+    ${RO?'':`<div class="btns">${pastSched?`<button class="btn sm dark" data-act="confirm-past">Mark ${pastSched} past shift${pastSched>1?'s':''} as worked</button>`:''}<button class="btn sm" data-act="copy-week">Copy last week</button><button class="btn sm primary" data-act="shift-new">+ Add shift</button></div>`}</div>
   <div class="card" style="padding:8px"><div class="table-wrap"><table class="sched"><thead><tr><th>Crew</th>${days.map(d=>`<th class="${d===now?'today':''}">${pd(d).toLocaleDateString('en-US',{weekday:'short'})} <span class="muted">${pd(d).getDate()}</span></th>`).join('')}</tr></thead><tbody>
   ${emps.map(e=>{const mine=inWeek.filter(s=>s.empId===e.id);const h=sum(mine.filter(s=>s.status!=='missed'),shiftHours);const ot=S.settings.ot!==false&&h>(num(S.settings.otThreshold)||40);
-    return `<tr><td><div class="emp-cell"><span class="dot" style="background:${e.color};margin-top:5px"></span><div><b>${esc(e.name)}</b><small class="${ot?'neg':''}">${hrs(h)}${ot?' · overtime':''}</small></div></div></td>
-    ${days.map(d=>`<td class="${d===now?'today':''}">${mine.filter(s=>s.date===d).sort((a,b)=>a.start.localeCompare(b.start)).map(s=>{const j=job(s.jobId);return `<button class="chip ${s.status}" style="--jc:${jobColor(j)}" data-act="shift-edit" data-id="${s.id}"><b>${esc(j?.name||'Job removed')}</b>${fmtTime(s.start)}–${fmtTime(s.end)} · ${hrs(shiftHours(s))}</button>`}).join('')}
-      <button class="add-cell" data-act="shift-new" data-emp="${e.id}" data-date="${d}" aria-label="Add shift for ${esc(e.name)} on ${fmtDate(d)}">+</button></td>`).join('')}</tr>`}).join('')}
+    return `<tr><td><div class="emp-cell"><span class="dot" style="background:${e.color};margin-top:5px"></span><div><b>${esc(e.name)}</b>${RO&&e.id===CLOUD.employeeId?' <span class="badge done">You</span>':''}<small class="${ot?'neg':''}">${hrs(h)}${ot?' · overtime':''}</small></div></div></td>
+    ${days.map(d=>`<td class="${d===now?'today':''}">${mine.filter(s=>s.date===d).sort((a,b)=>a.start.localeCompare(b.start)).map(s=>{const j=job(s.jobId);return `<button class="chip ${s.status}" style="--jc:${jobColor(j)}" ${RO?'':`data-act="shift-edit" data-id="${s.id}"`}><b>${esc(j?.name||'Job removed')}</b>${fmtTime(s.start)}–${fmtTime(s.end)} · ${hrs(shiftHours(s))}</button>`}).join('')}
+      ${RO?'':`<button class="add-cell" data-act="shift-new" data-emp="${e.id}" data-date="${d}" aria-label="Add shift for ${esc(e.name)} on ${fmtDate(d)}">+</button>`}</td>`).join('')}</tr>`}).join('')}
   </tbody><tfoot><tr><td>Day total</td>${days.map(d=>`<td class="num">${hrs(sum(inWeek.filter(s=>s.date===d&&s.status!=='missed'),shiftHours))}</td>`).join('')}</tr></tfoot></table></div></div>
-  <div class="card"><div class="card-head"><h2>This week by job</h2></div>
+  ${RO?'':`<div class="card"><div class="card-head"><h2>This week by job</h2></div>
   ${Object.keys(byJob).length?`<div class="table-wrap"><table><thead><tr><th>Job</th><th class="n">Hours</th><th class="n">Labor cost</th></tr></thead><tbody>${Object.entries(byJob).map(([jid,r])=>{const j=job(jid);return `<tr class="click" data-href="#/job/${jid}"><td><span class="dot" style="background:${jobColor(j)}"></span> ${esc(j?.name||'Job removed')}</td><td class="n">${hrs(r.h)}</td><td class="n">${money(r.c)}</td></tr>`}).join('')}</tbody>
-  <tfoot><tr><td>Total</td><td class="n">${hrs(sum(Object.values(byJob),r=>r.h))}</td><td class="n">${money(sum(Object.values(byJob),r=>r.c))}</td></tr></tfoot></table></div>`:emptyBox('Nothing scheduled this week.')}</div>${monthCal()}</div>`}`}
+  <tfoot><tr><td>Total</td><td class="n">${hrs(sum(Object.values(byJob),r=>r.h))}</td><td class="n">${money(sum(Object.values(byJob),r=>r.c))}</td></tr></tfoot></table></div>`:emptyBox('Nothing scheduled this week.')}</div>`}${monthCal()}</div>`}`}
 
 function monthCal(){const m=UI.month,first=pd(m),now=today(),sel=UI.day;
   const start=weekStart(m),end=addDays(weekStart(ds(new Date(first.getFullYear(),first.getMonth()+1,0))),6);
@@ -716,8 +735,8 @@ function monthCal(){const m=UI.month,first=pd(m),now=today(),sel=UI.day;
     <div class="cal-grid">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(w=>`<div class="cal-wd">${w}</div>`).join('')}${cells}</div>
     <div class="cal-agenda"><div class="split"><div><h2>${pd(sel).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</h2>
       <p class="note">${day.length?`${crew} on the crew · ${hrs(dayH)}`:'No one scheduled'}</p></div>
-      <div class="btns"><button class="btn sm" data-act="cal-week">Show in week view</button><button class="btn sm primary" data-act="shift-new" data-date="${sel}">+ Add shift</button></div></div>
-    ${day.length?`<ul class="list">${day.map(s=>{const e=emp(s.empId),j=job(s.jobId),st=stat[s.status]||['',s.status];return `<li class="click" data-act="shift-edit" data-id="${s.id}" style="${s.status==='missed'?'opacity:.55':''}">
+      <div class="btns"><button class="btn sm" data-act="cal-week">Show in week view</button>${isEmp()?'':`<button class="btn sm primary" data-act="shift-new" data-date="${sel}">+ Add shift</button>`}</div></div>
+    ${day.length?`<ul class="list">${day.map(s=>{const e=emp(s.empId),j=job(s.jobId),st=stat[s.status]||['',s.status];return `<li ${isEmp()?'':`class="click" data-act="shift-edit" data-id="${s.id}"`} style="${s.status==='missed'?'opacity:.55':''}">
       <span class="avatar sm" style="background:${e?.color||'#999'}">${esc(initials(e?.name))}</span><div class="grow"><b>${esc(e?.name||'Removed')}</b><small><span class="dot" style="background:${jobColor(j)};width:8px;height:8px"></span> ${esc(j?.name||'Job removed')} · ${fmtTime(s.start)}–${fmtTime(s.end)}${s.note?' · '+esc(s.note):''}</small></div>
       <span class="badge ${st[0]}">${st[1]}</span><b class="num" style="min-width:42px;text-align:right">${hrs(shiftHours(s))}</b></li>`}).join('')}</ul>`:''}</div></div>`}
 function payRange(){const now=today(),wk=weekStart(now),d=pd(now);
@@ -739,9 +758,10 @@ function pageCrew(){const L=laborCalc(),R=payRange(),[from,to]=R[UI.pay];
     ${Object.keys(perJob).length?`<div class="table-wrap"><table><thead><tr><th>Job</th><th class="n">Hours</th><th class="n">Wages</th><th class="n">Labor cost</th></tr></thead><tbody>
     ${Object.entries(perJob).map(([id,p])=>{const j=job(id);return `<tr class="click" data-href="#/job/${id}"><td><span class="dot" style="background:${jobColor(j)}"></span> ${esc(j?.name||'Job removed')}</td><td class="n">${hrs(p.h)}</td><td class="n">${money(p.wage)}</td><td class="n">${money(p.cost)}</td></tr>`}).join('')}</tbody></table></div>`:emptyBox('No worked hours in this period.')}</div>
   </div><div class="stack">
-  <div class="card"><div class="card-head"><h2>Crew</h2></div>
+  ${isOwnerCloud()?onClockCard():''}
+  <div class="card"><div class="card-head"><h2>Crew</h2>${isOwnerCloud()?'<span class="note">Invite people to clock in on the app</span>':''}</div>
   ${S.employees.length?`<ul class="list">${S.employees.slice().sort((a,b)=>(a.active===false)-(b.active===false)||a.name.localeCompare(b.name)).map(e=>{const h=sum(S.shifts.filter(s=>s.empId===e.id&&s.date>=wk&&s.date<=addDays(wk,6)&&s.status!=='missed'),shiftHours);
-    return `<li class="click" data-act="emp-edit" data-id="${e.id}" style="${e.active===false?'opacity:.55':''}"><span class="dot" style="background:${e.color};width:14px;height:14px"></span><div class="grow"><b>${esc(e.name)}${e.active===false?' <span class="badge">Inactive</span>':''}</b><small>${esc(e.role||'Crew')} · ${money2(e.rate)}/hr · +${num(e.burden)}% burden</small></div><span class="num small muted">${hrs(h)} this wk</span></li>`}).join('')}</ul>`
+    return `<li class="click" data-act="emp-edit" data-id="${e.id}" style="${e.active===false?'opacity:.55':''}"><span class="dot" style="background:${e.color};width:14px;height:14px"></span><div class="grow"><b>${esc(e.name)}${e.active===false?' <span class="badge">Inactive</span>':''}</b><small>${esc(e.role||'Crew')} · ${money2(e.rate)}/hr · +${num(e.burden)}% burden</small></div><span class="num small muted">${hrs(h)} this wk</span>${isOwnerCloud()&&e.active!==false?(onApp(e.id)?`<button class="badge done" style="border:0;cursor:pointer" data-act="invite" data-id="${e.id}">On app</button>`:`<button class="btn sm" data-act="invite" data-id="${e.id}">Invite</button>`):''}</li>`}).join('')}</ul>`
     :emptyBox('Add the people who work for you, with their hourly pay.','<button class="btn primary" data-act="emp-new">+ Add employee</button>')}</div>
   </div></div>`}
 
@@ -764,7 +784,7 @@ function pageProfile(){const p=S.profile||{};
   <div class="card stack"><h2>Your business at a glance</h2>
     <ul class="list"><li><div class="grow"><b>${S.jobs.filter(j=>j.status==='active').length} active jobs</b><small>${S.jobs.filter(j=>j.status==='bid').length} bids out · ${S.jobs.filter(j=>j.status==='done').length} finished</small></div><a class="btn sm" href="#/jobs">Jobs</a></li>
     <li><div class="grow"><b>${S.employees.filter(e=>e.active!==false).length} on the crew</b><small>${S.shifts.filter(x=>x.date>=weekStart(today())&&x.date<=addDays(weekStart(today()),6)).length} shifts this week</small></div><a class="btn sm" href="#/schedule">Schedule</a></li></ul></div>
-    <p class="note">Profile details are saved only on this device and included in your backup file.</p></div></div>`}
+    ${accountCard()}<p class="note">${CLOUD.user?'Profile details are saved to your account.':'Profile details are saved only on this device and included in your backup file.'}</p></div></div>`}
 const ACCENTS={green:['#17804a','#0f5c34','Money green'],red:['#dc2f33','#a91e22','Red'],blue:['#1f63c6','#164a94','Blue'],navy:['#24406e','#172b4c','Navy'],
   teal:['#0f7f7a','#0a5c58','Teal'],orange:['#d9661a','#a54c10','Orange'],purple:['#6d3fc0','#502c91','Purple'],charcoal:['#3b424b','#23282e','Charcoal']};
 const rgba=(hex,a)=>{const n=parseInt(hex.slice(1),16);return `rgba(${n>>16},${(n>>8)&255},${n&255},${a})`};
@@ -772,7 +792,7 @@ function applyTheme(){const p=S.profile||{},[c,dk]=ACCENTS[p.accent]||ACCENTS.gr
   r.style.setProperty('--hi',c);r.style.setProperty('--hi-dk',dk);r.style.setProperty('--hi-soft',rgba(c,.10));r.style.setProperty('--glow',rgba(c,.28));
   r.dataset.mode=p.mode==='dark'?'dark':'light';$('meta[name="theme-color"]').content=p.mode==='dark'?'#0c0e11':'#ffffff';
   const co=p.company,logo=p.logo?`<img src="${esc(p.logo)}" alt="">`:'';
-  for(const id of ['co-name','co-top']){const el=$('#'+id);el.classList.toggle('empty',!co);el.innerHTML=co?`${logo}<span>${esc(co)}</span>`:(id==='co-name'?'<span>+ Add your company name</span>':'')}
+  for(const id of ['co-name','co-top']){const el=$('#'+id);el.classList.toggle('empty',!co);el.innerHTML=co?`${logo}<span>${esc(co)}</span>`:(id==='co-name'&&!isEmp()?'<span>+ Add your company name</span>':'')}
   $('.top').classList.toggle('has-co',!!co)}
 async function logoFrom(file){const bmp=await createImageBitmap(file);const k=Math.min(1,240/Math.max(bmp.width,bmp.height));const c=document.createElement('canvas');c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);return c.toDataURL('image/png')}
 let deferredInstall=null;
@@ -784,10 +804,14 @@ function pageSettings(){const st=S.settings;const iOS=/iphone|ipad|ipod/i.test(n
     ${field('Overtime after (hours / week)',moneyInp('otThreshold',st.otThreshold))}
     <label class="check full"><input type="checkbox" name="ot" ${st.ot!==false?'checked':''}> Pay overtime at 1.5× (counts in job labor cost)</label></div>
     <div><button class="btn primary" type="submit">Save settings</button></div></form>
-  <div class="card stack"><h2>Backup</h2><p>Your jobs, expenses, photos and crew are saved <b>on this device only</b>. Export a backup file regularly and keep it somewhere safe (email it to yourself or save it to cloud storage). Restore it here on a new phone or computer.</p>
+  ${isOwnerCloud()?`<form class="card stack" id="empapp-form"><h2>Employee app</h2><p class="note">What your crew sees when they sign in. They never see job prices, expenses, profits or anyone else's pay.</p>
+    <label class="check"><input type="checkbox" name="showPay" ${st.showPay!==false?'checked':''}> Show employees their pay rate and earnings</label>
+    <label class="check"><input type="checkbox" name="requireLocation" ${st.requireLocation?'checked':''}> Require location to clock in and out</label></form>`:''}
+  <div class="card stack"><h2>Backup</h2><p>${isOwnerCloud()?'Your data is saved to your account and synced to every device you sign in on. You can still export a backup file for your records.':'Your jobs, expenses, photos and crew are saved <b>on this device only</b>. Export a backup file regularly and keep it somewhere safe (email it to yourself or save it to cloud storage). Restore it here on a new phone or computer.'}</p>
     <div class="btns"><button class="btn dark" data-act="export">Export backup</button><label class="btn" style="flex-direction:row;color:var(--ink)">Restore from backup<input type="file" accept="application/json,.json" id="import-file" hidden></label></div>
     <p class="note">${S.jobs.length} jobs · ${S.expenses.length} expenses · ${S.photos.length} photos · ${S.employees.length} employees · ${S.shifts.length} shifts</p></div>
   </div><div class="stack">
+  ${accountCard()}
   <div class="card stack"><h2>Install the app</h2>
     ${standalone?'<p>You\'re using the installed app.</p>':iOS?'<p>On iPhone or iPad: open this page in <b>Safari</b>, tap the <b>Share</b> button, then <b>Add to Home Screen</b>.</p>':`<p>Install Contractor Mainframe to get its own icon and open it full-screen, even offline.</p>${deferredInstall?'<div><button class="btn primary" data-act="install">Install app</button></div>':'<p class="note">In Chrome or Edge, use the install icon in the address bar, or the browser menu → <b>Install Contractor Mainframe</b> / <b>Add to Home screen</b>.</p>'}`}</div>
   <div class="card stack"><h2>Sample data</h2><p class="note">Load a sample company to see how everything works. It replaces what's on this device, so export a backup first if you have real data.</p>
@@ -796,11 +820,18 @@ function pageSettings(){const st=S.settings;const iOS=/iphone|ipad|ipod/i.test(n
 
 /* ---------- router ---------- */
 function route(){const h=(location.hash||'#/schedule').slice(2),[page,id]=h.split('/');const v=$('#view');
-  const P={dashboard:pageDashboard,jobs:pageJobs,job:()=>pageJob(id),schedule:pageSchedule,crew:pageCrew,settings:pageSettings,profile:pageProfile}[page]||pageSchedule;
+  if(page==='join'&&id){LS.set('invite',id.toUpperCase().replace(/[^A-Z0-9]/g,''));if(!CLOUD.user){CLOUD.mode='signedout';UI.authTab='up'}else if(CLOUD.mode==='onboard'){acceptPending().then(ok=>ok&&loadMembership()).then(()=>route())}location.hash='#/schedule';return}
+  let P;
+  if(CLOUD.mode==='signedout'||(page==='signin'&&!CLOUD.user))P=pageAuth;
+  else if(CLOUD.mode==='onboard')P=pageOnboard;
+  else if(isEmp())P={schedule:pageSchedule,crew:pageEmpCrew,pay:pageMyPay,profile:pageEmpAccount}[page]||pageSchedule;
+  else P={dashboard:pageDashboard,jobs:pageJobs,job:()=>pageJob(id),schedule:pageSchedule,crew:pageCrew,settings:pageSettings,profile:pageProfile}[page]||pageSchedule;
+  document.body.classList.toggle('emp',isEmp());document.body.classList.toggle('gate',P===pageAuth||P===pageOnboard);
+  $('#crew-label').textContent=isEmp()?'My crew':'Crew & Pay';renderMenu();
   const keepScroll=route.last===h;const y=scrollY;v.innerHTML=P();route.last=h;
-  const navKey=page==='job'?'jobs':(P===pageSchedule?'schedule':page);
+  const navKey=page==='job'?'jobs':P===pageSchedule?'schedule':P===pageMyPay?'pay':P===pageEmpCrew?'crew':P===pageEmpAccount?'profile':page;
   $$('[data-nav],[data-menu]').forEach(a=>a.removeAttribute('aria-current'));$$(`[data-nav="${navKey}"],[data-menu="${navKey}"]`).forEach(a=>a.setAttribute('aria-current','page'));
-  const pr=S.profile||{};$('#menu-who').innerHTML=`<span class="avatar">${esc(initials(pr.name||pr.company))}</span><span><b>${esc(pr.name||'Set up your profile')}</b><small>${esc(pr.company||'Name, company, license')}</small></span>`;
+  const pr=S.profile||{},me=isEmp()?emp(CLOUD.employeeId):null;$('#menu-who').innerHTML=me?`<span class="avatar" style="background:${me.color}">${esc(initials(me.name))}</span><span><b>${esc(me.name)}</b><small>${esc(me.role||'Crew')}</small></span>`:`<span class="avatar">${esc(initials(pr.name||pr.company))}</span><span><b>${esc(pr.name||'Set up your profile')}</b><small>${esc(pr.company||'Name, company, license')}</small></span>`;
   closeMenu();applyTheme();document.title=(S.profile?.company?S.profile.company+' · ':'')+'Contractor Mainframe';
   hydratePhotos(v);if(keepScroll)scrollTo(0,y);else scrollTo(0,0)}
 window.addEventListener('hashchange',route);
@@ -823,7 +854,7 @@ const ACT={
   'jobs-filter':a=>{UI.jobsFilter=a.dataset.v;route()},
   'dash':a=>{UI.dash=a.dataset.v;route()},'pay':a=>{UI.pay=a.dataset.v;route()},
   'accent':a=>{S.profile.accent=a.dataset.v;save();route()},
-  'mode':a=>{S.profile.mode=a.dataset.v;save();route()},
+  'mode':a=>{S.profile.mode=a.dataset.v;if(isEmp())LS.set('empMode',a.dataset.v);else save();route()},
   'logo-remove':()=>{delete S.profile.logo;save();route()},
   'cal-month':a=>{const v=+a.dataset.v;if(!v){UI.month=today().slice(0,7)+'-01';UI.day=today()}else{const d=pd(UI.month);d.setMonth(d.getMonth()+v);UI.month=ds(d)}route()},
   'cal-day':a=>{UI.day=a.dataset.d;UI.month=UI.day.slice(0,7)+'-01';route()},
@@ -857,6 +888,249 @@ document.addEventListener('submit',e=>{if(e.target.id==='profile-form'){e.preven
   if(e.target.id==='settings-form'){e.preventDefault();const fd=new FormData(e.target);Object.assign(S.settings,{burden:num(fd.get('burden')),otThreshold:num(fd.get('otThreshold'))||40,ot:!!fd.get('ot')});save();toast('Settings saved');route()}});
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;if(location.hash.startsWith('#/settings'))route()});
 
+const ICON={user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',dl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>',out:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/></svg>'};
+function renderMenu(){const it=[],mi=(h,k,ic,l)=>`<a class="item" href="${h}" data-menu="${k}">${ic}${l}</a>`;
+  if(isEmp())it.push(mi('#/profile','profile',ICON.user,'My account'));else it.push(mi('#/profile','profile',ICON.user,'Profile'),mi('#/settings','settings',ICON.gear,'Settings'));
+  it.push('<div class="sep"></div>');if(!isEmp())it.push(`<button class="item" type="button" data-act="export">${ICON.dl}Export backup</button>`);
+  it.push(CLOUD.user?`<button class="item" type="button" data-act="signout">${ICON.out}Sign out</button><div class="menu-sync">${esc(syncText())}</div>`:mi('#/signin','signin',ICON.user,'Sign in or create account'));
+  $('#menu-items').innerHTML=it.join('')}
+/* ---------- cloud: accounts, owner sync, employee app, clock in/out (Supabase) ---------- */
+const SB_URL='https://defbgjhyvleijkwdbwni.supabase.co',SB_KEY='sb_publishable_gwoNF0V3hqOgM_p5aP_xmQ_QkNlw6bq';
+const PAGES_URL='https://1cakeime.github.io/Job-Ledger/';
+// mode: 'local' (no account, this device only) | 'signedout' | 'onboard' | 'owner' | 'employee'
+const CLOUD={sb:null,mode:'local',user:null,company:null,employeeId:null,myRate:null,punches:[],members:[],sync:'',stateAt:null,pushT:null,pollT:null,pub:null};
+const isEmp=()=>CLOUD.mode==='employee',isOwnerCloud=()=>CLOUD.mode==='owner';
+const LS={get(k){try{return localStorage.getItem('cm.'+k)}catch(e){return null}},set(k,v){try{v==null?localStorage.removeItem('cm.'+k):localStorage.setItem('cm.'+k,v)}catch(e){}}};
+const errMsg=e=>{const m=(e&&(e.message||e.error_description||e.msg))||String(e);return /fetch|network|load failed/i.test(m)?'No connection. Try again when you have signal.':m};
+const timeOf=iso=>new Date(iso).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+const dur=m=>`${Math.floor(m/60)}h ${pad(Math.max(0,m%60))}m`;
+const mapUrl=(la,ln)=>`https://www.google.com/maps?q=${la},${ln}`;
+function sbClient(){if(CLOUD.sb)return CLOUD.sb;if(!window.supabase||!window.supabase.createClient)return null;
+  CLOUD.sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});return CLOUD.sb}
+const normState=st=>Object.assign(blank(),st,{settings:Object.assign(blank().settings,st.settings||{}),profile:st.profile||{}});
+
+async function cloudStart(){const sb=sbClient();if(!sb){CLOUD.mode='local';return}
+  let session=null;try{({data:{session}}=await sb.auth.getSession())}catch(e){}
+  if(!session){CLOUD.mode=LS.get('local')==='1'?'local':'signedout';return}
+  CLOUD.user=session.user;await loadMembership()}
+
+async function acceptPending(){const code=LS.get('invite');if(!code||!CLOUD.user)return false;LS.set('invite',null);
+  const {error}=await CLOUD.sb.rpc('accept_invite',{p_code:code.replace(/[^A-Z0-9]/gi,'')});
+  if(error){toast(errMsg(error));return false}toast('You joined the crew');return true}
+
+async function loadMembership(){const sb=CLOUD.sb;await acceptPending();
+  const {data,error}=await sb.from('members').select('company_id,role,employee_id').eq('user_id',CLOUD.user.id);
+  if(error){const c=JSON.parse(LS.get('role')||'null');if(c){Object.assign(CLOUD,{mode:c.mode,company:c.company,employeeId:c.employeeId||null,sync:'offline'});if(c.mode==='employee')empApplyCache();return}CLOUD.mode='onboard';return}
+  const own=data.find(m=>m.role==='owner'),em=data.find(m=>m.role==='employee');
+  if(own){Object.assign(CLOUD,{mode:'owner',company:own.company_id});LS.set('role',JSON.stringify({mode:'owner',company:own.company_id}));await ownerPull(true);startPolling()}
+  else if(em){Object.assign(CLOUD,{mode:'employee',company:em.company_id,employeeId:em.employee_id});LS.set('role',JSON.stringify({mode:'employee',company:em.company_id,employeeId:em.employee_id}));await empLoad();startPolling()}
+  else CLOUD.mode='onboard'}
+
+/* ----- owner: the whole company lives in the account; employees get a money-free copy ----- */
+async function ownerPull(initial){const {data,error}=await CLOUD.sb.from('company_state').select('data,updated_at').eq('company_id',CLOUD.company).maybeSingle();
+  if(error){CLOUD.sync='offline';return}
+  if(!data){cloudQueue(0);uploadAllPhotos();return}
+  if(LS.get('dirty')==='1'&&LS.get('company')===CLOUD.company){cloudQueue(0);return}   // this device has edits that never reached the account
+  if(initial||data.updated_at!==CLOUD.stateAt){S=normState(data.data||{});if(!memOnly)DB.put('kv','state',S).catch(()=>{})}
+  CLOUD.stateAt=data.updated_at;LS.set('stateAt',data.updated_at);LS.set('company',CLOUD.company);CLOUD.sync='synced'}
+function cloudQueue(delay=1200){if(!isOwnerCloud())return;LS.set('dirty','1');LS.set('company',CLOUD.company);CLOUD.sync='saving';syncBadge();clearTimeout(CLOUD.pushT);CLOUD.pushT=setTimeout(cloudPush,delay)}
+async function cloudPush(){if(!isOwnerCloud())return;const sb=CLOUD.sb,cid=CLOUD.company,at=new Date().toISOString();
+  try{const r1=await sb.from('company_state').upsert({company_id:cid,data:S,updated_at:at});if(r1.error)throw r1.error;
+    const r2=await sb.from('company_public').upsert({company_id:cid,data:publicDoc(),updated_at:at});if(r2.error)throw r2.error;
+    const rows=S.employees.map(e=>({company_id:cid,employee_id:e.id,rate:+e.rate||0}));
+    if(rows.length){const r3=await sb.from('employee_private').upsert(rows);if(r3.error)throw r3.error}
+    await sb.from('companies').update({name:S.profile?.company||''}).eq('id',cid);
+    CLOUD.stateAt=at;LS.set('stateAt',at);LS.set('dirty','0');CLOUD.sync='synced'}
+  catch(e){CLOUD.sync='offline'}syncBadge()}
+function publicDoc(){const cut=addDays(today(),-120),p=S.profile||{};
+  return{company:{name:p.company||'',logo:p.logo||'',accent:p.accent||'green',mode:p.mode||'light'},
+    settings:{ot:S.settings.ot!==false,otThreshold:num(S.settings.otThreshold)||40,requireLocation:!!S.settings.requireLocation,showPay:S.settings.showPay!==false},
+    jobs:S.jobs.map(j=>({id:j.id,name:j.name,address:j.address||'',status:j.status,start:j.start||'',end:j.end||'',color:jobColor(j)})),
+    employees:S.employees.map(e=>({id:e.id,name:e.name,role:e.role||'',color:e.color,active:e.active!==false})),
+    shifts:S.shifts.filter(s=>s.date>=cut).map(s=>({id:s.id,empId:s.empId,jobId:s.jobId,date:s.date,start:s.start,end:s.end,breakMin:+s.breakMin||0,status:s.status,note:s.note||''}))}}
+const photoPath=id=>`${CLOUD.company}/${id}`;
+async function uploadPhoto(id,blob){if(!isOwnerCloud()||!blob)return;try{await CLOUD.sb.storage.from('photos').upload(photoPath(id),blob,{upsert:true,contentType:blob.type||'image/jpeg'})}catch(e){}}
+async function uploadAllPhotos(){for(const p of S.photos){try{await uploadPhoto(p.id,await (memOnly?memPhotos.get(p.id):DB.get('photos',p.id)))}catch(e){}}}
+async function ownerPunches(){const since=new Date(Date.now()-45*864e5).toISOString();
+  const {data,error}=await CLOUD.sb.from('punches').select('*').eq('company_id',CLOUD.company).gte('in_at',since).order('in_at',{ascending:false});
+  if(error)return false;const sig=x=>x.map(p=>p.id+(p.out_at||'')).join();const changed=sig(data)!==sig(CLOUD.punches);CLOUD.punches=data;return applyPunches()||changed}
+async function loadMembers(){const {data,error}=await CLOUD.sb.from('members').select('user_id,role,employee_id').eq('company_id',CLOUD.company);if(error)return false;
+  const changed=JSON.stringify(data)!==JSON.stringify(CLOUD.members);CLOUD.members=data;return changed}
+const onApp=empId=>CLOUD.members.some(m=>m.role==='employee'&&m.employee_id===empId);
+// Every finished clock-in becomes a worked shift (replacing a matching scheduled one), so payroll and job cost fill in by themselves.
+function applyPunches(){let changed=false;
+  for(const p of CLOUD.punches){if(!p.out_at||S.shifts.some(s=>s.punchId===p.id))continue;const e=emp(p.employee_id);if(!e)continue;
+    const a=new Date(p.in_at),b=new Date(p.out_at),date=ds(a);
+    const loc={in:p.in_lat!=null?[p.in_lat,p.in_lng]:null,out:p.out_lat!=null?[p.out_lat,p.out_lng]:null};
+    const sched=S.shifts.find(s=>!s.punchId&&s.status==='scheduled'&&s.empId===e.id&&s.jobId===p.job_id&&s.date===date);
+    const f={start:pad(a.getHours())+':'+pad(a.getMinutes()),end:pad(b.getHours())+':'+pad(b.getMinutes()),breakMin:0,status:'worked',punchId:p.id,source:'clock',loc,note:p.note||sched?.note||''};
+    if(sched)Object.assign(sched,f);else S.shifts.push({id:uid(),empId:e.id,jobId:p.job_id,date,rate:e.rate,burden:e.burden,...f});changed=true}
+  if(changed)save();return changed}
+
+/* ----- employee ----- */
+function empApply(pub,rate,punches){pub=pub||{};CLOUD.pub=pub;CLOUD.myRate=rate;CLOUD.punches=punches||[];
+  S=Object.assign(blank(),{jobs:pub.jobs||[],employees:pub.employees||[],shifts:pub.shifts||[],settings:Object.assign(blank().settings,pub.settings||{}),
+    profile:{company:pub.company?.name||'',logo:pub.company?.logo||'',accent:pub.company?.accent||'green',mode:LS.get('empMode')||pub.company?.mode||'light'}})}
+function empApplyCache(){try{const c=JSON.parse(LS.get('empCache')||'null');if(c)empApply(c.pub,c.rate,c.punches)}catch(e){}}
+async function empLoad(){const sb=CLOUD.sb,cid=CLOUD.company;
+  const [a,b,c]=await Promise.all([sb.from('company_public').select('data').eq('company_id',cid).maybeSingle(),
+    sb.from('employee_private').select('rate').eq('company_id',cid).eq('employee_id',CLOUD.employeeId).maybeSingle(),
+    sb.from('punches').select('*').eq('user_id',CLOUD.user.id).order('in_at',{ascending:false}).limit(400)]);
+  if(a.error||c.error){CLOUD.sync='offline';if(!CLOUD.pub)empApplyCache();return}
+  empApply(a.data?.data,b.data?.rate??null,c.data);CLOUD.sync='synced';
+  LS.set('empCache',JSON.stringify({pub:a.data?.data,rate:b.data?.rate??null,punches:(c.data||[]).slice(0,120)}))}
+function getLoc(){if(!navigator.geolocation)return Promise.resolve(null);
+  return new Promise(res=>navigator.geolocation.getCurrentPosition(p=>res({lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy}),()=>res(null),{enableHighAccuracy:true,timeout:12000,maximumAge:60000}))}
+
+/* ----- polling (live clock-ins for the owner, fresh schedule for employees) ----- */
+function startPolling(){clearInterval(CLOUD.pollT);CLOUD.pollT=setInterval(poll,30000)}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)poll()});
+window.addEventListener('online',()=>{if(isOwnerCloud()&&LS.get('dirty')==='1')cloudPush();poll()});
+async function poll(){if(document.hidden||!CLOUD.user)return;
+  try{if(isOwnerCloud()){let ch=false;
+      if(LS.get('dirty')!=='1'){const {data}=await CLOUD.sb.from('company_state').select('updated_at').eq('company_id',CLOUD.company).maybeSingle();if(data&&data.updated_at!==CLOUD.stateAt){await ownerPull(false);ch=true}}
+      if(await ownerPunches())ch=true;if(await loadMembers())ch=true;if(ch)softRender()}
+    else if(isEmp()){await empLoad();softRender()}}catch(e){}}
+function softRender(){if($('#dlg').open)return;const ae=document.activeElement;if(ae&&ae.matches('input,select,textarea')&&$('#view').contains(ae))return;route()}
+setInterval(()=>$$('[data-elapsed]').forEach(el=>el.textContent=dur(Math.floor((Date.now()-new Date(el.dataset.elapsed))/60000))),20000);
+function syncText(){if(isEmp())return CLOUD.user?.email||'';return{synced:'✓ Synced to your account',saving:'Saving…',offline:'Offline · changes will sync when you reconnect'}[CLOUD.sync]||''}
+function syncBadge(){const el=$('.menu-sync');if(el)el.textContent=syncText()}
+
+/* ----- pages: sign in, set up ----- */
+function pageAuth(){const code=LS.get('invite'),tab=UI.authTab||(code?'up':'in');
+  return `<div class="auth"><div class="card auth-card stack">
+    <div class="auth-logo">${$('.brand svg').outerHTML.replace('width="32" height="32"','width="44" height="44"')}<div><h1>Contractor Mainframe</h1><p class="note">${code?'You\'ve been invited to join a crew.':'Sign in to your company\'s mainframe.'}</p></div></div>
+    ${code?`<div class="insight good"><b>Invite</b><span>Code <b>${esc(code.slice(0,4)+'-'+code.slice(4))}</b>. ${tab==='up'?'Create your account':'Sign in'} to join the crew.</span></div>`:''}
+    <div class="seg" role="group" aria-label="Account">${[['in','Sign in'],['up','Create account']].map(([k,l])=>`<button data-act="auth-tab" data-v="${k}" aria-pressed="${tab===k}">${l}</button>`).join('')}</div>
+    <form id="auth-form" class="stack" novalidate data-tab="${tab}">
+      ${field('Email',inp('email','','email','autocomplete="email" required'))}
+      ${field('Password',inp('password','','password',`autocomplete="${tab==='up'?'new-password':'current-password'}" required minlength="6"`))}
+      ${tab==='up'?'<p class="note">At least 6 characters.</p>':''}
+      <p class="note neg" id="auth-err" hidden></p>
+      <button class="btn primary big" type="submit">${tab==='up'?'Create account':'Sign in'}</button></form>
+    ${code?'':`<div class="hr"></div><button class="btn ghost" data-act="go-local">Use on this device without an account</button>
+    <p class="note">Without an account your data stays on this device and your crew can't use the app.</p>`}</div></div>`}
+function pageOnboard(){const co=S.profile?.company||'';const hasLocal=S.jobs.length||S.employees.length;
+  return `<div class="page-head"><div><h1>Welcome${CLOUD.user?.email?', '+esc(CLOUD.user.email.split('@')[0]):''}</h1><p class="sub">Are you running the company, or joining a crew?</p></div><button class="btn ghost" data-act="signout">Sign out</button></div>
+  <div class="onb">
+    <form class="card stack" id="create-co"><h2>I run the company</h2><p class="note">Set up your company's mainframe. You'll see everything: jobs, money, schedule, crew and pay.</p>
+      ${field('Company name',inp('company',co,'text','required autocomplete="organization"'))}
+      ${hasLocal?`<p class="note">The ${S.jobs.length} jobs and ${S.employees.length} crew members on this device will move into your company account.</p>`:''}
+      <div><button class="btn primary" type="submit">Set up my company</button></div></form>
+    <form class="card stack" id="join-co"><h2>I work for a company</h2><p class="note">Enter the invite code your boss sent you.</p>
+      ${field('Invite code',inp('code','','text','required placeholder="ABCD-EFGH" autocapitalize="characters" autocomplete="off"'))}
+      <div><button class="btn primary" type="submit">Join the crew</button></div></form></div>`}
+
+/* ----- employee pages ----- */
+function clockCard(){const open=CLOUD.punches.find(p=>!p.out_at),req=!!S.settings.requireLocation;
+  if(open){const j=job(open.job_id),mins=Math.floor((Date.now()-new Date(open.in_at))/60000);
+    return `<div class="card clock on"><div class="clock-row"><div><span class="badge done">On the clock</span><h2 style="margin-top:8px">${esc(j?.name||'Job')}</h2>
+      <p class="note">Since ${timeOf(open.in_at)} · <b data-elapsed="${esc(open.in_at)}">${dur(mins)}</b>${open.in_lat!=null?' · location recorded':''}</p></div>
+      <div class="clock-act"><input id="clock-note" placeholder="Note for your boss (optional)" maxlength="300"><button class="btn primary big" data-act="clock-out">Clock out</button></div></div></div>`}
+  const me=CLOUD.employeeId,mine=S.shifts.find(s=>s.empId===me&&s.date===today()&&s.status!=='missed');
+  const jobs=S.jobs.filter(j=>j.status!=='done'||j.id===mine?.jobId);
+  return `<div class="card clock"><div class="clock-row"><div><h2>Ready to work?</h2><p class="note">${mine?`Scheduled today: <b>${esc(job(mine.jobId)?.name||'')}</b> ${fmtTime(mine.start)}–${fmtTime(mine.end)}. `:'Pick the job you\'re on. '}${req?'Location is required to clock in.':'Your location is recorded when you clock in and out.'}</p></div>
+    <div class="clock-act"><select id="clock-job" aria-label="Job">${jobs.length?jobs.map(j=>opt(j.id,j.name,mine?.jobId)).join(''):'<option value="">No jobs yet</option>'}</select><button class="btn primary big" data-act="clock-in"${jobs.length?'':' disabled'}>Clock in</button></div></div></div>`}
+function pageEmpCrew(){const me=CLOUD.employeeId,wk=weekStart(today()),end=addDays(wk,6);
+  const crew=S.employees.filter(e=>e.active!==false).sort((a,b)=>(b.id===me)-(a.id===me)||a.name.localeCompare(b.name));
+  const wkJobs=id=>[...new Set(S.shifts.filter(s=>s.empId===id&&s.date>=wk&&s.date<=end&&s.status!=='missed').map(s=>s.jobId))];
+  const mineJ=new Set(wkJobs(me));
+  return `<div class="page-head"><div><h1>My crew</h1><p class="sub">${crew.length} ${crew.length===1?'person':'people'}${S.profile.company?' at '+esc(S.profile.company):''}</p></div></div>
+  <div class="card">${crew.length?`<ul class="list">${crew.map(e=>{const js=wkJobs(e.id),withMe=e.id!==me&&js.some(x=>mineJ.has(x));
+    return `<li><span class="avatar sm" style="background:${e.color}">${esc(initials(e.name))}</span><div class="grow"><b>${esc(e.name)}${e.id===me?' <span class="badge done">You</span>':''}</b>
+      <small>${esc(e.role||'Crew')}${js.length?' · this week: '+js.map(x=>esc(job(x)?.name||'')).join(', '):''}</small></div>${withMe?'<span class="badge active">With you this week</span>':''}</li>`}).join('')}</ul>`:emptyBox('No crew listed yet.')}</div>`}
+function myPayRows(from,to){const th=num(S.settings.otThreshold)||40,ot=S.settings.ot!==false,rate=+CLOUD.myRate||0,acc={},rows=[];
+  for(const p of CLOUD.punches.filter(p=>p.out_at).sort((a,b)=>a.in_at.localeCompare(b.in_at))){const d=ds(new Date(p.in_at)),h=(new Date(p.out_at)-new Date(p.in_at))/36e5,k=weekStart(d),before=acc[k]||0;acc[k]=before+h;
+    let reg=h,o=0;if(ot){reg=Math.max(0,Math.min(h,th-before));o=h-reg}if(d>=from&&d<=to)rows.push({p,d,h,reg,ot:o,pay:rate*(reg+1.5*o)})}
+  return rows.reverse()}
+const pins=(la,ln,lab)=>la!=null?`<a class="btn sm ghost" href="${mapUrl(la,ln)}" target="_blank" rel="noopener">${lab} ↗</a>`:'';
+function pageMyPay(){const R=payRange(),[from,to]=R[UI.pay],rows=myPayRows(from,to),show=S.settings.showPay!==false&&CLOUD.myRate!=null;
+  const H=sum(rows,r=>r.h),O=sum(rows,r=>r.ot),P=sum(rows,r=>r.pay),open=CLOUD.punches.find(p=>!p.out_at);
+  return `<div class="page-head"><div><h1>My pay</h1><p class="sub">Your hours from clocking in and out${show?', and what you\'ve earned':''}.</p></div>
+    <div class="seg" role="group" aria-label="Pay period">${Object.entries(R).map(([k,[, ,l]])=>`<button data-act="pay" data-v="${k}" aria-pressed="${UI.pay===k}">${l}</button>`).join('')}</div></div>
+  <div class="stack"><div class="kpis">
+    <div class="kpi lead"><span>Hours</span><b>${hrs(H)}</b><small>${fmtDate(from)} – ${fmtDate(to)}</small></div>
+    <div class="kpi"><span>Overtime</span><b>${hrs(O)}</b><small>${S.settings.ot!==false?`1.5× over ${num(S.settings.otThreshold)||40}h/week`:'not paid'}</small></div>
+    ${show?`<div class="kpi"><span>Gross pay</span><b class="pos">${money2(P)}</b><small>before taxes</small></div><div class="kpi"><span>Your rate</span><b>${money2(+CLOUD.myRate)}</b><small>per hour</small></div>`:''}
+  </div>
+  ${open?`<div class="insight good"><b>On the clock</b><span>Since ${timeOf(open.in_at)} at ${esc(job(open.job_id)?.name||'a job')}. These hours count once you clock out.</span></div>`:''}
+  <div class="card"><div class="card-head"><h2>Clock history</h2><span class="note">${rows.length} shift${rows.length===1?'':'s'}</span></div>
+  ${rows.length?`<div class="table-wrap"><table><thead><tr><th>Day</th><th>Job</th><th>In</th><th>Out</th><th class="n">Hours</th>${show?'<th class="n">Pay</th>':''}<th>Location</th></tr></thead><tbody>
+  ${rows.map(r=>{const j=job(r.p.job_id);return `<tr><td>${pd(r.d).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</td><td><span class="dot" style="background:${jobColor(j)}"></span> ${esc(j?.name||'Job')}${r.p.note?`<br><small class="muted">${esc(r.p.note)}</small>`:''}</td>
+    <td>${timeOf(r.p.in_at)}</td><td>${timeOf(r.p.out_at)}</td><td class="n">${hrs(r.h)}${r.ot?`<br><small class="neg">${hrs(r.ot)} OT</small>`:''}</td>${show?`<td class="n">${money2(r.pay)}</td>`:''}<td>${pins(r.p.in_lat,r.p.in_lng,'In')}${pins(r.p.out_lat,r.p.out_lng,'Out')}</td></tr>`}).join('')}</tbody></table></div>`:emptyBox('No clocked hours in this period.')}
+  <p class="note" style="margin-top:10px">Hours are rounded from your clock times. Your boss may adjust them for breaks or corrections. Gross pay is before taxes and deductions.</p></div></div>`}
+function pageEmpAccount(){const me=emp(CLOUD.employeeId),p=S.profile;
+  return `<div class="page-head"><div class="profile-head"><span class="avatar lg" style="background:${me?.color||'var(--hi)'}">${esc(initials(me?.name))}</span><div><h1>${esc(me?.name||'My account')}</h1><p class="sub">${esc([me?.role,p.company].filter(Boolean).join(' at '))}</p></div></div></div>
+  <div class="grid2"><div class="card stack"><h2>Account</h2><ul class="list"><li><div class="grow"><b>Email</b><small>${esc(CLOUD.user?.email||'')}</small></div></li><li><div class="grow"><b>Company</b><small>${esc(p.company||'')}</small></div></li></ul>
+    <div><button class="btn danger" data-act="signout">Sign out</button></div></div>
+  <div class="card stack"><h2>Appearance</h2><div class="seg" role="group" aria-label="Mode">${[['light','Light'],['dark','Dark']].map(([k,l])=>`<button data-act="mode" data-v="${k}" aria-pressed="${(p.mode||'light')===k}">${l}</button>`).join('')}</div>
+    <p class="note">Your company's colors and logo are set by your boss.</p></div></div>`}
+
+/* ----- owner extras ----- */
+function onClockCard(){const open=CLOUD.punches.filter(p=>!p.out_at),recent=CLOUD.punches.filter(p=>p.out_at).slice(0,6);
+  const li=(p,live)=>{const e=emp(p.employee_id),j=job(p.job_id),h=((p.out_at?new Date(p.out_at):new Date())-new Date(p.in_at))/36e5;
+    return `<li><span class="avatar sm" style="background:${e?.color||'#999'}">${esc(initials(e?.name))}</span><div class="grow"><b>${esc(e?.name||'Unknown')}</b><small><span class="dot" style="background:${jobColor(j)};width:8px;height:8px"></span> ${esc(j?.name||'Job')} · ${live?'since '+timeOf(p.in_at):fmtDate(ds(new Date(p.in_at)))+', '+timeOf(p.in_at)+'–'+timeOf(p.out_at)}${p.note?' · '+esc(p.note):''}</small></div>
+      ${pins(p.in_lat,p.in_lng,live?'Map':'In')}${live?'':pins(p.out_lat,p.out_lng,'Out')}<b class="num" style="min-width:58px;text-align:right">${live?`<span data-elapsed="${esc(p.in_at)}">${dur(Math.floor(h*60))}</span>`:hrs(h)}</b></li>`};
+  return `<div class="card"><div class="card-head"><h2>On the clock</h2><span class="badge ${open.length?'done':''}">${open.length} working now</span></div>
+    ${open.length?`<ul class="list">${open.map(p=>li(p,true)).join('')}</ul>`:'<p class="note">No one is clocked in right now.</p>'}
+    ${recent.length?`<h3 style="margin-top:16px">Recent clock-outs</h3><ul class="list">${recent.map(p=>li(p)).join('')}</ul>`:''}
+    <p class="note" style="margin-top:10px">Each clock-out is added to the schedule as a worked shift, so it counts in payroll and job cost.</p></div>`}
+function accountCard(){if(!CLOUD.user)return `<div class="card stack"><h2>Account</h2><p>Create a free account to keep your data in the cloud, use it on any device, and put your crew on the app to clock in and out.</p><div><a class="btn primary" href="#/signin">Sign in or create account</a></div></div>`;
+  return `<div class="card stack"><h2>Account</h2><ul class="list"><li><div class="grow"><b>${esc(CLOUD.user.email)}</b><small>${esc(syncText())}</small></div></li></ul><div><button class="btn danger" data-act="signout">Sign out</button></div></div>`}
+function inviteDialog(e){const linked=onApp(e.id);
+  if(linked)return openForm({title:`${e.name} is on the app`,body:`<p>${esc(e.name)} can see the schedule and crew, clock in and out, and see their own hours${S.settings.showPay!==false?' and pay':''}. They can't see job prices, expenses, profits or anyone else's pay.</p>`,
+    onDelete:async()=>{const {error}=await CLOUD.sb.from('members').delete().eq('company_id',CLOUD.company).eq('employee_id',e.id);if(error){toast(errMsg(error));return}await loadMembers();toast('App access removed')},deleteLabel:'Remove app access'});
+  const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',r=crypto.getRandomValues(new Uint8Array(8)),code=[...r].map(x=>A[x%A.length]).join(''),show=code.slice(0,4)+'-'+code.slice(4);
+  const base=location.protocol.startsWith('http')?location.origin+location.pathname:PAGES_URL,link=base+'#/join/'+code;
+  const msg=`${S.profile.company||'Your boss'} added you to Contractor Mainframe. Open ${link} on your phone and create an account to see the schedule and clock in. Invite code: ${show}`;
+  openForm({title:`Invite ${e.name}`,body:`<p>Send this to <b>${esc(e.name)}</b>. They open the link on their phone, create an account, and they're on your crew.</p>
+    <div class="invite-code">${show}</div>${field('Link',`<input readonly value="${esc(link)}" onfocus="this.select()">`)}
+    <div class="btns"><button type="button" class="btn primary" id="copy-invite">Copy invite message</button></div><p class="note" id="inv-status">Creating the code…</p>
+    <p class="note">The code works once. If it's lost, make a new one.</p>`,
+    onOpen:async f=>{const {error}=await CLOUD.sb.from('invites').insert({code,company_id:CLOUD.company,employee_id:e.id});
+      $('#inv-status').textContent=error?'Could not create the code: '+errMsg(error):'Code ready.';
+      $('#copy-invite').onclick=async()=>{try{await navigator.clipboard.writeText(msg);toast('Invite copied. Paste it in a text.')}catch(err){$('#inv-status').textContent=msg}}}})}
+
+/* ----- actions & forms ----- */
+Object.assign(ACT,{
+  'auth-tab':a=>{UI.authTab=a.dataset.v;route()},
+  'go-local':()=>{LS.set('local','1');CLOUD.mode='local';location.hash='#/schedule';route()},
+  'signout':async a=>{closeMenu();if(isOwnerCloud()&&LS.get('dirty')==='1'&&!armTwoStep(a,'Changes not synced yet. Tap again'))return;
+    clearInterval(CLOUD.pollT);try{await CLOUD.sb.auth.signOut()}catch(e){}
+    if(isOwnerCloud()){S=blank();if(!memOnly){await DB.put('kv','state',S).catch(()=>{});await DB.clear('photos').catch(()=>{})}}
+    else if(isEmp()){S=blank();if(!memOnly){const st=await DB.get('kv','state').catch(()=>null);if(st)S=normState(st)}}
+    ['role','stateAt','dirty','company','empCache','local'].forEach(k=>LS.set(k,null));Object.assign(CLOUD,{mode:'signedout',user:null,company:null,employeeId:null,punches:[],members:[],pub:null,sync:''});
+    location.hash='#/schedule';route();toast('Signed out')},
+  'clock-in':async a=>{const jobId=$('#clock-job')?.value;if(!jobId)return toast('Pick a job first');a.disabled=true;a.textContent='Getting location…';
+    const loc=await getLoc();if(!loc&&S.settings.requireLocation){a.disabled=false;a.textContent='Clock in';return toast('Turn on location for this app, then try again')}
+    a.textContent='Clocking in…';const {data,error}=await CLOUD.sb.rpc('clock_in',{p_company:CLOUD.company,p_job:jobId,p_lat:loc?.lat??null,p_lng:loc?.lng??null,p_acc:loc?.acc??null});
+    if(error){a.disabled=false;a.textContent='Clock in';return toast(errMsg(error))}CLOUD.punches.unshift(data);toast('Clocked in at '+timeOf(data.in_at));route()},
+  'clock-out':async a=>{const note=$('#clock-note')?.value||'';a.disabled=true;a.textContent='Getting location…';const loc=await getLoc();
+    if(!loc&&S.settings.requireLocation){a.disabled=false;a.textContent='Clock out';return toast('Turn on location for this app, then try again')}
+    a.textContent='Clocking out…';const {data,error}=await CLOUD.sb.rpc('clock_out',{p_lat:loc?.lat??null,p_lng:loc?.lng??null,p_acc:loc?.acc??null,p_note:note});
+    if(error){a.disabled=false;a.textContent='Clock out';return toast(errMsg(error))}CLOUD.punches=CLOUD.punches.map(p=>p.id===data.id?data:p);
+    toast(`Clocked out · ${hrs((new Date(data.out_at)-new Date(data.in_at))/36e5)}`);route()},
+  'invite':a=>inviteDialog(emp(a.dataset.id)),
+});
+document.addEventListener('submit',async e=>{const f=e.target;
+  if(f.id==='auth-form'){e.preventDefault();const sb=sbClient(),err=$('#auth-err'),btn=$('[type=submit]',f);if(!sb){err.hidden=false;err.textContent='Can\'t reach the sign-in service. Check your connection.';return}
+    const email=f.email.value.trim(),password=f.password.value;if(!email||password.length<6){err.hidden=false;err.textContent='Enter your email and a password of at least 6 characters.';return}
+    btn.disabled=true;err.hidden=true;try{const up=f.dataset.tab==='up';
+      const {data,error}=up?await sb.auth.signUp({email,password}):await sb.auth.signInWithPassword({email,password});if(error)throw error;
+      if(!data.session){err.hidden=false;err.textContent='Check your email for a confirmation link, then come back and sign in.';return}
+      CLOUD.user=data.session.user;LS.set('local',null);await loadMembership();location.hash='#/schedule';route();toast(up?'Account created':'Signed in')}
+    catch(x){err.hidden=false;err.textContent=/invalid login/i.test(errMsg(x))?'Wrong email or password.':errMsg(x)}finally{btn.disabled=false}}
+  else if(f.id==='create-co'){e.preventDefault();const name=f.company.value.trim();if(!name)return toast('Enter your company name');const btn=$('[type=submit]',f);btn.disabled=true;
+    const {data,error}=await CLOUD.sb.rpc('create_company',{p_name:name});if(error){btn.disabled=false;return toast(errMsg(error))}
+    Object.assign(CLOUD,{mode:'owner',company:data});LS.set('role',JSON.stringify({mode:'owner',company:data}));
+    const st=await CLOUD.sb.from('company_state').select('data,updated_at').eq('company_id',data).maybeSingle();
+    if(st.data){S=normState(st.data.data||{});CLOUD.stateAt=st.data.updated_at}else{S.profile=Object.assign(S.profile||{},{company:name});await cloudPush();uploadAllPhotos()}
+    if(!memOnly)DB.put('kv','state',S).catch(()=>{});startPolling();location.hash='#/schedule';route();toast('Your company is set up')}
+  else if(f.id==='join-co'){e.preventDefault();const code=f.code.value.trim().toUpperCase();if(!code)return;LS.set('invite',code.replace(/[^A-Z0-9]/g,''));
+    if(await acceptPending()){await loadMembership();location.hash='#/schedule';route()}}
+  else if(f.id==='empapp-form'){e.preventDefault()}});
+document.addEventListener('change',e=>{const f=e.target.closest('#empapp-form');if(!f)return;S.settings.requireLocation=f.requireLocation.checked;S.settings.showPay=f.showPay.checked;save();toast('Saved')});
+
 /* ---------- sample data ---------- */
 function loadSample(){const T=today(),D=n=>addDays(T,n);
   const E=[{id:uid(),name:'Marco Diaz',role:'Lead carpenter',rate:34,burden:18,color:EMP_COLORS[0],active:true},
@@ -887,7 +1161,9 @@ function loadSample(){const T=today(),D=n=>addDays(T,n);
 (async()=>{const slow=setTimeout(()=>{$('#view').innerHTML=emptyBox('Still opening your saved data… If this doesn\'t clear in a few seconds, close any other Contractor Mainframe tabs or windows and reload.')},4000);
   try{await DB.open();const st=await DB.get('kv','state');if(st){S=Object.assign(blank(),st,{settings:Object.assign(blank().settings,st.settings||{}),profile:st.profile||{}});if(S.settings.company&&!S.profile.company)S.profile.company=S.settings.company}}
   catch(e){memOnly=true;setTimeout(()=>toast('Storage is blocked here, so changes won\'t be kept'),400)}
-  clearTimeout(slow);route();
+  clearTimeout(slow);
+  try{await Promise.race([cloudStart(),new Promise(r=>setTimeout(r,9000))])}catch(e){CLOUD.mode=LS.get('local')==='1'?'local':'signedout'}
+  route();if(isOwnerCloud())Promise.all([ownerPunches(),loadMembers()]).then(()=>softRender()).catch(()=>{});
   if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
   if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{})})();
 </script>
