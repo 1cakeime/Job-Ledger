@@ -533,10 +533,30 @@ main{padding:14px 32px 34px;max-width:1240px}
 }
 body.gate .brand svg rect:first-child{fill:#16191d}
 body.gate .brand svg path{stroke:#fff}
+/* layout: menu left · brand · Schedule · company (center) · Jobs, Crew & Pay, Profit (right) */
+.menu-wrap{order:0}
+.brand{order:1}
+.nav a[data-nav="schedule"]{order:2}
+.co-name{order:3;margin:0 auto}
+.nav a[data-nav="jobs"],.nav a[data-nav="crew"],.nav a[data-nav="dashboard"],.nav a[data-nav="pay"]{order:4}
+.co-name{color:var(--ink);font-weight:600;padding:8px 18px;border-radius:999px;background:color-mix(in srgb,var(--surface) 60%,transparent)}
+.co-name:hover{background:var(--surface)}
+.icon-btn{width:42px;height:42px;border-radius:14px;background:var(--surface);color:var(--ink);box-shadow:0 4px 14px -6px rgba(28,36,51,.28)}
+.icon-btn svg{width:21px;height:21px}
+.icon-btn:hover,.icon-btn[aria-expanded="true"]{background:var(--surface);color:var(--hi)}
+.menu{left:0;right:auto;transform-origin:top left}
+@media (max-width:820px){.co-name{margin:0 0 0 auto;padding:6px 12px;font-size:14px}}
 </style>
 </head>
 <body>
 <header class="top">
+  <div class="menu-wrap">
+    <button class="icon-btn" id="menu-btn" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <div class="menu" id="menu" hidden>
+      <a class="who" href="#/profile" id="menu-who"></a>
+      <div id="menu-items"></div>
+    </div>
+  </div>
   <a class="brand" href="#/schedule" aria-label="Blue Board home">
     <svg width="32" height="32" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#16191d"/><rect x="15" y="12" width="34" height="42" rx="6" fill="none" style="stroke:var(--hi)" stroke-width="4"/><rect x="24" y="7" width="16" height="10" rx="4" style="fill:var(--hi)"/><path d="M22 42l7-8 6 5 9-11" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
     <span>Blue <em>Board</em></span>
@@ -550,13 +570,6 @@ body.gate .brand svg path{stroke:#fff}
     <a href="#/pay" data-nav="pay" data-emp-only><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="13" rx="3"/><circle cx="12" cy="12.5" r="2.5"/><path d="M6 10v5M18 10v5"/></svg>My Pay</a>
   </nav>
   <a class="co-name" id="co-name" href="#/profile"></a>
-  <div class="menu-wrap">
-    <button class="icon-btn" id="menu-btn" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="menu"><span class="avatar" id="menu-av">CM</span></button>
-    <div class="menu" id="menu" hidden>
-      <a class="who" href="#/profile" id="menu-who"></a>
-      <div id="menu-items"></div>
-    </div>
-  </div>
 </header>
 <main id="view" tabindex="-1"></main>
 <dialog id="dlg"></dialog>
@@ -1101,7 +1114,7 @@ function route(){const h=(location.hash||'#/schedule').slice(2),[page,id]=h.spli
   const navKey=page==='job'?'jobs':P===pageSchedule?'schedule':P===pageMyPay?'pay':P===pageEmpCrew?'crew':P===pageEmpAccount?'profile':page;
   $$('[data-nav],[data-menu]').forEach(a=>a.removeAttribute('aria-current'));$$(`[data-nav="${navKey}"],[data-menu="${navKey}"]`).forEach(a=>a.setAttribute('aria-current','page'));
   const pr=S.profile||{},me=isEmp()?emp(CLOUD.employeeId):null;$('#menu-who').innerHTML=me?`<span class="avatar" style="background:${me.color}">${esc(initials(me.name))}</span><span><b>${esc(me.name)}</b><small>${esc(me.role||'Crew')}</small></span>`:`<span class="avatar">${esc(initials(pr.name||pr.company))}</span><span><b>${esc(pr.name||'Set up your profile')}</b><small>${esc(pr.company||'Name, company, license')}</small></span>`;
-  closeMenu();applyTheme();{const mv=$('#menu-av');if(mv){mv.textContent=initials(me?me.name:(pr.name||pr.company));mv.style.background=me?me.color:''}}document.title=(S.profile?.company?S.profile.company+' · ':'')+'Blue Board';
+  closeMenu();applyTheme();document.title=(S.profile?.company?S.profile.company+' · ':'')+'Blue Board';
   hydratePhotos(v);if(keepScroll)scrollTo(0,y);else scrollTo(0,0)}
 window.addEventListener('hashchange',route);
 function closeMenu(){const m=$('#menu');if(m)m.hidden=true;$('#menu-btn')?.setAttribute('aria-expanded','false')}
