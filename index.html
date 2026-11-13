@@ -304,6 +304,14 @@ body.gate .nav,body.gate .menu-wrap,body.gate .co-top,body.gate .co-name{display
 .btn.big{min-height:52px;padding:12px 28px;font-size:17px}
 .invite-code{font:800 30px/1.1 ui-monospace,Menlo,monospace;letter-spacing:.12em;text-align:center;padding:16px;border-radius:14px;background:var(--surface2);border:1px dashed var(--line2)}
 .menu-sync{font-size:12px;color:var(--muted);padding:8px 12px 4px}
+/* Crew & schedule picker */
+.pick-row{display:flex;flex-wrap:wrap;gap:8px}
+label.pick{flex-direction:row;align-items:center;gap:8px;padding:8px 13px;border:1px solid var(--line2);border-radius:999px;background:var(--surface);color:var(--ink);font-weight:600;cursor:pointer;font-size:14px}
+label.pick input{width:17px;height:17px;min-height:0;margin:0;accent-color:var(--hi)}
+label.pick:has(input:checked){border-color:var(--hi);background:var(--hi-soft)}
+label.pick small{color:var(--muted);font-weight:500;font-size:12px}
+label.pick.day{padding:7px 11px;font-size:13px}
+.plan-sum{font-size:13px;color:var(--ink);background:var(--surface);border-radius:12px;padding:10px 12px;border:1px solid var(--line)}
 /* Profile */
 .swatches{display:flex;gap:10px;flex-wrap:wrap}
 .swatch{appearance:none;width:36px;height:36px;border-radius:50%;background:var(--c);border:3px solid var(--surface);box-shadow:0 0 0 1px var(--line2);cursor:pointer;padding:0}
@@ -480,14 +488,55 @@ function jobForm(j){const isNew=!j;j=j||{status:'active',est:{},start:today()};c
       <fieldset><legend>Your estimate (what you bid it at)</legend><div class="fields three keep">
       ${EST.map(([k,l])=>field(l,moneyInp('est_'+k,e[k]))).join('')}</div>
       <p class="note" style="margin-top:8px">Fill these in from your bid. Contractor Mainframe compares them to what you actually spend, so you can see where your estimates run high or low.</p></fieldset>
+      ${planFields(j)}
       ${field('Notes',`<textarea name="notes">${esc(j.notes)}</textarea>`)}`,
+    onOpen:planWire,
     onDelete:isNew?null:async()=>{for(const p of S.photos.filter(p=>p.jobId===j.id))await photoDel(p.id);
       S.photos=S.photos.filter(p=>p.jobId!==j.id);S.expenses=S.expenses.filter(x=>x.jobId!==j.id);S.shifts=S.shifts.filter(x=>x.jobId!==j.id);S.jobs=S.jobs.filter(x=>x.id!==j.id);save();toast('Job deleted');location.hash='#/jobs'},
     deleteLabel:'Delete job',
-    onSubmit:fd=>{const o=isNew?{id:uid(),createdAt:Date.now(),changeOrders:[]}:j;
+    onSubmit:(fd,f)=>{const plan=readPlan(fd),status=fd.get('status'),jid=isNew?(f.dataset.newId||(f.dataset.newId=uid())):j.id;
+      if(plan.crew.length){if(!plan.to){toast('Pick the last day to schedule the crew');return false}if(plan.to<plan.from){toast('The last day is before the first day');return false}if(!plan.days.length){toast('Pick at least one work day');return false}}
+      const conf=planConflicts(jid,plan,status);
+      if(conf.length&&f.dataset.warned!=='1'){f.dataset.warned='1';$('#plan-warn',f).innerHTML=`<div class="insight warn"><b>Already booked</b><span>${conf.slice(0,5).map(c=>`${esc(emp(c.empId)?.name)} on ${fmtDate(c.date)} (${esc(job(c.other)?.name||'another job')})`).join(', ')}${conf.length>5?` and ${conf.length-5} more`:''}. Those days will be skipped. <label class="check" style="margin-top:6px"><input type="checkbox" name="dbl"> Book them anyway</label></span></div>`;$('#plan-warn',f).scrollIntoView({block:'nearest'});toast('Some crew are already booked. Check, then save again.');return false}
+      const o=isNew?{id:jid,createdAt:Date.now(),changeOrders:[]}:j;
       Object.assign(o,{name:fd.get('name').trim(),client:fd.get('client').trim(),phone:fd.get('phone').trim(),address:fd.get('address').trim(),status:fd.get('status'),price:num(fd.get('price')),start:fd.get('start'),end:fd.get('end'),notes:fd.get('notes'),
         est:Object.fromEntries(EST.map(([k])=>[k,num(fd.get('est_'+k))]))});
-      if(isNew){S.jobs.push(o);save();location.hash='#/job/'+o.id;toast('Job created');return}save();toast('Saved')}})}
+      o.plan=plan;if(isNew)S.jobs.push(o);const r=syncPlan(o,{double:!!fd.get('dbl')});save();
+      const msg=[isNew?'Job created':'Saved'];if(r.added)msg.push(`${r.added} shift${r.added>1?'s':''} scheduled`);if(r.removed)msg.push(`${r.removed} removed`);if(r.skipped)msg.push(`${r.skipped} skipped (already booked)`);
+      if(plan.crew.length&&o.status==='bid')msg.push('crew will be scheduled when the job is Active');toast(msg.join(' · '));if(isNew)location.hash='#/job/'+o.id}})}
+const WD=[['1','Mon'],['2','Tue'],['3','Wed'],['4','Thu'],['5','Fri'],['6','Sat'],['0','Sun']];
+function planFields(j){const p=j.plan||{},crew=p.crew||[],days=(p.days||[1,2,3,4,5]).map(String),emps=S.employees.filter(e=>e.active!==false||crew.includes(e.id));
+  return `<fieldset><legend>Crew &amp; schedule</legend><div class="stack" style="gap:12px">
+    ${emps.length?`<div><div class="note" style="margin-bottom:8px">Who's working this job</div><div class="pick-row">${emps.map(e=>`<label class="pick"><input type="checkbox" name="crew" value="${e.id}"${crew.includes(e.id)?' checked':''}><span class="dot" style="background:${e.color}"></span>${esc(e.name)}${e.role?` <small>${esc(e.role)}</small>`:''}</label>`).join('')}</div></div>`
+      :'<p class="note">Add your crew on <b>Crew &amp; Pay</b> first, then pick them here to put this job on the schedule.</p>'}
+    <div class="fields">${field('First day',inp('pfrom',p.from||j.start||today(),'date'))}${field('Last day',inp('pto',p.to||j.end||'','date'))}</div>
+    <div><div class="note" style="margin-bottom:8px">Work days</div><div class="pick-row">${WD.map(([v,l])=>`<label class="pick day"><input type="checkbox" name="pdays" value="${v}"${days.includes(v)?' checked':''}>${l}</label>`).join('')}</div></div>
+    <div class="fields three keep times">${field('Start',inp('pstart',p.start||'07:00','time'))}${field('End',inp('pend',p.end||'15:30','time'))}${field('Break (min)',inp('pbreak',p.breakMin??30,'number','min="0" step="5" inputmode="numeric"'))}</div>
+    <div class="plan-sum" id="plan-sum"></div><div id="plan-warn"></div>
+    <p class="note">Saving puts these days on the schedule and calendar. Days before today aren't added. Changing this later only changes upcoming scheduled days, never days already worked.</p></div></fieldset>`}
+function readPlan(fd){return{crew:fd.getAll('crew'),from:fd.get('pfrom')||today(),to:fd.get('pto')||'',days:fd.getAll('pdays').map(Number),start:fd.get('pstart')||'07:00',end:fd.get('pend')||'15:30',breakMin:num(fd.get('pbreak'))}}
+function planDates(p){const out=[];if(!p||!p.to)return out;let d=p.from>today()?p.from:today();for(let i=0;d<=p.to&&i<400;i++,d=addDays(d,1))if(p.days.includes(pd(d).getDay()))out.push(d);return out}
+function planWire(f){const sync=(src,dst)=>{const a=f.elements[src],b=f.elements[dst];a.addEventListener('change',()=>{if(!b.dataset.touched)b.value=a.value})};
+  f.elements.pfrom.addEventListener('input',()=>f.elements.pfrom.dataset.touched=1);f.elements.pto.addEventListener('input',()=>f.elements.pto.dataset.touched=1);
+  if(!f.elements.pto.value)f.elements.pto.dataset.touched='';sync('start','pfrom');sync('end','pto');
+  const upd=()=>{const p=readPlan(new FormData(f)),n=p.crew.length,ds=planDates(p),h=shiftHours({start:p.start,end:p.end,breakMin:p.breakMin}),st=f.elements.status.value;
+    $('#plan-sum',f).innerHTML=!n?'No crew picked yet. The job won\'t show on the schedule until you pick people.':!p.to?'Pick the last day to schedule the crew.':!ds.length?'No upcoming work days in that range.'
+      :`<b>${ds.length} day${ds.length>1?'s':''} × ${n} ${n>1?'people':'person'} = ${ds.length*n} shifts</b> · ${fmtDate(ds[0])} – ${fmtDate(ds[ds.length-1])} · ${hrs(h)} a day${st==='bid'?' · scheduled once the job is <b>Active</b>':st==='done'?' · not scheduled while the job is <b>Done</b>':''}`;
+    $('#plan-warn',f).innerHTML='';delete f.dataset.warned};
+  f.addEventListener('input',upd);f.addEventListener('change',upd);upd()}
+function overlaps(a1,a2,b1,b2){const n=(x,y)=>[toMin(x),toMin(y)<=toMin(x)?toMin(y)+1440:toMin(y)],[a,b]=n(a1,a2),[c,d]=n(b1,b2);return a<d&&c<b}
+function conflictFor(empId,date,p,jobId){return S.shifts.find(s=>s.empId===empId&&s.date===date&&s.jobId!==jobId&&s.status!=='missed'&&overlaps(p.start,p.end,s.start,s.end))}
+function planConflicts(jobId,p,status){if(status!=='active'||!p.crew.length)return[];const out=[];
+  for(const d of planDates(p))for(const id of p.crew){if(S.shifts.some(s=>s.jobId===jobId&&s.empId===id&&s.date===d))continue;const c=conflictFor(id,d,p,jobId);if(c)out.push({empId:id,date:d,other:c.jobId})}return out}
+// Keep a job's upcoming scheduled days in line with its crew plan. Never touches past days, worked or missed shifts, or shifts added by hand.
+function syncPlan(j,opt={}){const t=today(),p=j.plan,res={added:0,removed:0,skipped:0},want=new Map();
+  if(p&&p.crew&&p.crew.length&&j.status==='active')for(const d of planDates(p))for(const id of p.crew){const e=emp(id);if(e&&e.active!==false)want.set(id+'|'+d,{empId:id,date:d})}
+  S.shifts=S.shifts.filter(s=>{if(s.jobId!==j.id||!s.plan||s.status!=='scheduled'||s.date<t)return true;const k=s.empId+'|'+s.date;
+    if(want.has(k)){Object.assign(s,{start:p.start,end:p.end,breakMin:p.breakMin});want.delete(k);return true}res.removed++;return false});
+  for(const w of want.values()){if(S.shifts.some(s=>s.jobId===j.id&&s.empId===w.empId&&s.date===w.date))continue;
+    if(!opt.double&&conflictFor(w.empId,w.date,p,j.id)){res.skipped++;continue}
+    const e=emp(w.empId);S.shifts.push({id:uid(),empId:w.empId,jobId:j.id,date:w.date,start:p.start,end:p.end,breakMin:p.breakMin,status:'scheduled',rate:e.rate,burden:e.burden,note:'',plan:true});res.added++}
+  return res}
 
 function expenseForm(x,jobId){const isNew=!x;x=x||{date:today(),cat:'materials',jobId};
   const rec=x.photoId?`<img class="thumb" style="width:72px;height:72px" data-photo="${x.photoId}" alt="Receipt">`:'';
@@ -687,7 +736,7 @@ function pageJob(id){const j=job(id);if(!j)return emptyBox('That job was not fou
     <div class="card"><div class="card-head"><h2>Photos</h2><div class="btns"><label class="btn sm" style="flex-direction:row;color:var(--ink)">Take photo<input type="file" accept="image/*" capture="environment" data-photo-input hidden></label><label class="btn sm" style="flex-direction:row;color:var(--ink)">Upload<input type="file" accept="image/*" multiple data-photo-input hidden></label></div></div>
       ${photos.length?`<div class="photos">${photos.map(p=>`<button data-act="photo" data-id="${p.id}"><img data-photo="${p.id}" alt="${esc(p.caption||'Job photo')}" loading="lazy"><small>${esc(p.caption||fmtDate(p.date))}</small></button>`).join('')}</div>`:emptyBox('Before, during and after photos, damage, rough-ins and inspections all in one place.')}</div>
   </div><div class="stack">
-    <div class="card"><div class="card-head"><h2>Crew on this job</h2><button class="btn sm" data-act="shift-new-job">+ Log hours</button></div>
+    <div class="card"><div class="card-head"><h2>Crew on this job</h2><div class="btns"><button class="btn sm" data-act="job-edit">${j.plan?.crew?.length?'Edit crew &amp; dates':'Schedule crew'}</button><button class="btn sm" data-act="shift-new-job">+ Log hours</button></div></div>
       ${Object.keys(byEmp).length?`<div class="table-wrap"><table><thead><tr><th>Employee</th><th class="n">Hours</th><th class="n">Wages</th><th class="n">Cost</th></tr></thead><tbody>
       ${Object.entries(byEmp).map(([eid,r])=>{const em=emp(eid);return `<tr><td><span class="dot" style="background:${em?.color||'#999'}"></span> ${esc(em?.name||'Removed')}${r.ph?`<br><small class="muted">+${hrs(r.ph)} scheduled</small>`:''}</td><td class="n">${hrs(r.h)}</td><td class="n">${money(r.wage)}</td><td class="n">${money(r.cost)}</td></tr>`}).join('')}</tbody>
       <tfoot><tr><td>Total</td><td class="n">${hrs(s.hours)}</td><td class="n">${money(sum(Object.values(byEmp),r=>r.wage))}</td><td class="n">${money(s.cost.labor)}</td></tr></tfoot></table></div>
@@ -881,7 +930,7 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(
   const r=e.target.closest('[data-href]');if(r&&!e.target.closest('a,button,input,select,textarea'))location.hash=r.dataset.href});
 document.addEventListener('input',e=>{if(e.target.id==='jobs-q'){UI.jobsQ=e.target.value;const pos=e.target.selectionStart;route();const i=$('#jobs-q');i.focus();i.setSelectionRange(pos,pos)}});
 document.addEventListener('change',async e=>{const t=e.target;
-  if(t.id==='job-status'){const j=curJob();j.status=t.value;if(t.value==='done'&&!j.end)j.end=today();save();toast('Marked '+STATUS[t.value]);route()}
+  if(t.id==='job-status'){const j=curJob();j.status=t.value;if(t.value==='done'&&!j.end)j.end=today();const r=syncPlan(j);save();toast('Marked '+STATUS[t.value]+(r.added?` · ${r.added} shifts scheduled`:'')+(r.removed?` · ${r.removed} upcoming shifts removed`:''));route()}
   else if(t.id==='logo-file'){const f=t.files[0];if(!f)return;try{S.profile.logo=await logoFrom(f);save();toast('Logo saved');route()}catch(err){toast('That image could not be read')}}
   else if(t.id==='job-notes'){curJob().notes=t.value;save();toast('Notes saved')}
   else if(t.matches('[data-photo-input]')){const j=curJob();const files=[...t.files];if(!files.length)return;toast(`Saving ${files.length} photo${files.length>1?'s':''}…`);for(const f of files)await addPhoto(f,j.id);save();toast('Photos saved');route()}
