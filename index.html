@@ -795,10 +795,10 @@ function pageSettings(){const st=S.settings;const iOS=/iphone|ipad|ipod/i.test(n
   </div></div>`}
 
 /* ---------- router ---------- */
-function route(){const h=(location.hash||(S.jobs.length?'#/schedule':'#/dashboard')).slice(2),[page,id]=h.split('/');const v=$('#view');
-  const P={dashboard:pageDashboard,jobs:pageJobs,job:()=>pageJob(id),schedule:pageSchedule,crew:pageCrew,settings:pageSettings,profile:pageProfile}[page]||pageDashboard;
+function route(){const h=(location.hash||'#/schedule').slice(2),[page,id]=h.split('/');const v=$('#view');
+  const P={dashboard:pageDashboard,jobs:pageJobs,job:()=>pageJob(id),schedule:pageSchedule,crew:pageCrew,settings:pageSettings,profile:pageProfile}[page]||pageSchedule;
   const keepScroll=route.last===h;const y=scrollY;v.innerHTML=P();route.last=h;
-  const navKey=page==='job'?'jobs':(P===pageDashboard?'dashboard':page);
+  const navKey=page==='job'?'jobs':(P===pageSchedule?'schedule':page);
   $$('[data-nav],[data-menu]').forEach(a=>a.removeAttribute('aria-current'));$$(`[data-nav="${navKey}"],[data-menu="${navKey}"]`).forEach(a=>a.setAttribute('aria-current','page'));
   const pr=S.profile||{};$('#menu-who').innerHTML=`<span class="avatar">${esc(initials(pr.name||pr.company))}</span><span><b>${esc(pr.name||'Set up your profile')}</b><small>${esc(pr.company||'Name, company, license')}</small></span>`;
   closeMenu();applyTheme();document.title=(S.profile?.company?S.profile.company+' · ':'')+'Contractor Mainframe';
@@ -839,7 +839,7 @@ const ACT={
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`contractor-mainframe-backup-${today()}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('Backup downloaded')},
   'install':async()=>{if(!deferredInstall)return;deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;route()},
   'sample':a=>{if(S.jobs.length&&!armTwoStep(a,'Replaces your data. Tap again'))return;loadSample()},
-  'erase':async a=>{if(!armTwoStep(a,'Erases everything. Tap again'))return;if(!memOnly)await DB.clear('photos');memPhotos.clear();S=blank();save();toast('All data erased');location.hash='#/dashboard';route()},
+  'erase':async a=>{if(!armTwoStep(a,'Erases everything. Tap again'))return;if(!memOnly)await DB.clear('photos');memPhotos.clear();S=blank();save();toast('All data erased');location.hash='#/schedule';route()},
 };
 document.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(a&&!a.closest('dialog')){e.preventDefault();ACT[a.dataset.act]?.(a,e);return}
   const r=e.target.closest('[data-href]');if(r&&!e.target.closest('a,button,input,select,textarea'))location.hash=r.dataset.href});
@@ -881,7 +881,7 @@ function loadSample(){const T=today(),D=n=>addDays(T,n);
   add(0,1,-30,-21);add(1,1,-30,-17);add(2,1,-30,-17);
   add(0,2,-12,13);add(1,2,-12,13);add(2,2,-5,6);
   const keepProfile=S.profile||{};S=blank();Object.assign(S,{profile:keepProfile,settings:{company:'',burden:18,ot:true,otThreshold:40},jobs:J,expenses:X,employees:E,shifts:Sh,photos:[]});
-  if(!memOnly)DB.clear('photos').catch(()=>{});save();toast('Sample data loaded');location.hash='#/dashboard';route()}
+  if(!memOnly)DB.clear('photos').catch(()=>{});save();toast('Sample data loaded');location.hash='#/schedule';route()}
 
 /* ---------- start ---------- */
 (async()=>{const slow=setTimeout(()=>{$('#view').innerHTML=emptyBox('Still opening your saved data… If this doesn\'t clear in a few seconds, close any other Contractor Mainframe tabs or windows and reload.')},4000);
