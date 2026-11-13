@@ -234,6 +234,41 @@ td:hover .add-cell{border-color:var(--line2);color:var(--ink)}
 .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--muted);align-items:center}
 .legend .chip{display:inline-block;width:auto;margin:0;padding:3px 10px 3px 12px}
 
+.cal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.cal-title{font-size:21px;font-weight:800;letter-spacing:-.02em}
+.cal-title span{color:var(--muted);font-weight:600}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.cal-wd{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center;padding:2px 0 6px}
+.cal-day{appearance:none;border:1px solid transparent;background:var(--surface2);border-radius:14px;min-height:98px;padding:7px;text-align:left;font:inherit;color:var(--ink);cursor:pointer;
+  display:flex;flex-direction:column;gap:5px;position:relative;min-width:0}
+.cal-day:hover{background:var(--surface3)}
+.cal-day.out{background:transparent;color:var(--muted)}
+.cal-day.out .cal-jobs{opacity:.5}
+.cal-day.wkend:not(.out){background:color-mix(in srgb,var(--surface2) 55%,var(--surface))}
+.cal-num{font-size:13px;font-weight:700;width:26px;height:26px;display:grid;place-items:center;border-radius:50%;flex:none}
+.cal-day.today .cal-num{background:var(--hi);color:#fff;box-shadow:0 4px 10px -2px var(--glow)}
+.cal-day.sel{border-color:var(--hi);background:var(--surface);box-shadow:0 0 0 3px var(--hi-soft)}
+.cal-jobs{display:flex;flex-direction:column;gap:3px;min-width:0}
+.cal-job{display:flex;align-items:center;gap:5px;font-size:11.5px;line-height:1.25;background:var(--surface);border-radius:999px;padding:2px 7px 2px 4px;min-width:0;box-shadow:0 1px 2px rgba(16,24,40,.05)}
+.cal-day.sel .cal-job{background:var(--surface2)}
+.cal-job i{width:8px;height:8px;border-radius:50%;background:var(--jc);flex:none}
+.cal-job em{font-style:normal;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.cal-job small{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+.cal-h{position:absolute;top:11px;right:10px;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.cal-more{font-size:11px;color:var(--muted);padding-left:6px}
+.cal-agenda{margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
+.cal-agenda .list{margin-top:10px}
+.avatar.sm{width:34px;height:34px;font-size:12px;box-shadow:none}
+@media (max-width:640px){
+  .cal-grid{gap:4px}
+  .cal-day{min-height:56px;padding:5px 2px;border-radius:12px;align-items:center}
+  .cal-jobs{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:3px}
+  .cal-job{padding:0;background:none;box-shadow:none}
+  .cal-day.sel .cal-job{background:none}
+  .cal-job em,.cal-job small,.cal-h,.cal-more{display:none}
+  .cal-job i{width:7px;height:7px}
+  .cal-wd{font-size:10.5px;letter-spacing:.04em}
+}
 /* Profile */
 .profile-head{display:flex;gap:16px;align-items:center}
 
@@ -486,7 +521,7 @@ function photoViewer(p){const j=job(p.jobId);
     onSubmit:fd=>{p.caption=fd.get('caption').trim();save()}})}
 
 /* ---------- pages ---------- */
-const UI={jobsFilter:'open',jobsQ:'',week:weekStart(today()),pay:'this-week',dash:'all'};
+const UI={jobsFilter:'open',jobsQ:'',week:weekStart(today()),pay:'this-week',dash:'all',month:today().slice(0,7)+'-01',day:today()};
 const statusBadge=s=>`<span class="badge ${s}">${STATUS[s]||s}</span>`;
 const emptyBox=(msg,btns='')=>`<div class="empty"><p>${msg}</p>${btns?`<div class="btns">${btns}</div>`:''}</div>`;
 
@@ -634,8 +669,31 @@ function pageSchedule(){const wk=UI.week,days=[...Array(7)].map((_,i)=>addDays(w
   </tbody><tfoot><tr><td>Day total</td>${days.map(d=>`<td class="num">${hrs(sum(inWeek.filter(s=>s.date===d&&s.status!=='missed'),shiftHours))}</td>`).join('')}</tr></tfoot></table></div></div>
   <div class="card"><div class="card-head"><h2>This week by job</h2></div>
   ${Object.keys(byJob).length?`<div class="table-wrap"><table><thead><tr><th>Job</th><th class="n">Hours</th><th class="n">Labor cost</th></tr></thead><tbody>${Object.entries(byJob).map(([jid,r])=>{const j=job(jid);return `<tr class="click" data-href="#/job/${jid}"><td><span class="dot" style="background:${jobColor(j)}"></span> ${esc(j?.name||'Job removed')}</td><td class="n">${hrs(r.h)}</td><td class="n">${money(r.c)}</td></tr>`}).join('')}</tbody>
-  <tfoot><tr><td>Total</td><td class="n">${hrs(sum(Object.values(byJob),r=>r.h))}</td><td class="n">${money(sum(Object.values(byJob),r=>r.c))}</td></tr></tfoot></table></div>`:emptyBox('Nothing scheduled this week.')}</div></div>`}`}
+  <tfoot><tr><td>Total</td><td class="n">${hrs(sum(Object.values(byJob),r=>r.h))}</td><td class="n">${money(sum(Object.values(byJob),r=>r.c))}</td></tr></tfoot></table></div>`:emptyBox('Nothing scheduled this week.')}</div>${monthCal()}</div>`}`}
 
+function monthCal(){const m=UI.month,first=pd(m),now=today(),sel=UI.day;
+  const start=weekStart(m),end=addDays(weekStart(ds(new Date(first.getFullYear(),first.getMonth()+1,0))),6);
+  const byDay={};for(const s of S.shifts){if(s.date<start||s.date>end||s.status==='missed')continue;(byDay[s.date]=byDay[s.date]||[]).push(s)}
+  const inMonth=S.shifts.filter(s=>s.date.slice(0,7)===m.slice(0,7)&&s.status!=='missed');
+  let cells='';for(let d=start;d<=end;d=addDays(d,1)){const list=byDay[d]||[],jobs={};
+    for(const s of list){const r=jobs[s.jobId]=jobs[s.jobId]||{e:new Set(),h:0};r.e.add(s.empId);r.h+=shiftHours(s)}
+    const js=Object.entries(jobs).sort((a,b)=>b[1].h-a[1].h),h=sum(list,shiftHours),wd=pd(d).getDay();
+    cells+=`<button class="cal-day${d.slice(0,7)===m.slice(0,7)?'':' out'}${wd===0||wd===6?' wkend':''}${d===now?' today':''}${d===sel?' sel':''}" data-act="cal-day" data-d="${d}" aria-pressed="${d===sel}" aria-label="${fmtDateY(d)}${list.length?`, ${list.length} shift${list.length>1?'s':''}`:''}">
+      <span class="cal-num">${pd(d).getDate()}</span>${h?`<span class="cal-h">${hrs(h)}</span>`:''}
+      <span class="cal-jobs">${js.slice(0,3).map(([jid,r])=>{const j=job(jid);return `<span class="cal-job" style="--jc:${jobColor(j)}" title="${esc(j?.name||'')}"><i></i><em>${esc(j?.name||'Job')}</em><small>${r.e.size}</small></span>`}).join('')}${js.length>3?`<span class="cal-more">+${js.length-3} more</span>`:''}</span></button>`}
+  const day=S.shifts.filter(s=>s.date===sel).sort((a,b)=>a.start.localeCompare(b.start)||(emp(a.empId)?.name||'').localeCompare(emp(b.empId)?.name||''));
+  const dayH=sum(day.filter(s=>s.status!=='missed'),shiftHours),crew=new Set(day.filter(s=>s.status!=='missed').map(s=>s.empId)).size;
+  const stat={worked:['done','Worked'],scheduled:['','Scheduled'],missed:['','Missed']};
+  return `<div class="card"><div class="cal-head"><div><div class="cal-title">${first.toLocaleDateString('en-US',{month:'long'})} <span>${first.getFullYear()}</span></div>
+      <p class="note">${inMonth.length?`${hrs(sum(inMonth,shiftHours))} across ${new Set(inMonth.map(s=>s.jobId)).size} job${new Set(inMonth.map(s=>s.jobId)).size>1?'s':''} this month`:'Nothing on the calendar this month'}</p></div>
+    <div class="week-nav"><button class="btn sm" data-act="cal-month" data-v="-1" aria-label="Previous month">‹</button><button class="btn sm" data-act="cal-month" data-v="0">Today</button><button class="btn sm" data-act="cal-month" data-v="1" aria-label="Next month">›</button></div></div>
+    <div class="cal-grid">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(w=>`<div class="cal-wd">${w}</div>`).join('')}${cells}</div>
+    <div class="cal-agenda"><div class="split"><div><h2>${pd(sel).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</h2>
+      <p class="note">${day.length?`${crew} on the crew · ${hrs(dayH)}`:'No one scheduled'}</p></div>
+      <div class="btns"><button class="btn sm" data-act="cal-week">Show in week view</button><button class="btn sm primary" data-act="shift-new" data-date="${sel}">+ Add shift</button></div></div>
+    ${day.length?`<ul class="list">${day.map(s=>{const e=emp(s.empId),j=job(s.jobId),st=stat[s.status]||['',s.status];return `<li class="click" data-act="shift-edit" data-id="${s.id}" style="${s.status==='missed'?'opacity:.55':''}">
+      <span class="avatar sm" style="background:${e?.color||'#999'}">${esc(initials(e?.name))}</span><div class="grow"><b>${esc(e?.name||'Removed')}</b><small><span class="dot" style="background:${jobColor(j)};width:8px;height:8px"></span> ${esc(j?.name||'Job removed')} · ${fmtTime(s.start)}–${fmtTime(s.end)}${s.note?' · '+esc(s.note):''}</small></div>
+      <span class="badge ${st[0]}">${st[1]}</span><b class="num" style="min-width:42px;text-align:right">${hrs(shiftHours(s))}</b></li>`}).join('')}</ul>`:''}</div></div>`}
 function payRange(){const now=today(),wk=weekStart(now),d=pd(now);
   const mStart=ds(new Date(d.getFullYear(),d.getMonth(),1)),lmStart=ds(new Date(d.getFullYear(),d.getMonth()-1,1)),lmEnd=ds(new Date(d.getFullYear(),d.getMonth(),0));
   return{'this-week':[wk,addDays(wk,6),'This week'],'last-week':[addDays(wk,-7),addDays(wk,-1),'Last week'],'this-month':[mStart,ds(new Date(d.getFullYear(),d.getMonth()+1,0)),'This month'],'last-month':[lmStart,lmEnd,'Last month']}}
@@ -722,6 +780,9 @@ const ACT={
   'photo':a=>photoViewer(S.photos.find(p=>p.id===a.dataset.id)),
   'jobs-filter':a=>{UI.jobsFilter=a.dataset.v;route()},
   'dash':a=>{UI.dash=a.dataset.v;route()},'pay':a=>{UI.pay=a.dataset.v;route()},
+  'cal-month':a=>{const v=+a.dataset.v;if(!v){UI.month=today().slice(0,7)+'-01';UI.day=today()}else{const d=pd(UI.month);d.setMonth(d.getMonth()+v);UI.month=ds(d)}route()},
+  'cal-day':a=>{UI.day=a.dataset.d;UI.month=UI.day.slice(0,7)+'-01';route()},
+  'cal-week':()=>{UI.week=weekStart(UI.day);route();scrollTo({top:0,behavior:'smooth'})},
   'week':a=>{const v=+a.dataset.v;UI.week=v?addDays(UI.week,v):weekStart(today());route()},
   'confirm-past':()=>{const now=today(),end=addDays(UI.week,6);let n=0;S.shifts.forEach(s=>{if(s.status==='scheduled'&&s.date<now&&s.date>=UI.week&&s.date<=end){s.status='worked';n++}});save();toast(`${n} shift${n>1?'s':''} marked worked`);route()},
   'copy-week':()=>{const prev=addDays(UI.week,-7);const src=S.shifts.filter(s=>s.date>=prev&&s.date<UI.week&&s.status!=='missed');let n=0;
