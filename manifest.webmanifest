@@ -1,6 +1,6 @@
 {
-  "name": "Contractor Mainframe",
-  "short_name": "Mainframe",
+  "name": "Blue Board",
+  "short_name": "Blue Board",
   "description": "Run every job: schedule your crew, track expenses, photos and pay, and see the real profit on each job.",
   "start_url": "./#/schedule",
   "scope": "./",

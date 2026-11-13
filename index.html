@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Contractor Mainframe</title>
+<title>Blue Board</title>
 <meta name="description" content="Organize every job, track expenses, purchases, photos and crew hours, and see the real profit on each job.">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Contractor Mainframe">
+<meta name="apple-mobile-web-app-title" content="Blue Board">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -19,9 +19,9 @@
 :root{
   --bg:#f6f6f7;--surface:#ffffff;--surface2:#f3f4f6;--surface3:#e9ebee;--ink:#16191d;--muted:#5f6873;
   --line:rgba(16,24,40,.08);--line2:rgba(16,24,40,.14);
-  --hi:#17804a;--hi-dk:#0f5c34;--hi-ink:#fff;--hi-soft:rgba(23,128,74,.10);--glow:rgba(23,128,74,.28);
+  --hi:#1f63c6;--hi-dk:#164a94;--hi-ink:#fff;--hi-soft:rgba(31,99,198,.10);--glow:rgba(31,99,198,.28);
   --top-solid:#fff;--nav-float:rgba(255,255,255,.94);--bar:#3b424b;--ph:#9aa1aa;
-  --good:#1a7f4e;--good-bg:#e7f6ee;--bad:#c42b2b;--bad-bg:#fdeceb;--warn:#9a5b00;--warn-bg:#fff4dc;
+  --good:#1565c0;--good-bg:#e8f1fd;--bad:#c42b2b;--bad-bg:#fdeceb;--warn:#9a5b00;--warn-bg:#fff4dc;
   --nav:rgba(255,255,255,.88);--nav-ink:#16191d;--nav-muted:#5f6873;
   --r:20px;--r-sm:12px;--ease:cubic-bezier(.2,.7,.2,1);
   --shadow:0 1px 2px rgba(16,24,40,.05),0 8px 24px rgba(16,24,40,.06);
@@ -30,7 +30,7 @@
 :root[data-mode="dark"]{
   --bg:#0c0e11;--surface:#15181c;--surface2:#1c2025;--surface3:#262b32;--ink:#eef0f3;--muted:#98a1ac;
   --line:rgba(255,255,255,.07);--line2:rgba(255,255,255,.13);
-  --good:#45cc8f;--good-bg:rgba(69,204,143,.12);--bad:#ff7a7a;--bad-bg:rgba(255,92,92,.12);--warn:#f2b44c;--warn-bg:rgba(242,180,76,.12);
+  --good:#6aaeff;--good-bg:rgba(106,174,255,.13);--bad:#ff7a7a;--bad-bg:rgba(255,92,92,.12);--warn:#f2b44c;--warn-bg:rgba(242,180,76,.12);
   --nav:rgba(12,14,17,.82);--nav-ink:#eef0f3;--nav-muted:#98a1ac;--shadow:0 1px 0 rgba(255,255,255,.04) inset,0 12px 32px rgba(0,0,0,.32);
   --top-solid:#0c0e11;--nav-float:rgba(21,24,28,.92);--bar:#c9d0d8;--ph:#6d7680;color-scheme:dark;
 }
@@ -178,7 +178,7 @@ tfoot td{font-weight:750;border-bottom:0;border-top:1px solid var(--line2)}
 .bar{height:8px;background:var(--surface3);border-radius:999px;overflow:hidden;min-width:60px}
 .bar i{display:block;height:100%;background:var(--bar);border-radius:999px}
 .bar i.over{background:linear-gradient(90deg,#9b1c1c,var(--bad))}
-.bar i.ok{background:linear-gradient(90deg,#2f9e6c,var(--good))}
+.bar i.ok{background:linear-gradient(90deg,#1e4fa3,var(--good))}
 .mbar{display:grid;grid-template-columns:1fr 1fr;align-items:center;height:14px;min-width:120px}
 .mbar .l{display:flex;justify-content:flex-end;border-right:1px solid var(--line2);height:100%;align-items:center}
 .mbar .r{display:flex;height:100%;align-items:center}
@@ -477,9 +477,9 @@ body.gate main::before{content:"";position:fixed;inset:0;z-index:-1;pointer-even
       <div id="menu-items"></div>
     </div>
   </div>
-  <a class="brand" href="#/schedule" aria-label="Contractor Mainframe home">
+  <a class="brand" href="#/schedule" aria-label="Blue Board home">
     <svg width="32" height="32" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#16191d"/><rect x="15" y="12" width="34" height="42" rx="6" fill="none" style="stroke:var(--hi)" stroke-width="4"/><rect x="24" y="7" width="16" height="10" rx="4" style="fill:var(--hi)"/><path d="M22 42l7-8 6 5 9-11" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    <span>Contractor <em>Mainframe</em></span>
+    <span>Blue <em>Board</em></span>
   </a>
   <a class="co-top" id="co-top" href="#/profile"></a>
   <nav class="nav" aria-label="Main">
@@ -518,8 +518,8 @@ const fmtDate=s=>s?pd(s).toLocaleDateString('en-US',{month:'short',day:'numeric'
 const fmtDateY=s=>s?pd(s).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
 const toMin=t=>{const[h,m]=String(t||'0:0').split(':').map(Number);return (h||0)*60+(m||0)};
 const fmtTime=t=>{if(!t)return'';let m=toMin(t),h=Math.floor(m/60)%24,mm=m%60;const ap=h<12?'a':'p';h=h%12||12;return h+(mm?':'+pad(mm):'')+ap};
-const JOB_COLORS=['#2f6fb0','#c2571a','#2e8b57','#8a4fb5','#b8860b','#c03a5b','#1f8a8a','#6b7280'];
-const EMP_COLORS=['#2f6fb0','#2e8b57','#c2571a','#8a4fb5','#c03a5b','#1f8a8a','#b8860b','#6b7280'];
+const JOB_COLORS=['#2f6fb0','#c2571a','#0e7490','#8a4fb5','#b8860b','#c03a5b','#4f46e5','#6b7280'];
+const EMP_COLORS=['#2f6fb0','#0e7490','#c2571a','#8a4fb5','#c03a5b','#4f46e5','#b8860b','#6b7280'];
 const CATS=[['materials','Materials'],['subs','Subcontractor'],['equipment','Equipment & rentals'],['permits','Permits & fees'],['fuel','Fuel & travel'],['disposal','Dumpster & disposal'],['other','Other']];
 const CAT_NAME=Object.fromEntries(CATS);
 const EST=[['materials','Materials'],['labor','Labor'],['subs','Subcontractors'],['equipment','Equipment'],['other','Other / fees']];
@@ -610,7 +610,7 @@ function jobForm(j){const isNew=!j;j=j||{status:'active',est:{},start:today()};c
       ${field('Start',inp('start',j.start,'date'))}${field('Finish',inp('end',j.end,'date'))}</div>
       <fieldset><legend>Your estimate (what you bid it at)</legend><div class="fields three keep">
       ${EST.map(([k,l])=>field(l,moneyInp('est_'+k,e[k]))).join('')}</div>
-      <p class="note" style="margin-top:8px">Fill these in from your bid. Contractor Mainframe compares them to what you actually spend, so you can see where your estimates run high or low.</p></fieldset>
+      <p class="note" style="margin-top:8px">Fill these in from your bid. Blue Board compares them to what you actually spend, so you can see where your estimates run high or low.</p></fieldset>
       ${planFields(j)}
       ${field('Notes',`<textarea name="notes">${esc(j.notes)}</textarea>`)}`,
     onOpen:planWire,
@@ -693,7 +693,7 @@ function empForm(e){const isNew=!e;e=e||{burden:S.settings.burden,active:true,co
     body:`<div class="fields">${field('Name',inp('name',e.name,'text','required'),'full')}
       ${field('Role',inp('role',e.role,'text','placeholder="e.g. Lead carpenter"'))}${field('Phone',inp('phone',e.phone,'tel'))}
       ${field('Hourly pay',moneyInp('rate',e.rate,'required'))}${field('Labor burden %',moneyInp('burden',e.burden))}
-      ${field('Color',`<select name="color">${EMP_COLORS.map((c,i)=>opt(c,['Blue','Green','Orange','Purple','Rose','Teal','Gold','Gray'][i],e.color)).join('')}</select>`)}
+      ${field('Color',`<select name="color">${EMP_COLORS.map((c,i)=>opt(c,['Blue','Cyan','Orange','Purple','Rose','Indigo','Gold','Gray'][i],e.color)).join('')}</select>`)}
       <label class="check" style="align-self:end;min-height:42px"><input type="checkbox" name="active" ${e.active!==false?'checked':''}> Active on the crew</label></div>
       <p class="note">Labor burden covers payroll taxes, workers' comp and other costs on top of wages (often 15–30%). It's added to job costs so profit is real. A new pay rate applies to shifts added from now on.</p>`,
     onDelete:isNew?null:()=>{if(S.shifts.some(s=>s.empId===e.id)){e.active=false;toast('Marked inactive (they have hours on record)')}else S.employees=S.employees.filter(x=>x.id!==e.id);save()},
@@ -955,17 +955,17 @@ function pageProfile(){const p=S.profile||{};
   <div class="stack"><div class="card stack"><h2>Look &amp; brand</h2>
     <div class="logo-row"><div class="logo-box">${p.logo?`<img src="${esc(p.logo)}" alt="Company logo">`:'<span class="note">No logo</span>'}</div>
       <div class="btns"><label class="btn sm" style="flex-direction:row;color:var(--ink)">${p.logo?'Change logo':'Upload logo'}<input type="file" accept="image/*" id="logo-file" hidden></label>${p.logo?'<button class="btn sm ghost danger" data-act="logo-remove">Remove</button>':''}</div></div>
-    <div><div class="note" style="margin-bottom:8px">Accent color · <b>${(ACCENTS[p.accent]||ACCENTS.green)[2]}</b></div><div class="swatches">${Object.entries(ACCENTS).map(([k,[c,,n]])=>`<button class="swatch" data-act="accent" data-v="${k}" style="--c:${c}" aria-pressed="${(p.accent||'green')===k}" title="${n}" aria-label="${n}"></button>`).join('')}</div></div>
+    <div><div class="note" style="margin-bottom:8px">Accent color · <b>${(ACCENTS[p.accent]||ACCENTS.blue)[2]}</b></div><div class="swatches">${Object.entries(ACCENTS).map(([k,[c,,n]])=>`<button class="swatch" data-act="accent" data-v="${k}" style="--c:${c}" aria-pressed="${(p.accent||'blue')===k}" title="${n}" aria-label="${n}"></button>`).join('')}</div></div>
     <div><div class="note" style="margin-bottom:8px">Mode</div><div class="seg" role="group" aria-label="Mode">${[['light','Light'],['dark','Dark']].map(([k,l])=>`<button data-act="mode" data-v="${k}" aria-pressed="${(p.mode||'light')===k}">${l}</button>`).join('')}</div></div>
     <p class="note">Your company name and logo show at the top of every page, between Schedule and Jobs.</p></div>
   <div class="card stack"><h2>Your business at a glance</h2>
     <ul class="list"><li><div class="grow"><b>${S.jobs.filter(j=>j.status==='active').length} active jobs</b><small>${S.jobs.filter(j=>j.status==='bid').length} bids out · ${S.jobs.filter(j=>j.status==='done').length} finished</small></div><a class="btn sm" href="#/jobs">Jobs</a></li>
     <li><div class="grow"><b>${S.employees.filter(e=>e.active!==false).length} on the crew</b><small>${S.shifts.filter(x=>x.date>=weekStart(today())&&x.date<=addDays(weekStart(today()),6)).length} shifts this week</small></div><a class="btn sm" href="#/schedule">Schedule</a></li></ul></div>
     ${accountCard()}<p class="note">${CLOUD.user?'Profile details are saved to your account.':'Profile details are saved only on this device and included in your backup file.'}</p></div></div>`}
-const ACCENTS={green:['#17804a','#0f5c34','Money green'],red:['#dc2f33','#a91e22','Red'],blue:['#1f63c6','#164a94','Blue'],navy:['#24406e','#172b4c','Navy'],
+const ACCENTS={blue:['#1f63c6','#164a94','Blue'],sky:['#0b84d8','#0864a6','Sky blue'],red:['#dc2f33','#a91e22','Red'],navy:['#24406e','#172b4c','Navy'],
   teal:['#0f7f7a','#0a5c58','Teal'],orange:['#d9661a','#a54c10','Orange'],purple:['#6d3fc0','#502c91','Purple'],charcoal:['#3b424b','#23282e','Charcoal']};
 const rgba=(hex,a)=>{const n=parseInt(hex.slice(1),16);return `rgba(${n>>16},${(n>>8)&255},${n&255},${a})`};
-function applyTheme(){const p=S.profile||{},[c,dk]=ACCENTS[p.accent]||ACCENTS.green,r=document.documentElement;
+function applyTheme(){const p=S.profile||{},[c,dk]=ACCENTS[p.accent]||ACCENTS.blue,r=document.documentElement;
   r.style.setProperty('--hi',c);r.style.setProperty('--hi-dk',dk);r.style.setProperty('--hi-soft',rgba(c,.10));r.style.setProperty('--glow',rgba(c,.28));
   r.dataset.mode=p.mode==='dark'?'dark':'light';$('meta[name="theme-color"]').content=p.mode==='dark'?'#0c0e11':'#ffffff';
   const co=p.company,logo=p.logo?`<img src="${esc(p.logo)}" alt="">`:'';
@@ -990,7 +990,7 @@ function pageSettings(){const st=S.settings;const iOS=/iphone|ipad|ipod/i.test(n
   </div><div class="stack">
   ${accountCard()}
   <div class="card stack"><h2>Install the app</h2>
-    ${standalone?'<p>You\'re using the installed app.</p>':iOS?'<p>On iPhone or iPad: open this page in <b>Safari</b>, tap the <b>Share</b> button, then <b>Add to Home Screen</b>.</p>':`<p>Install Contractor Mainframe to get its own icon and open it full-screen, even offline.</p>${deferredInstall?'<div><button class="btn primary" data-act="install">Install app</button></div>':'<p class="note">In Chrome or Edge, use the install icon in the address bar, or the browser menu → <b>Install Contractor Mainframe</b> / <b>Add to Home screen</b>.</p>'}`}</div>
+    ${standalone?'<p>You\'re using the installed app.</p>':iOS?'<p>On iPhone or iPad: open this page in <b>Safari</b>, tap the <b>Share</b> button, then <b>Add to Home Screen</b>.</p>':`<p>Install Blue Board to get its own icon and open it full-screen, even offline.</p>${deferredInstall?'<div><button class="btn primary" data-act="install">Install app</button></div>':'<p class="note">In Chrome or Edge, use the install icon in the address bar, or the browser menu → <b>Install Blue Board</b> / <b>Add to Home screen</b>.</p>'}`}</div>
   <div class="card stack"><h2>Sample data</h2><p class="note">Load a sample company to see how everything works. It replaces what's on this device, so export a backup first if you have real data.</p>
     <div class="btns"><button class="btn" data-act="sample">Load sample data</button><button class="btn danger" data-act="erase">Erase all data</button></div>
     <p class="note"><a href="#/reset">Start over on this device</a> signs out and resets the app to its first screen.</p></div>
@@ -1011,7 +1011,7 @@ function route(){const h=(location.hash||'#/schedule').slice(2),[page,id]=h.spli
   const navKey=page==='job'?'jobs':P===pageSchedule?'schedule':P===pageMyPay?'pay':P===pageEmpCrew?'crew':P===pageEmpAccount?'profile':page;
   $$('[data-nav],[data-menu]').forEach(a=>a.removeAttribute('aria-current'));$$(`[data-nav="${navKey}"],[data-menu="${navKey}"]`).forEach(a=>a.setAttribute('aria-current','page'));
   const pr=S.profile||{},me=isEmp()?emp(CLOUD.employeeId):null;$('#menu-who').innerHTML=me?`<span class="avatar" style="background:${me.color}">${esc(initials(me.name))}</span><span><b>${esc(me.name)}</b><small>${esc(me.role||'Crew')}</small></span>`:`<span class="avatar">${esc(initials(pr.name||pr.company))}</span><span><b>${esc(pr.name||'Set up your profile')}</b><small>${esc(pr.company||'Name, company, license')}</small></span>`;
-  closeMenu();applyTheme();document.title=(S.profile?.company?S.profile.company+' · ':'')+'Contractor Mainframe';
+  closeMenu();applyTheme();document.title=(S.profile?.company?S.profile.company+' · ':'')+'Blue Board';
   hydratePhotos(v);if(keepScroll)scrollTo(0,y);else scrollTo(0,0)}
 window.addEventListener('hashchange',route);
 function closeMenu(){const m=$('#menu');if(m)m.hidden=true;$('#menu-btn')?.setAttribute('aria-expanded','false')}
@@ -1046,7 +1046,7 @@ const ACT={
     save();toast(n?`Copied ${n} shift${n>1?'s':''} from last week`:'Nothing new to copy from last week');route()},
   'export':async()=>{closeMenu();toast('Preparing backup…');const photos={};for(const p of S.photos){const b=await photoGet(p.id);if(b)photos[p.id]=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(b)})}
     const blob=new Blob([JSON.stringify({app:'job-ledger',exportedAt:new Date().toISOString(),state:S,photos})],{type:'application/json'});
-    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`contractor-mainframe-backup-${today()}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('Backup downloaded')},
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`blue-board-backup-${today()}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('Backup downloaded')},
   'install':async()=>{if(!deferredInstall)return;deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;route()},
   'sample':a=>{if(S.jobs.length&&!armTwoStep(a,'Replaces your data. Tap again'))return;loadSample()},
   'erase':async a=>{if(!armTwoStep(a,'Erases everything. Tap again'))return;if(!memOnly)await DB.clear('photos');memPhotos.clear();S=blank();save();toast('All data erased');location.hash='#/schedule';route()},
@@ -1062,7 +1062,7 @@ document.addEventListener('change',async e=>{const t=e.target;
   else if(t.id==='import-file'){const f=t.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(d.app!=='job-ledger'||!d.state)throw 0;
       openForm({title:'Restore backup?',body:`<p>This replaces everything on this device with the backup from <b>${esc(d.exportedAt?new Date(d.exportedAt).toLocaleString():'the file')}</b>: ${d.state.jobs.length} jobs, ${d.state.expenses.length} expenses, ${Object.keys(d.photos||{}).length} photos.</p>`,submit:'Replace and restore',
         onSubmit:async()=>{if(!memOnly)await DB.clear('photos');memPhotos.clear();urlCache.clear();for(const[id,u] of Object.entries(d.photos||{})){const b=await (await fetch(u)).blob();await photoPut(id,b)}S=Object.assign(blank(),d.state);S.settings=Object.assign(blank().settings,d.state.settings);save();toast('Backup restored')}})}
-    catch(err){toast('That file isn\'t a Contractor Mainframe backup')}t.value=''}});
+    catch(err){toast('That file isn\'t a Blue Board backup')}t.value=''}});
 document.addEventListener('submit',e=>{if(e.target.id==='profile-form'){e.preventDefault();const fd=new FormData(e.target);S.profile=Object.assign(S.profile||{},Object.fromEntries(['name','title','company','phone','email','license','website','address'].map(k=>[k,String(fd.get(k)||'').trim()])));save();toast('Profile saved');route();return}
   if(e.target.id==='settings-form'){e.preventDefault();const fd=new FormData(e.target);Object.assign(S.settings,{burden:num(fd.get('burden')),otThreshold:num(fd.get('otThreshold'))||40,ot:!!fd.get('ot')});save();toast('Settings saved');route()}});
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;if(location.hash.startsWith('#/settings'))route()});
@@ -1086,7 +1086,7 @@ const dur=m=>`${Math.floor(m/60)}h ${pad(Math.max(0,m%60))}m`;
 const mapUrl=(la,ln)=>`https://www.google.com/maps?q=${la},${ln}`;
 function sbClient(){if(CLOUD.sb)return CLOUD.sb;if(!window.supabase||!window.supabase.createClient)return null;
   CLOUD.sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});return CLOUD.sb}
-const normState=st=>Object.assign(blank(),st,{settings:Object.assign(blank().settings,st.settings||{}),profile:st.profile||{}});
+const normState=st=>{const o=Object.assign(blank(),st,{settings:Object.assign(blank().settings,st.settings||{}),profile:st.profile||{}});if(o.profile.accent==='green')o.profile.accent='blue';o.employees.forEach(e=>{if(e.color==='#2e8b57')e.color='#0e7490';if(e.color==='#1f8a8a')e.color='#4f46e5'});return o};
 
 async function cloudStart(){const sb=sbClient();if(!sb){CLOUD.mode='local';return}
   let session=null;try{({data:{session}}=await sb.auth.getSession())}catch(e){}
@@ -1122,7 +1122,7 @@ async function cloudPush(){if(!isOwnerCloud())return;const sb=CLOUD.sb,cid=CLOUD
     CLOUD.stateAt=at;LS.set('stateAt',at);LS.set('dirty','0');CLOUD.sync='synced'}
   catch(e){CLOUD.sync='offline'}syncBadge()}
 function publicDoc(){const cut=addDays(today(),-120),p=S.profile||{};
-  return{company:{name:p.company||'',logo:p.logo||'',accent:p.accent||'green',mode:p.mode||'light'},
+  return{company:{name:p.company||'',logo:p.logo||'',accent:p.accent==='green'?'blue':(p.accent||'blue'),mode:p.mode||'light'},
     settings:{ot:S.settings.ot!==false,otThreshold:num(S.settings.otThreshold)||40,requireLocation:!!S.settings.requireLocation,showPay:S.settings.showPay!==false},
     jobs:S.jobs.map(j=>({id:j.id,name:j.name,address:j.address||'',status:j.status,start:j.start||'',end:j.end||'',color:jobColor(j)})),
     employees:S.employees.map(e=>({id:e.id,name:e.name,role:e.role||'',color:e.color,active:e.active!==false})),
@@ -1149,7 +1149,7 @@ function applyPunches(){let changed=false;
 /* ----- employee ----- */
 function empApply(pub,rate,punches){pub=pub||{};CLOUD.pub=pub;CLOUD.myRate=rate;CLOUD.punches=punches||[];
   S=Object.assign(blank(),{jobs:pub.jobs||[],employees:pub.employees||[],shifts:pub.shifts||[],settings:Object.assign(blank().settings,pub.settings||{}),
-    profile:{company:pub.company?.name||'',logo:pub.company?.logo||'',accent:pub.company?.accent||'green',mode:LS.get('empMode')||pub.company?.mode||'light'}})}
+    profile:{company:pub.company?.name||'',logo:pub.company?.logo||'',accent:pub.company?.accent==='green'?'blue':(pub.company?.accent||'blue'),mode:LS.get('empMode')||pub.company?.mode||'light'}})}
 function empApplyCache(){try{const c=JSON.parse(LS.get('empCache')||'null');if(c)empApply(c.pub,c.rate,c.punches)}catch(e){}}
 async function empLoad(){const sb=CLOUD.sb,cid=CLOUD.company;
   const [a,b,c]=await Promise.all([sb.from('company_public').select('data').eq('company_id',cid).maybeSingle(),
@@ -1178,7 +1178,7 @@ function syncBadge(){const el=$('.menu-sync');if(el)el.textContent=syncText()}
 /* ----- pages: sign in, set up ----- */
 function pageAuth(){const code=LS.get('invite'),tab=UI.authTab||(code?'up':'in');
   return `<div class="auth"><div class="card auth-card stack">
-    <div class="auth-logo">${$('.brand svg').outerHTML.replace('width="32" height="32"','width="44" height="44"')}<div><h1>Contractor Mainframe</h1><p class="note">${code?'You\'ve been invited to join a crew.':'Sign in to your company\'s mainframe.'}</p></div></div>
+    <div class="auth-logo">${$('.brand svg').outerHTML.replace('width="32" height="32"','width="44" height="44"')}<div><h1>Blue Board</h1><p class="note">${code?'You\'ve been invited to join a crew.':'Sign in to your company\'s board.'}</p></div></div>
     ${code?`<div class="insight good"><b>Invite</b><span>Code <b>${esc(code.slice(0,4)+'-'+code.slice(4))}</b>. ${tab==='up'?'Create your account':'Sign in'} to join the crew.</span></div>`:''}
     <div class="seg" role="group" aria-label="Account">${[['in','Sign in'],['up','Create account']].map(([k,l])=>`<button data-act="auth-tab" data-v="${k}" aria-pressed="${tab===k}">${l}</button>`).join('')}</div>
     <form id="auth-form" class="stack" novalidate data-tab="${tab}">
@@ -1192,7 +1192,7 @@ function pageAuth(){const code=LS.get('invite'),tab=UI.authTab||(code?'up':'in')
 function pageOnboard(){const co=S.profile?.company||'';const hasLocal=S.jobs.length||S.employees.length;
   return `<div class="page-head"><div><h1>Welcome${CLOUD.user?.email?', '+esc(CLOUD.user.email.split('@')[0]):''}</h1><p class="sub">Are you running the company, or joining a crew?</p></div><button class="btn ghost" data-act="signout">Sign out</button></div>
   <div class="onb">
-    <form class="card stack" id="create-co"><h2>I run the company</h2><p class="note">Set up your company's mainframe. You'll see everything: jobs, money, schedule, crew and pay.</p>
+    <form class="card stack" id="create-co"><h2>I run the company</h2><p class="note">Set up your company's board. You'll see everything: jobs, money, schedule, crew and pay.</p>
       ${field('Company name',inp('company',co,'text','required autocomplete="organization"'))}
       ${hasLocal?`<p class="note">The ${S.jobs.length} jobs and ${S.employees.length} crew members on this device will move into your company account.</p>`:''}
       <div><button class="btn primary" type="submit">Set up my company</button></div></form>
@@ -1261,7 +1261,7 @@ function inviteDialog(e){const linked=onApp(e.id);
     onDelete:async()=>{const {error}=await CLOUD.sb.from('members').delete().eq('company_id',CLOUD.company).eq('employee_id',e.id);if(error){toast(errMsg(error));return}await loadMembers();toast('App access removed')},deleteLabel:'Remove app access'});
   const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',r=crypto.getRandomValues(new Uint8Array(8)),code=[...r].map(x=>A[x%A.length]).join(''),show=code.slice(0,4)+'-'+code.slice(4);
   const base=location.protocol.startsWith('http')?location.origin+location.pathname:PAGES_URL,link=base+'#/join/'+code;
-  const msg=`${S.profile.company||'Your boss'} added you to Contractor Mainframe. Open ${link} on your phone and create an account to see the schedule and clock in. Invite code: ${show}`;
+  const msg=`${S.profile.company||'Your boss'} added you to Blue Board. Open ${link} on your phone and create an account to see the schedule and clock in. Invite code: ${show}`;
   openForm({title:`Invite ${e.name}`,body:`<p>Send this to <b>${esc(e.name)}</b>. They open the link on their phone, create an account, and they're on your crew.</p>
     <div class="invite-code">${show}</div>${field('Link',`<input readonly value="${esc(link)}" onfocus="this.select()">`)}
     <div class="btns"><button type="button" class="btn primary" id="copy-invite">Copy invite message</button></div><p class="note" id="inv-status">Creating the code…</p>
@@ -1271,7 +1271,7 @@ function inviteDialog(e){const linked=onApp(e.id);
       $('#copy-invite').onclick=async()=>{try{await navigator.clipboard.writeText(msg);toast('Invite copied. Paste it in a text.')}catch(err){$('#inv-status').textContent=msg}}}})}
 
 function pageReset(){return `<div class="auth"><div class="card auth-card stack">
-    <div class="auth-logo">${$('.brand svg').outerHTML.replace('width="32" height="32"','width="44" height="44"')}<div><h1>Start over</h1><p class="note">Reset Contractor Mainframe on this device.</p></div></div>
+    <div class="auth-logo">${$('.brand svg').outerHTML.replace('width="32" height="32"','width="44" height="44"')}<div><h1>Start over</h1><p class="note">Reset Blue Board on this device.</p></div></div>
     <p>This signs you out and clears everything the app saved in this browser: jobs, crew, photos, schedule and settings that live only on this device.</p>
     <div class="insight good"><b>Safe</b><span>Your account and anything already synced to it stay in the cloud. Sign back in to get it back.</span></div>
     <button class="btn primary big" data-act="reset-device">Start over</button>
@@ -1348,8 +1348,8 @@ function loadSample(){const T=today(),D=n=>addDays(T,n);
   if(!memOnly)DB.clear('photos').catch(()=>{});save();toast('Sample data loaded');location.hash='#/schedule';route()}
 
 /* ---------- start ---------- */
-(async()=>{const slow=setTimeout(()=>{$('#view').innerHTML=emptyBox('Still opening your saved data… If this doesn\'t clear in a few seconds, close any other Contractor Mainframe tabs or windows and reload.')},4000);
-  try{await DB.open();const st=await DB.get('kv','state');if(st){S=Object.assign(blank(),st,{settings:Object.assign(blank().settings,st.settings||{}),profile:st.profile||{}});if(S.settings.company&&!S.profile.company)S.profile.company=S.settings.company}}
+(async()=>{const slow=setTimeout(()=>{$('#view').innerHTML=emptyBox('Still opening your saved data… If this doesn\'t clear in a few seconds, close any other Blue Board tabs or windows and reload.')},4000);
+  try{await DB.open();const st=await DB.get('kv','state');if(st){S=Object.assign(blank(),st,{settings:Object.assign(blank().settings,st.settings||{}),profile:st.profile||{}});if(S.settings.company&&!S.profile.company)S.profile.company=S.settings.company;if(S.profile.accent==='green')S.profile.accent='blue';S.employees.forEach(e=>{if(e.color==='#2e8b57')e.color='#0e7490';if(e.color==='#1f8a8a')e.color='#4f46e5'})}}
   catch(e){memOnly=true;setTimeout(()=>toast('Storage is blocked here, so changes won\'t be kept'),400)}
   clearTimeout(slow);
   try{await Promise.race([cloudStart(),new Promise(r=>setTimeout(r,9000))])}catch(e){CLOUD.mode=LS.get('local')==='1'?'local':'signedout'}

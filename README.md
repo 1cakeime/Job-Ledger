@@ -1,4 +1,4 @@
-# Contractor Mainframe
+# Blue Board
 
 Jobsite organization and profit tracking for contractors. An installable web
 app (PWA): add it to a phone's home screen and it works offline.
