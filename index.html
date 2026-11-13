@@ -343,6 +343,128 @@ dialog::backdrop{background:rgba(16,20,26,.45);-webkit-backdrop-filter:blur(4px)
 :focus-visible{outline:2px solid var(--hi);outline-offset:2px}
 input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* ===== Polish layer: banner headers, softer surfaces, color ===== */
+@font-face{font-family:'Manrope';font-style:normal;font-weight:400 800;font-display:swap;src:url(vendor/manrope.woff2) format('woff2')}
+:root{--r:22px;--shadow:0 1px 2px rgba(16,24,40,.04),0 10px 30px -6px rgba(16,24,40,.09);--bg:#f4f5f7}
+:root[data-mode="dark"]{--shadow:0 1px 0 rgba(255,255,255,.03) inset,0 12px 32px rgba(0,0,0,.4)}
+body{font-family:'Manrope',ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-feature-settings:"tnum" 0;
+  background:radial-gradient(1000px 380px at 50% -120px,color-mix(in srgb,var(--hi) 9%,transparent),transparent 70%),var(--bg)}
+h1,h2,h3,.brand,.kpi b,.cal-title{letter-spacing:-.025em}
+h2{font-size:17.5px;font-weight:800}
+main{padding:26px 18px 30px}
+
+/* header */
+.top{border-bottom:2px solid var(--hi);box-shadow:0 1px 0 rgba(16,24,40,.03),0 10px 30px -18px rgba(16,24,40,.25)}
+.brand{font-size:17.5px}
+.nav a{font-weight:700}
+.icon-btn{border:0;background:var(--surface2)}
+
+/* banner page headers */
+.page-head{position:relative;overflow:hidden;isolation:isolate;color:#fff;padding:26px 28px;border-radius:26px;align-items:center;margin-bottom:24px;
+  background:radial-gradient(520px 260px at 100% -10%,rgba(255,255,255,.22),transparent 62%),radial-gradient(380px 200px at 0% 120%,rgba(0,0,0,.18),transparent 70%),linear-gradient(130deg,var(--hi-dk),var(--hi));
+  box-shadow:0 18px 40px -18px var(--glow),0 2px 6px -2px rgba(16,24,40,.12)}
+.page-head::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background-image:linear-gradient(rgba(255,255,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.08) 1px,transparent 1px);background-size:28px 28px;
+  -webkit-mask-image:linear-gradient(100deg,transparent 15%,#000 70%);mask-image:linear-gradient(100deg,transparent 15%,#000 70%)}
+.page-head::after{content:"";position:absolute;right:-60px;bottom:-90px;width:260px;height:260px;border-radius:50%;border:1px solid rgba(255,255,255,.14);z-index:-1;box-shadow:0 0 0 40px rgba(255,255,255,.04),0 0 0 80px rgba(255,255,255,.025)}
+.page-head h1{color:#fff;font-size:30px;font-weight:800}
+.page-head .sub,.page-head .note,.page-head .muted,.page-head small{color:rgba(255,255,255,.84)}
+.page-head a{color:#fff}
+.page-head .btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.28);color:#fff;box-shadow:none;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.page-head .btn:hover{background:rgba(255,255,255,.26)}
+.page-head .btn.primary{background:#fff;color:var(--hi-dk);border-color:#fff;box-shadow:0 8px 20px -8px rgba(0,0,0,.4)}
+.page-head .btn.primary:hover{filter:none;background:#f3f4f6}
+.page-head .btn.ghost{background:transparent;border-color:transparent}
+.page-head .btn.danger{color:#fff}
+.page-head .seg{background:rgba(0,0,0,.16);border-color:rgba(255,255,255,.16)}
+.page-head .seg button{color:rgba(255,255,255,.82)}
+.page-head .seg button:hover{color:#fff}
+.page-head .seg button[aria-pressed="true"]{background:#fff;color:var(--hi-dk);box-shadow:none}
+.page-head select{background-color:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3);font-weight:700}
+.page-head select option{color:#16191d}
+.page-head .badge{background:rgba(255,255,255,.2);color:#fff}
+.page-head .week-nav b{color:#fff;font-size:16px}
+.page-head .avatar{box-shadow:0 0 0 4px rgba(255,255,255,.28);background:rgba(255,255,255,.18)}
+@media (max-width:640px){.page-head{padding:20px;border-radius:22px}.page-head h1{font-size:25px}}
+
+/* surfaces */
+.card,.kpi,.job{border-color:transparent}
+:root[data-mode="dark"] .card,:root[data-mode="dark"] .kpi,:root[data-mode="dark"] .job{border-color:var(--line)}
+.card{padding:22px;border-radius:var(--r)}
+.card-head{margin-bottom:16px}
+.btn{background:var(--surface2);border-color:transparent;font-weight:700}
+.btn:hover{background:var(--surface3)}
+.btn.primary{background:linear-gradient(180deg,color-mix(in srgb,var(--hi) 88%,#fff),var(--hi-dk));box-shadow:0 8px 20px -8px var(--glow),inset 0 1px 0 rgba(255,255,255,.2)}
+.btn.dark{background:#1f242a;color:#fff}
+input,select,textarea{border-color:transparent;background:var(--surface2)}
+input:hover,select:hover,textarea:hover{border-color:var(--line2)}
+fieldset{border:0;background:var(--surface2);border-radius:18px;padding:16px}
+fieldset input,fieldset select{background:var(--surface)}
+legend{background:var(--surface);border-radius:999px;padding:4px 12px;font-size:12.5px;box-shadow:0 1px 3px rgba(16,24,40,.08)}
+.seg{background:var(--surface2);border-color:transparent}
+.seg button[aria-pressed="true"]{background:var(--surface);box-shadow:0 1px 3px rgba(16,24,40,.12)}
+.empty{border:1.5px dashed var(--line2);background:transparent;padding:26px}
+.badge{font-weight:800}
+
+/* KPIs */
+.kpis{gap:16px}
+.kpi{padding:18px 20px;border-radius:var(--r)}
+.kpi b{font-size:29px;font-weight:800}
+.kpi span{display:flex;align-items:center;gap:8px}
+.kpi:not(.lead) span::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--hi);opacity:.85}
+.kpi.lead{border:0;color:#fff;background:radial-gradient(280px 160px at 105% -10%,color-mix(in srgb,var(--hi) 55%,transparent),transparent 65%),linear-gradient(160deg,#1b2026,#2c333c)}
+.kpi.lead::before{display:none}
+.kpi.lead span,.kpi.lead small{color:rgba(255,255,255,.72)}
+.kpi.lead b{color:#fff}
+
+/* tables & lists */
+th{border-bottom-color:var(--line);font-size:11px;letter-spacing:.08em}
+td{padding:12px 10px}
+.list li{padding:12px 10px}
+.thumb{border-radius:12px}
+.insight{border-radius:16px;padding:13px 15px}
+
+/* job cards */
+.job{padding:20px;gap:11px;background:linear-gradient(180deg,color-mix(in srgb,var(--jc,var(--hi)) 10%,var(--surface)),var(--surface) 110px)}
+.job::before{left:0;right:0;top:0;bottom:auto;width:auto;height:5px;border-radius:0;background:var(--jc,var(--hi))}
+.job:hover{transform:translateY(-3px);box-shadow:0 16px 36px -14px rgba(16,24,40,.22)}
+.job .t b{font-size:17px;font-weight:800}
+.bar{height:9px;border:0}
+
+/* schedule */
+.sched th{font-weight:800}
+.chip{border:0;border-radius:11px;padding:7px 9px 7px 12px;background:color-mix(in srgb,var(--jc,#8a94a0) 14%,var(--surface));box-shadow:none}
+.chip::before{left:4px;top:6px;bottom:6px;width:3px;border-radius:3px}
+.chip:hover{background:color-mix(in srgb,var(--jc,#8a94a0) 22%,var(--surface))}
+.chip.scheduled{background:var(--surface);border:0;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--jc,#8a94a0) 45%,transparent)}
+.chip.scheduled:hover{background:color-mix(in srgb,var(--jc,#8a94a0) 8%,var(--surface))}
+.cal-day{border-radius:16px}
+.cal-job{background:color-mix(in srgb,var(--jc) 15%,var(--surface));box-shadow:none;font-weight:600}
+.cal-day.sel .cal-job{background:color-mix(in srgb,var(--jc) 15%,var(--surface2))}
+.cal-title{font-size:23px}
+.clock{border:0;box-shadow:var(--shadow),inset 0 0 0 1.5px color-mix(in srgb,var(--hi) 30%,transparent)}
+
+/* sign-in backdrop */
+body.gate{background:radial-gradient(700px 400px at 85% 10%,rgba(255,255,255,.2),transparent 60%),linear-gradient(140deg,var(--hi-dk),var(--hi));background-attachment:fixed}
+body.gate .top{background:transparent;border-bottom-color:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+body.gate .brand{color:#fff}
+body.gate .brand em{color:#fff;opacity:.8}
+body.gate .page-head{background:transparent;box-shadow:none;padding:6px 2px}
+body.gate .page-head::before,body.gate .page-head::after{display:none}
+body.gate main::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px);background-size:30px 30px}
+.auth-card{box-shadow:0 30px 70px -20px rgba(0,0,0,.45);border-radius:28px;padding:30px}
+.onb .card{box-shadow:0 30px 70px -24px rgba(0,0,0,.4)}
+/* controls sitting on the page background need their own surface */
+.btn:not(.primary):not(.dark):not(.ghost){background:var(--surface);box-shadow:inset 0 0 0 1px var(--line2),0 1px 2px rgba(16,24,40,.05)}
+.btn:not(.primary):not(.dark):not(.ghost):hover{background:var(--surface2)}
+.card .btn:not(.primary):not(.dark):not(.ghost),dialog .btn:not(.primary):not(.dark):not(.ghost),.auth-card .btn:not(.primary):not(.dark):not(.ghost){background:var(--surface2);box-shadow:none}
+.card .btn:not(.primary):not(.dark):not(.ghost):hover,dialog .btn:not(.primary):not(.dark):not(.ghost):hover{background:var(--surface3)}
+.page-head .btn:not(.primary):not(.dark):not(.ghost){background:rgba(255,255,255,.15);box-shadow:inset 0 0 0 1px rgba(255,255,255,.28)}
+.page-head .btn:not(.primary):not(.dark):not(.ghost):hover{background:rgba(255,255,255,.26)}
+.btn.ghost{box-shadow:none}
+.filters input,.filters .seg{background:var(--surface);box-shadow:inset 0 0 0 1px var(--line2)}
+.filters .seg button[aria-pressed="true"]{background:var(--surface2)}
+.legend .chip{background:var(--surface)}
 </style>
 </head>
 <body>
