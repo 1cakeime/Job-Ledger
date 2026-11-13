@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Blue Board</title>
 <meta name="description" content="Organize every job, track expenses, purchases, photos and crew hours, and see the real profit on each job.">
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#0b1120">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Blue Board">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
@@ -466,6 +466,40 @@ body.gate main::before{content:"";position:fixed;inset:0;z-index:-1;pointer-even
 .filters input,.filters .seg{background:var(--surface);box-shadow:inset 0 0 0 1px var(--line2)}
 .filters .seg button[aria-pressed="true"]{background:var(--surface2)}
 .legend .chip{background:var(--surface)}
+/* ===== Header: dark blueprint bar with a glowing edge ===== */
+:root{--bar1:#0b1120;--bar2:#121c33;--hi-lite:color-mix(in srgb,var(--hi) 55%,#fff)}
+.top{background:radial-gradient(520px 140px at 12% -60%,color-mix(in srgb,var(--hi) 55%,transparent),transparent 70%),radial-gradient(420px 120px at 92% 160%,color-mix(in srgb,var(--hi) 30%,transparent),transparent 70%),linear-gradient(90deg,var(--bar1),var(--bar2));
+  color:#fff;border-bottom:0;box-shadow:0 10px 30px -12px rgba(8,14,30,.55);padding-top:calc(12px + env(safe-area-inset-top,0px));padding-bottom:12px;gap:12px;-webkit-backdrop-filter:none;backdrop-filter:none}
+.top::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);background-size:22px 22px;
+  -webkit-mask-image:linear-gradient(90deg,#000,transparent 55%,#000);mask-image:linear-gradient(90deg,#000,transparent 55%,#000)}
+.top::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;pointer-events:none;background:linear-gradient(90deg,transparent,var(--hi-lite) 20%,var(--hi) 50%,var(--hi-lite) 80%,transparent);box-shadow:0 0 14px 1px var(--glow),0 0 2px var(--hi)}
+.top>.brand,.top>.co-top,.nav a{position:relative}
+.brand{color:#fff}
+.brand em{color:var(--hi-lite)}
+.brand svg{border-radius:10px;box-shadow:0 0 0 1px rgba(255,255,255,.16),0 6px 16px -4px var(--glow);filter:none}
+.icon-btn{background:rgba(255,255,255,.08);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+.icon-btn:hover,.icon-btn[aria-expanded="true"]{background:rgba(255,255,255,.16);border-color:transparent}
+.nav a{color:rgba(255,255,255,.72);padding:9px 16px}
+.nav a:hover:not([aria-current="page"]){color:#fff;background:rgba(255,255,255,.08)}
+.nav a[aria-current="page"]{background:#fff;color:var(--hi-dk);box-shadow:0 6px 18px -6px var(--glow),0 0 0 1px rgba(255,255,255,.6)}
+.nav a.co-name{flex:0 1 auto;margin:0 auto;color:#fff;font-size:15.5px;padding:8px 18px 8px 10px;border-radius:999px;background:rgba(255,255,255,.07)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.nav a.co-name::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--hi-lite);box-shadow:0 0 10px 2px var(--glow);flex:none;margin-left:6px}
+.nav a.co-name:has(img)::before{display:none}
+.nav a.co-name:hover{background:rgba(255,255,255,.13)!important;color:#fff}
+.co-name img,.co-top img{background:#fff;padding:2px 4px;border-radius:7px}
+.co-name.co-empty,.co-top.co-empty{color:rgba(255,255,255,.6)!important}
+.co-name.co-empty::before{background:rgba(255,255,255,.4);box-shadow:none}
+@media (max-width:820px){
+  .top{background:radial-gradient(360px 120px at 10% -60%,color-mix(in srgb,var(--hi) 55%,transparent),transparent 70%),linear-gradient(90deg,var(--bar1),var(--bar2))}
+  .co-top{color:#fff}
+  .nav{background:rgba(11,17,32,.9);border-color:rgba(255,255,255,.1);box-shadow:0 14px 34px rgba(8,14,30,.45)}
+  .nav a{color:rgba(255,255,255,.65)}
+  .nav a[aria-current="page"]{background:rgba(255,255,255,.12);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+  .nav a[aria-current="page"] svg{color:var(--hi-lite)}
+}
+body.gate .top{background:transparent;box-shadow:none}
+body.gate .top::before,body.gate .top::after{display:none}
 </style>
 </head>
 <body>
@@ -967,7 +1001,7 @@ const ACCENTS={blue:['#1f63c6','#164a94','Blue'],sky:['#0b84d8','#0864a6','Sky b
 const rgba=(hex,a)=>{const n=parseInt(hex.slice(1),16);return `rgba(${n>>16},${(n>>8)&255},${n&255},${a})`};
 function applyTheme(){const p=S.profile||{},[c,dk]=ACCENTS[p.accent]||ACCENTS.blue,r=document.documentElement;
   r.style.setProperty('--hi',c);r.style.setProperty('--hi-dk',dk);r.style.setProperty('--hi-soft',rgba(c,.10));r.style.setProperty('--glow',rgba(c,.28));
-  r.dataset.mode=p.mode==='dark'?'dark':'light';$('meta[name="theme-color"]').content=p.mode==='dark'?'#0c0e11':'#ffffff';
+  r.dataset.mode=p.mode==='dark'?'dark':'light';$('meta[name="theme-color"]').content='#0b1120';
   const co=p.company,logo=p.logo?`<img src="${esc(p.logo)}" alt="">`:'';
   for(const id of ['co-name','co-top']){const el=$('#'+id);el.classList.toggle('co-empty',!co);el.innerHTML=co?`${logo}<span>${esc(co)}</span>`:(id==='co-name'&&!isEmp()?'<span>+ Add your company name</span>':'')}
   $('.top').classList.toggle('has-co',!!co)}
