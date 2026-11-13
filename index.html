@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Blue Board</title>
 <meta name="description" content="Organize every job, track expenses, purchases, photos and crew hours, and see the real profit on each job.">
-<meta name="theme-color" content="#0b1120">
+<meta name="theme-color" content="#e9f0fb">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Blue Board">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
@@ -359,34 +359,6 @@ main{padding:26px 18px 30px}
 .nav a{font-weight:700}
 .icon-btn{border:0;background:var(--surface2)}
 
-/* banner page headers */
-.page-head{position:relative;overflow:hidden;isolation:isolate;color:#fff;padding:26px 28px;border-radius:26px;align-items:center;margin-bottom:24px;
-  background:radial-gradient(520px 260px at 100% -10%,rgba(255,255,255,.22),transparent 62%),radial-gradient(380px 200px at 0% 120%,rgba(0,0,0,.18),transparent 70%),linear-gradient(130deg,var(--hi-dk),var(--hi));
-  box-shadow:0 18px 40px -18px var(--glow),0 2px 6px -2px rgba(16,24,40,.12)}
-.page-head::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
-  background-image:linear-gradient(rgba(255,255,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.08) 1px,transparent 1px);background-size:28px 28px;
-  -webkit-mask-image:linear-gradient(100deg,transparent 15%,#000 70%);mask-image:linear-gradient(100deg,transparent 15%,#000 70%)}
-.page-head::after{content:"";position:absolute;right:-60px;bottom:-90px;width:260px;height:260px;border-radius:50%;border:1px solid rgba(255,255,255,.14);z-index:-1;box-shadow:0 0 0 40px rgba(255,255,255,.04),0 0 0 80px rgba(255,255,255,.025)}
-.page-head h1{color:#fff;font-size:30px;font-weight:800}
-.page-head .sub,.page-head .note,.page-head .muted,.page-head small{color:rgba(255,255,255,.84)}
-.page-head a{color:#fff}
-.page-head .btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.28);color:#fff;box-shadow:none;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
-.page-head .btn:hover{background:rgba(255,255,255,.26)}
-.page-head .btn.primary{background:#fff;color:var(--hi-dk);border-color:#fff;box-shadow:0 8px 20px -8px rgba(0,0,0,.4)}
-.page-head .btn.primary:hover{filter:none;background:#f3f4f6}
-.page-head .btn.ghost{background:transparent;border-color:transparent}
-.page-head .btn.danger{color:#fff}
-.page-head .seg{background:rgba(0,0,0,.16);border-color:rgba(255,255,255,.16)}
-.page-head .seg button{color:rgba(255,255,255,.82)}
-.page-head .seg button:hover{color:#fff}
-.page-head .seg button[aria-pressed="true"]{background:#fff;color:var(--hi-dk);box-shadow:none}
-.page-head select{background-color:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3);font-weight:700}
-.page-head select option{color:#16191d}
-.page-head .badge{background:rgba(255,255,255,.2);color:#fff}
-.page-head .week-nav b{color:#fff;font-size:16px}
-.page-head .avatar{box-shadow:0 0 0 4px rgba(255,255,255,.28);background:rgba(255,255,255,.18)}
-@media (max-width:640px){.page-head{padding:20px;border-radius:22px}.page-head h1{font-size:25px}}
-
 /* surfaces */
 .card,.kpi,.job{border-color:transparent}
 :root[data-mode="dark"] .card,:root[data-mode="dark"] .kpi,:root[data-mode="dark"] .job{border-color:var(--line)}
@@ -460,57 +432,111 @@ body.gate main::before{content:"";position:fixed;inset:0;z-index:-1;pointer-even
 .btn:not(.primary):not(.dark):not(.ghost):hover{background:var(--surface2)}
 .card .btn:not(.primary):not(.dark):not(.ghost),dialog .btn:not(.primary):not(.dark):not(.ghost),.auth-card .btn:not(.primary):not(.dark):not(.ghost){background:var(--surface2);box-shadow:none}
 .card .btn:not(.primary):not(.dark):not(.ghost):hover,dialog .btn:not(.primary):not(.dark):not(.ghost):hover{background:var(--surface3)}
-.page-head .btn:not(.primary):not(.dark):not(.ghost){background:rgba(255,255,255,.15);box-shadow:inset 0 0 0 1px rgba(255,255,255,.28)}
-.page-head .btn:not(.primary):not(.dark):not(.ghost):hover{background:rgba(255,255,255,.26)}
 .btn.ghost{box-shadow:none}
 .filters input,.filters .seg{background:var(--surface);box-shadow:inset 0 0 0 1px var(--line2)}
 .filters .seg button[aria-pressed="true"]{background:var(--surface2)}
 .legend .chip{background:var(--surface)}
-/* ===== Header: dark blueprint bar with a glowing edge ===== */
-:root{--bar1:#0b1120;--bar2:#121c33;--hi-lite:color-mix(in srgb,var(--hi) 55%,#fff)}
-.top{background:radial-gradient(520px 140px at 12% -60%,color-mix(in srgb,var(--hi) 55%,transparent),transparent 70%),radial-gradient(420px 120px at 92% 160%,color-mix(in srgb,var(--hi) 30%,transparent),transparent 70%),linear-gradient(90deg,var(--bar1),var(--bar2));
-  color:#fff;border-bottom:0;box-shadow:0 10px 30px -12px rgba(8,14,30,.55);padding-top:calc(12px + env(safe-area-inset-top,0px));padding-bottom:12px;gap:12px;-webkit-backdrop-filter:none;backdrop-filter:none}
-.top::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);background-size:22px 22px;
-  -webkit-mask-image:linear-gradient(90deg,#000,transparent 55%,#000);mask-image:linear-gradient(90deg,#000,transparent 55%,#000)}
-.top::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;pointer-events:none;background:linear-gradient(90deg,transparent,var(--hi-lite) 20%,var(--hi) 50%,var(--hi-lite) 80%,transparent);box-shadow:0 0 14px 1px var(--glow),0 0 2px var(--hi)}
-.top>.brand,.top>.co-top,.nav a{position:relative}
-.brand{color:#fff}
-.brand em{color:var(--hi-lite)}
-.brand svg{border-radius:10px;box-shadow:0 0 0 1px rgba(255,255,255,.16),0 6px 16px -4px var(--glow);filter:none}
-.icon-btn{background:rgba(255,255,255,.08);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
-.icon-btn:hover,.icon-btn[aria-expanded="true"]{background:rgba(255,255,255,.16);border-color:transparent}
-.nav a{color:rgba(255,255,255,.72);padding:9px 16px}
-.nav a:hover:not([aria-current="page"]){color:#fff;background:rgba(255,255,255,.08)}
-.nav a[aria-current="page"]{background:#fff;color:var(--hi-dk);box-shadow:0 6px 18px -6px var(--glow),0 0 0 1px rgba(255,255,255,.6)}
-.nav a.co-name{flex:0 1 auto;margin:0 auto;color:#fff;font-size:15.5px;padding:8px 18px 8px 10px;border-radius:999px;background:rgba(255,255,255,.07)!important;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
-.nav a.co-name::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--hi-lite);box-shadow:0 0 10px 2px var(--glow);flex:none;margin-left:6px}
-.nav a.co-name:has(img)::before{display:none}
-.nav a.co-name:hover{background:rgba(255,255,255,.13)!important;color:#fff}
-.co-name img,.co-top img{background:#fff;padding:2px 4px;border-radius:7px}
-.co-name.co-empty,.co-top.co-empty{color:rgba(255,255,255,.6)!important}
-.co-name.co-empty::before{background:rgba(255,255,255,.4);box-shadow:none}
+/* ===== Soft Minimal ===== */
+@font-face{font-family:'DM Sans';font-style:normal;font-weight:400 700;font-display:swap;src:url(vendor/dmsans.woff2) format('woff2')}
+:root{--bg:#f6f8fc;--surface:#ffffff;--surface2:#f1f4f9;--surface3:#e6ebf3;--ink:#1c2433;--muted:#5d6b82;--line:rgba(28,36,51,.07);--line2:rgba(28,36,51,.12);
+  --r:26px;--shadow:0 12px 30px -16px rgba(28,36,51,.22),0 1px 2px rgba(28,36,51,.04);--ph:#97a2b4}
+body{font-family:'DM Sans',ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;letter-spacing:-.005em;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--hi) 11%,var(--bg)) 0,var(--bg) 560px) no-repeat,var(--bg)}
+h1,h2,h3,.brand,.kpi b{letter-spacing:-.03em}
+h2{font-weight:700;font-size:18px}
+main{padding:14px 32px 34px;max-width:1240px}
+/* header */
+.top{background:color-mix(in srgb,color-mix(in srgb,var(--hi) 11%,var(--bg)) 86%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  border-bottom:0;box-shadow:none;padding:calc(16px + env(safe-area-inset-top,0px)) 32px 14px;gap:24px;color:var(--ink)}
+.brand{color:var(--ink);font-size:19px;font-weight:700;gap:11px}
+.brand em{color:inherit}
+.brand svg{width:38px;height:38px;border-radius:12px;box-shadow:0 6px 16px -6px var(--glow);filter:none}
+.brand svg rect:first-child{fill:var(--surface)}
+.brand svg path{stroke:var(--ink)}
+.nav a{color:var(--muted);font-weight:500;font-size:15px;padding:9px 18px;gap:8px}
+.nav a svg{display:none}
+.nav a:hover:not([aria-current="page"]){color:var(--ink);background:color-mix(in srgb,var(--surface) 55%,transparent)}
+.nav a[aria-current="page"]{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:0 4px 14px -6px rgba(28,36,51,.28)}
+.co-name{margin-left:auto;display:flex;align-items:center;gap:10px;color:var(--muted);font-size:15px;font-weight:500;text-decoration:none;min-width:0}
+.co-name span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.co-name:hover{color:var(--ink)}
+.co-name img{height:28px;width:auto;max-width:90px;object-fit:contain;border-radius:6px}
+.co-name.co-empty{font-size:14px}
+.co-top{display:none!important}
+.menu-wrap{order:99}
+.icon-btn{width:40px;height:40px;border-radius:50%;padding:0;background:none;border:0;box-shadow:none}
+.icon-btn:hover,.icon-btn[aria-expanded="true"]{background:none}
+.icon-btn .avatar{width:40px;height:40px;font-size:13px;box-shadow:0 0 0 3px var(--surface),0 6px 14px -6px var(--glow)}
+.icon-btn[aria-expanded="true"] .avatar{box-shadow:0 0 0 3px var(--hi-soft),0 6px 14px -6px var(--glow)}
+.menu{left:auto;right:0;transform-origin:top right;border:0;box-shadow:0 24px 60px -12px rgba(28,36,51,.3)}
+/* page titles */
+.page-head{margin:18px 0 24px;align-items:flex-end}
+.page-head h1{font-size:42px;font-weight:700;letter-spacing:-.035em}
+.page-head .sub{font-size:17px;margin-top:6px}
+.page-head .eyebrow{font-size:16px;color:var(--muted);margin-bottom:4px}
+.btn.big{min-height:50px;padding:12px 26px;font-size:16px}
+.btn.primary{background:var(--hi);box-shadow:0 12px 24px -10px var(--glow)}
+.btn.primary:hover{filter:brightness(1.07)}
+/* surfaces */
+.card{border-radius:var(--r);padding:22px 24px}
+.kpi{border-radius:24px}
+.kpi.lead{background:linear-gradient(160deg,var(--hi),var(--hi-dk));box-shadow:0 20px 40px -18px var(--glow)}
+.kpi.lead span,.kpi.lead small{color:rgba(255,255,255,.8)}
+.kpi:not(.lead) span::before{display:none}
+.seg{background:var(--surface2)}
+.seg button[aria-pressed="true"]{background:var(--surface);box-shadow:0 2px 8px -2px rgba(28,36,51,.18)}
+.job{background:var(--surface)}
+.job::before{height:4px}
+/* week as day cards */
+.wk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px}
+.wk-day{border-radius:26px;padding:16px 14px 10px;background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px;min-height:240px;min-width:0}
+.wk-day.off{background:color-mix(in srgb,var(--surface) 55%,transparent);box-shadow:none}
+.wk-day.today{background:linear-gradient(160deg,var(--hi),var(--hi-dk));color:#fff;box-shadow:0 20px 40px -18px var(--glow)}
+.wk-head{display:flex;align-items:baseline;justify-content:space-between}
+.wk-head span{font-size:14px;font-weight:600;color:var(--muted)}
+.wk-head b{font-size:26px;font-weight:700;letter-spacing:-.03em}
+.wk-day.today .wk-head span{color:rgba(255,255,255,.85)}
+.wk-list{display:flex;flex-direction:column;gap:8px;flex:1;min-width:0}
+.wk-job{border-radius:18px;padding:12px;background:color-mix(in srgb,var(--jc) 14%,var(--surface));color:var(--ink)}
+.wk-day.today .wk-job{background:color-mix(in srgb,var(--jc) 12%,#fff);color:#1c2433}
+.wk-jt{font-weight:600;font-size:13px;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.wk-av{display:flex;flex-wrap:wrap;gap:4px;margin-top:9px}
+.wk-av .av{width:26px;height:26px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;font:700 10px/1 inherit;color:#fff;box-shadow:0 0 0 2px #fff;cursor:default}
+.wk-av button.av{cursor:pointer}
+.wk-av button.av:hover{transform:translateY(-2px)}
+.wk-time{font-size:12px;color:#5d6b82;margin-top:9px}
+.wk-off{font-size:13px;color:var(--muted);padding:4px 2px}
+.wk-day.today .wk-off{color:rgba(255,255,255,.8)}
+.wk-add{appearance:none;border:0;background:transparent;color:var(--muted);font:600 13px/1 inherit;padding:9px 8px;border-radius:12px;cursor:pointer;text-align:left}
+.wk-add:hover{background:var(--surface2);color:var(--ink)}
+.wk-day.today .wk-add{color:rgba(255,255,255,.85)}
+.wk-day.today .wk-add:hover{background:rgba(255,255,255,.15);color:#fff}
+.stat-row{display:flex;gap:14px;flex-wrap:wrap}
+.stat{flex:1 1 200px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 22px;border-radius:24px;background:var(--surface);box-shadow:var(--shadow)}
+.stat span{color:var(--muted)}
+.stat b{font-size:24px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+@media (max-width:1000px) and (min-width:821px){.wk{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media (max-width:820px){
-  .top{background:radial-gradient(360px 120px at 10% -60%,color-mix(in srgb,var(--hi) 55%,transparent),transparent 70%),linear-gradient(90deg,var(--bar1),var(--bar2))}
-  .co-top{color:#fff}
-  .nav{background:rgba(11,17,32,.9);border-color:rgba(255,255,255,.1);box-shadow:0 14px 34px rgba(8,14,30,.45)}
-  .nav a{color:rgba(255,255,255,.65)}
-  .nav a[aria-current="page"]{background:rgba(255,255,255,.12);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
-  .nav a[aria-current="page"] svg{color:var(--hi-lite)}
+  .top{padding:calc(12px + env(safe-area-inset-top,0px)) 16px 10px;gap:12px;-webkit-backdrop-filter:none;backdrop-filter:none;background:color-mix(in srgb,var(--hi) 11%,var(--bg))}
+  main{padding:8px 16px 30px}
+  .page-head{margin:10px 0 18px}
+  .page-head h1{font-size:30px}
+  .page-head .sub{font-size:15.5px}
+  .wk{grid-template-columns:minmax(0,1fr);gap:10px}
+  .wk-day{min-height:0;display:grid;grid-template-columns:52px minmax(0,1fr);gap:10px 12px;padding:14px;border-radius:22px}
+  .wk-head{flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:2px}
+  .wk-add{grid-column:2;justify-self:start;padding:6px 8px}
+  .nav{background:color-mix(in srgb,var(--surface) 94%,transparent);border:0;box-shadow:0 10px 30px -8px rgba(28,36,51,.28)}
+  .nav a{flex-direction:column;font-size:11.5px;gap:3px;padding:7px 4px}
+  .nav a svg{display:block}
+  .nav a[aria-current="page"]{background:var(--hi-soft);color:var(--hi);box-shadow:none}
 }
-body.gate .top{background:transparent;box-shadow:none}
-body.gate .top::before,body.gate .top::after{display:none}
+body.gate .brand svg rect:first-child{fill:#16191d}
+body.gate .brand svg path{stroke:#fff}
 </style>
 </head>
 <body>
 <header class="top">
-  <div class="menu-wrap">
-    <button class="icon-btn" id="menu-btn" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-    <div class="menu" id="menu" hidden>
-      <a class="who" href="#/profile" id="menu-who"></a>
-      <div id="menu-items"></div>
-    </div>
-  </div>
   <a class="brand" href="#/schedule" aria-label="Blue Board home">
     <svg width="32" height="32" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#16191d"/><rect x="15" y="12" width="34" height="42" rx="6" fill="none" style="stroke:var(--hi)" stroke-width="4"/><rect x="24" y="7" width="16" height="10" rx="4" style="fill:var(--hi)"/><path d="M22 42l7-8 6 5 9-11" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
     <span>Blue <em>Board</em></span>
@@ -518,12 +544,19 @@ body.gate .top::before,body.gate .top::after{display:none}
   <a class="co-top" id="co-top" href="#/profile"></a>
   <nav class="nav" aria-label="Main">
     <a href="#/schedule" data-nav="schedule"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Schedule</a>
-    <a class="co-name" id="co-name" href="#/profile"></a>
     <a href="#/jobs" data-nav="jobs" data-owner-only><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="3"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></svg>Jobs</a>
     <a href="#/crew" data-nav="crew"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M17 4a4 4 0 0 1 0 8M22 21a7 7 0 0 0-4-6.3"/></svg><span id="crew-label">Crew &amp; Pay</span></a>
     <a href="#/dashboard" data-nav="dashboard" data-owner-only><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg>Profit</a>
     <a href="#/pay" data-nav="pay" data-emp-only><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="13" rx="3"/><circle cx="12" cy="12.5" r="2.5"/><path d="M6 10v5M18 10v5"/></svg>My Pay</a>
   </nav>
+  <a class="co-name" id="co-name" href="#/profile"></a>
+  <div class="menu-wrap">
+    <button class="icon-btn" id="menu-btn" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="menu"><span class="avatar" id="menu-av">CM</span></button>
+    <div class="menu" id="menu" hidden>
+      <a class="who" href="#/profile" id="menu-who"></a>
+      <div id="menu-items"></div>
+    </div>
+  </div>
 </header>
 <main id="view" tabindex="-1"></main>
 <dialog id="dlg"></dialog>
@@ -905,27 +938,50 @@ function pageJob(id){const j=job(id);if(!j)return emptyBox('That job was not fou
     <div class="card"><div class="card-head"><h2>Notes</h2></div><textarea id="job-notes" placeholder="Gate code, client preferences, punch list…">${esc(j.notes)}</textarea></div>
   </div></div></div>`}
 
-function pageSchedule(){const RO=isEmp(),wk=UI.week,days=[...Array(7)].map((_,i)=>addDays(wk,i)),now=today(),L=laborCalc();
+function greet(){const h=new Date().getHours();return h<12?'Good morning':h<17?'Good afternoon':'Good evening'}
+function weekCards(days,inWeek,RO){const now=today();
+  return `<div class="wk">${days.map(d=>{const list=inWeek.filter(s=>s.date===d&&s.status!=='missed').sort((a,b)=>a.start.localeCompare(b.start)),groups={};
+    for(const s of list)(groups[s.jobId]=groups[s.jobId]||[]).push(s);const wd=pd(d).getDay(),off=wd===0||wd===6;
+    return `<div class="wk-day${d===now?' today':''}${off&&d!==now?' off':''}"><div class="wk-head"><span>${pd(d).toLocaleDateString('en-US',{weekday:'short'})}</span><b>${pd(d).getDate()}</b></div>
+      <div class="wk-list">${Object.entries(groups).map(([jid,ss])=>{const j=job(jid),same=ss.every(x=>x.start===ss[0].start&&x.end===ss[0].end);
+        return `<div class="wk-job" style="--jc:${jobColor(j)}"><div class="wk-jt">${esc(j?.name||'Job removed')}</div><div class="wk-av">${ss.map(x=>{const e=emp(x.empId),t=`${esc(e?.name||'')} · ${fmtTime(x.start)}–${fmtTime(x.end)}${x.status==='worked'?' · worked':''}`;
+          return RO?`<span class="av" style="background:${e?.color||'#999'}" title="${t}">${esc(initials(e?.name))}</span>`:`<button class="av" style="background:${e?.color||'#999'}" data-act="shift-edit" data-id="${x.id}" title="${t}" aria-label="${t}">${esc(initials(e?.name))}</button>`}).join('')}</div>
+          <div class="wk-time">${same?`${fmtTime(ss[0].start)} – ${fmtTime(ss[0].end)}`:'Mixed hours'}</div></div>`}).join('')}
+        ${list.length?'':`<div class="wk-off">${off?'Day off':'Nothing scheduled'}</div>`}</div>
+      ${RO?'':`<button class="wk-add" data-act="shift-new" data-date="${d}" aria-label="Add shift on ${fmtDate(d)}">+ Add</button>`}</div>`}).join('')}</div>`}
+function pageSchedule(){const RO=isEmp(),wk=UI.week,days=[...Array(7)].map((_,i)=>addDays(wk,i)),now=today(),L=laborCalc(),view=UI.schedView||'days';
   const inWeek=S.shifts.filter(s=>s.date>=wk&&s.date<=days[6]);
   const emps=S.employees.filter(e=>e.active!==false||inWeek.some(s=>s.empId===e.id));
   const pastSched=inWeek.filter(s=>s.status==='scheduled'&&s.date<now).length;
   const byJob={};for(const s of inWeek){if(s.status==='missed')continue;const r=byJob[s.jobId]=byJob[s.jobId]||{h:0,c:0};r.h+=shiftHours(s);r.c+=s.status==='worked'?(L.get(s.id)?.cost||0):plannedCost(s)}
   const label=`${pd(wk).toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${pd(days[6]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
-  return `<div class="page-head"><div><h1>Schedule</h1><p class="sub">${RO?'Where you and your crew are working.':'Who\'s working where, and the hours that turn into pay and job cost.'}</p></div>
-    <div class="week-nav"><button class="btn sm" data-act="week" data-v="-7" aria-label="Previous week">‹</button><button class="btn sm" data-act="week" data-v="0">This week</button><button class="btn sm" data-act="week" data-v="7" aria-label="Next week">›</button><b style="margin-left:6px">${label}</b></div></div>
-  ${!S.employees.length?`<div class="stack">${emptyBox('Add your crew first, then schedule them on jobs. Or load the sample company to see how it works.','<a class="btn primary" href="#/crew">Add employees</a>'+(S.jobs.length?'':'<button class="btn" data-act="sample">Load sample data</button>'))}${monthCal()}</div>`:`
-  <div class="stack">${RO?clockCard():''}
-  <div class="split"><div class="legend"><span class="chip scheduled">Scheduled</span><span class="chip">Worked</span><span class="chip missed">Missed</span></div>
-    ${RO?'':`<div class="btns">${pastSched?`<button class="btn sm dark" data-act="confirm-past">Mark ${pastSched} past shift${pastSched>1?'s':''} as worked</button>`:''}<button class="btn sm" data-act="copy-week">Copy last week</button><button class="btn sm primary" data-act="shift-new">+ Add shift</button></div>`}</div>
-  <div class="card" style="padding:8px"><div class="table-wrap"><table class="sched"><thead><tr><th>Crew</th>${days.map(d=>`<th class="${d===now?'today':''}">${pd(d).toLocaleDateString('en-US',{weekday:'short'})} <span class="muted">${pd(d).getDate()}</span></th>`).join('')}</tr></thead><tbody>
+  const tod=S.shifts.filter(s=>s.date===now&&s.status!=='missed'),ppl=new Set(tod.map(s=>s.empId)).size,jb=new Set(tod.map(s=>s.jobId)).size;
+  const me=RO?emp(CLOUD.employeeId):null,first=String(RO?(me?.name||''):(S.profile?.name||'')).trim().split(/\s+/)[0];
+  const mineToday=RO?tod.find(s=>s.empId===CLOUD.employeeId):null;
+  const line=RO?(mineToday?`You're on <b>${esc(job(mineToday.jobId)?.name||'a job')}</b> today, ${fmtTime(mineToday.start)} – ${fmtTime(mineToday.end)}.`:'You\'re not scheduled today.')
+    :(ppl?`${ppl} ${ppl===1?'person is':'people are'} on site today across ${jb} job${jb>1?'s':''}.`:'No one is scheduled today.');
+  const wkH=sum(inWeek.filter(s=>s.status!=='missed'),shiftHours),wkC=sum(Object.values(byJob),r=>r.c);
+  const otH=sum(emps,e=>Math.max(0,sum(inWeek.filter(s=>s.empId===e.id&&s.status!=='missed'),shiftHours)-(num(S.settings.otThreshold)||40)));
+  const myH=RO?sum(inWeek.filter(s=>s.empId===CLOUD.employeeId&&s.status!=='missed'),shiftHours):0,myN=RO?inWeek.filter(s=>s.empId===CLOUD.employeeId&&s.status!=='missed').length:0;
+  const grid=`<div class="card" style="padding:8px"><div class="table-wrap"><table class="sched"><thead><tr><th>Crew</th>${days.map(d=>`<th class="${d===now?'today':''}">${pd(d).toLocaleDateString('en-US',{weekday:'short'})} <span class="muted">${pd(d).getDate()}</span></th>`).join('')}</tr></thead><tbody>
   ${emps.map(e=>{const mine=inWeek.filter(s=>s.empId===e.id);const h=sum(mine.filter(s=>s.status!=='missed'),shiftHours);const ot=S.settings.ot!==false&&h>(num(S.settings.otThreshold)||40);
     return `<tr><td><div class="emp-cell"><span class="dot" style="background:${e.color};margin-top:5px"></span><div><b>${esc(e.name)}</b>${RO&&e.id===CLOUD.employeeId?' <span class="badge done">You</span>':''}<small class="${ot?'neg':''}">${hrs(h)}${ot?' · overtime':''}</small></div></div></td>
     ${days.map(d=>`<td class="${d===now?'today':''}">${mine.filter(s=>s.date===d).sort((a,b)=>a.start.localeCompare(b.start)).map(s=>{const j=job(s.jobId);return `<button class="chip ${s.status}" style="--jc:${jobColor(j)}" ${RO?'':`data-act="shift-edit" data-id="${s.id}"`}><b>${esc(j?.name||'Job removed')}</b>${fmtTime(s.start)}–${fmtTime(s.end)} · ${hrs(shiftHours(s))}</button>`}).join('')}
       ${RO?'':`<button class="add-cell" data-act="shift-new" data-emp="${e.id}" data-date="${d}" aria-label="Add shift for ${esc(e.name)} on ${fmtDate(d)}">+</button>`}</td>`).join('')}</tr>`}).join('')}
-  </tbody><tfoot><tr><td>Day total</td>${days.map(d=>`<td class="num">${hrs(sum(inWeek.filter(s=>s.date===d&&s.status!=='missed'),shiftHours))}</td>`).join('')}</tr></tfoot></table></div></div>
-  ${RO?'':`<div class="card"><div class="card-head"><h2>This week by job</h2></div>
-  ${Object.keys(byJob).length?`<div class="table-wrap"><table><thead><tr><th>Job</th><th class="n">Hours</th><th class="n">Labor cost</th></tr></thead><tbody>${Object.entries(byJob).map(([jid,r])=>{const j=job(jid);return `<tr class="click" data-href="#/job/${jid}"><td><span class="dot" style="background:${jobColor(j)}"></span> ${esc(j?.name||'Job removed')}</td><td class="n">${hrs(r.h)}</td><td class="n">${money(r.c)}</td></tr>`}).join('')}</tbody>
-  <tfoot><tr><td>Total</td><td class="n">${hrs(sum(Object.values(byJob),r=>r.h))}</td><td class="n">${money(sum(Object.values(byJob),r=>r.c))}</td></tr></tfoot></table></div>`:emptyBox('Nothing scheduled this week.')}</div>`}${monthCal()}</div>`}`}
+  </tbody><tfoot><tr><td>Day total</td>${days.map(d=>`<td class="num">${hrs(sum(inWeek.filter(s=>s.date===d&&s.status!=='missed'),shiftHours))}</td>`).join('')}</tr></tfoot></table></div></div>`;
+  return `<div class="page-head"><div><div class="eyebrow">${pd(now).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div><h1>${greet()}${first?', '+esc(first):''}.</h1><p class="sub">${S.employees.length?line:'Add your crew to start scheduling.'}</p></div>
+    ${RO||!S.employees.length?'':`<button class="btn primary big" data-act="shift-new">+ Add shift</button>`}</div>
+  ${!S.employees.length?`<div class="stack">${emptyBox('Add your crew first, then schedule them on jobs. Or load the sample company to see how it works.','<a class="btn primary" href="#/crew">Add employees</a>'+(S.jobs.length?'':'<button class="btn" data-act="sample">Load sample data</button>'))}${monthCal()}</div>`:`
+  <div class="stack">${RO?clockCard():''}
+  <div class="split"><div class="week-nav"><button class="btn sm" data-act="week" data-v="-7" aria-label="Previous week">‹</button><button class="btn sm" data-act="week" data-v="0">This week</button><button class="btn sm" data-act="week" data-v="7" aria-label="Next week">›</button><b style="margin-left:6px">${label}</b></div>
+    <div class="btns"><div class="seg" role="group" aria-label="View">${[['days','Days'],['crew','By crew']].map(([k,l])=>`<button data-act="sched-view" data-v="${k}" aria-pressed="${view===k}">${l}</button>`).join('')}</div>
+    ${RO?'':`${pastSched?`<button class="btn sm dark" data-act="confirm-past">Mark ${pastSched} past shift${pastSched>1?'s':''} worked</button>`:''}<button class="btn sm" data-act="copy-week">Copy last week</button>`}</div></div>
+  ${view==='crew'?grid:weekCards(days,inWeek,RO)}
+  <div class="stat-row">${RO?`<div class="stat"><span>My hours this week</span><b>${hrs(myH)}</b></div><div class="stat"><span>My shifts this week</span><b>${myN}</b></div>`
+    :`<div class="stat"><span>Hours this week</span><b>${hrs(wkH)}</b></div><div class="stat"><span>Labor cost</span><b>${money(wkC)}</b></div><div class="stat"><span>Overtime</span><b>${hrs(otH)}</b></div>`}</div>
+  ${RO||!Object.keys(byJob).length?'':`<div class="card"><div class="card-head"><h2>This week by job</h2></div>
+  <div class="table-wrap"><table><thead><tr><th>Job</th><th class="n">Hours</th><th class="n">Labor cost</th></tr></thead><tbody>${Object.entries(byJob).map(([jid,r])=>{const j=job(jid);return `<tr class="click" data-href="#/job/${jid}"><td><span class="dot" style="background:${jobColor(j)}"></span> ${esc(j?.name||'Job removed')}</td><td class="n">${hrs(r.h)}</td><td class="n">${money(r.c)}</td></tr>`}).join('')}</tbody>
+  <tfoot><tr><td>Total</td><td class="n">${hrs(sum(Object.values(byJob),r=>r.h))}</td><td class="n">${money(sum(Object.values(byJob),r=>r.c))}</td></tr></tfoot></table></div></div>`}${monthCal()}</div>`}`}
 
 function monthCal(){const m=UI.month,first=pd(m),now=today(),sel=UI.day;
   const start=weekStart(m),end=addDays(weekStart(ds(new Date(first.getFullYear(),first.getMonth()+1,0))),6);
@@ -1001,7 +1057,7 @@ const ACCENTS={blue:['#1f63c6','#164a94','Blue'],sky:['#0b84d8','#0864a6','Sky b
 const rgba=(hex,a)=>{const n=parseInt(hex.slice(1),16);return `rgba(${n>>16},${(n>>8)&255},${n&255},${a})`};
 function applyTheme(){const p=S.profile||{},[c,dk]=ACCENTS[p.accent]||ACCENTS.blue,r=document.documentElement;
   r.style.setProperty('--hi',c);r.style.setProperty('--hi-dk',dk);r.style.setProperty('--hi-soft',rgba(c,.10));r.style.setProperty('--glow',rgba(c,.28));
-  r.dataset.mode=p.mode==='dark'?'dark':'light';$('meta[name="theme-color"]').content='#0b1120';
+  r.dataset.mode=p.mode==='dark'?'dark':'light';$('meta[name="theme-color"]').content=p.mode==='dark'?'#0c0e11':'#e9f0fb';
   const co=p.company,logo=p.logo?`<img src="${esc(p.logo)}" alt="">`:'';
   for(const id of ['co-name','co-top']){const el=$('#'+id);el.classList.toggle('co-empty',!co);el.innerHTML=co?`${logo}<span>${esc(co)}</span>`:(id==='co-name'&&!isEmp()?'<span>+ Add your company name</span>':'')}
   $('.top').classList.toggle('has-co',!!co)}
@@ -1045,7 +1101,7 @@ function route(){const h=(location.hash||'#/schedule').slice(2),[page,id]=h.spli
   const navKey=page==='job'?'jobs':P===pageSchedule?'schedule':P===pageMyPay?'pay':P===pageEmpCrew?'crew':P===pageEmpAccount?'profile':page;
   $$('[data-nav],[data-menu]').forEach(a=>a.removeAttribute('aria-current'));$$(`[data-nav="${navKey}"],[data-menu="${navKey}"]`).forEach(a=>a.setAttribute('aria-current','page'));
   const pr=S.profile||{},me=isEmp()?emp(CLOUD.employeeId):null;$('#menu-who').innerHTML=me?`<span class="avatar" style="background:${me.color}">${esc(initials(me.name))}</span><span><b>${esc(me.name)}</b><small>${esc(me.role||'Crew')}</small></span>`:`<span class="avatar">${esc(initials(pr.name||pr.company))}</span><span><b>${esc(pr.name||'Set up your profile')}</b><small>${esc(pr.company||'Name, company, license')}</small></span>`;
-  closeMenu();applyTheme();document.title=(S.profile?.company?S.profile.company+' · ':'')+'Blue Board';
+  closeMenu();applyTheme();{const mv=$('#menu-av');if(mv){mv.textContent=initials(me?me.name:(pr.name||pr.company));mv.style.background=me?me.color:''}}document.title=(S.profile?.company?S.profile.company+' · ':'')+'Blue Board';
   hydratePhotos(v);if(keepScroll)scrollTo(0,y);else scrollTo(0,0)}
 window.addEventListener('hashchange',route);
 function closeMenu(){const m=$('#menu');if(m)m.hidden=true;$('#menu-btn')?.setAttribute('aria-expanded','false')}
@@ -1072,6 +1128,7 @@ const ACT={
   'cal-month':a=>{const v=+a.dataset.v;if(!v){UI.month=today().slice(0,7)+'-01';UI.day=today()}else{const d=pd(UI.month);d.setMonth(d.getMonth()+v);UI.month=ds(d)}route()},
   'cal-day':a=>{UI.day=a.dataset.d;UI.month=UI.day.slice(0,7)+'-01';route()},
   'cal-week':()=>{UI.week=weekStart(UI.day);route();scrollTo({top:0,behavior:'smooth'})},
+  'sched-view':a=>{UI.schedView=a.dataset.v;route()},
   'week':a=>{const v=+a.dataset.v;UI.week=v?addDays(UI.week,v):weekStart(today());route()},
   'confirm-past':()=>{const now=today(),end=addDays(UI.week,6);let n=0;S.shifts.forEach(s=>{if(s.status==='scheduled'&&s.date<now&&s.date>=UI.week&&s.date<=end){s.status='worked';n++}});save();toast(`${n} shift${n>1?'s':''} marked worked`);route()},
   'copy-week':()=>{const prev=addDays(UI.week,-7);const src=S.shifts.filter(s=>s.date>=prev&&s.date<UI.week&&s.status!=='missed');let n=0;
