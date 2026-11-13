@@ -82,7 +82,7 @@ button,a,input,select,textarea{transition:background-color .18s var(--ease),bord
 .nav a.co-name:hover{background:none!important;color:var(--hi)}
 .nav a.co-name span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .co-name img,.co-top img{height:30px;width:auto;max-width:96px;object-fit:contain;border-radius:6px;flex:none}
-.co-name.empty,.co-top.empty{color:var(--muted)!important;font-weight:600!important;font-size:13px!important}
+.co-name.co-empty,.co-top.co-empty{color:var(--muted)!important;font-weight:600!important;font-size:13px!important}
 .co-top{display:none}
 .nav a[aria-current="page"]{color:#fff;background:linear-gradient(180deg,var(--hi),var(--hi-dk));box-shadow:0 6px 18px -4px var(--glow)}
 .nav a:hover:not([aria-current="page"]){color:var(--nav-ink);background:var(--surface2)}
@@ -572,10 +572,15 @@ const emptyBox=(msg,btns='')=>`<div class="empty"><p>${msg}</p>${btns?`<div clas
 
 function pageDashboard(){
   const L=laborCalc();
-  if(!S.jobs.length)return `<div class="page-head"><div><h1>Welcome to Contractor Mainframe</h1><p class="sub">Every job's money in one place: what you bid, what you spent, what you kept.</p></div></div>
-    <div class="card stack"><p>Add your jobs, log purchases and expenses (snap a photo of the receipt), schedule your crew and log their hours. Contractor Mainframe works out the real profit on every job and shows where your estimates are off.</p>
-    <div class="btns"><button class="btn primary" data-act="job-new">Add your first job</button><button class="btn" data-act="sample">Try it with sample data</button></div>
-    <p class="note">Your data is saved on this device only. Export a backup from Settings now and then.</p></div>`;
+  if(!S.jobs.length)return `<div class="page-head"><div><h1>Profit</h1><p class="sub">Built to help you keep more of every dollar you bid. See which jobs make money, which ones don't, and why.</p></div></div>
+    <div class="card stack"><h2>How this page maximizes your profit</h2>
+    <ul class="list">
+      <li><div class="grow"><b>Real profit on every job</b><small>Compares what you charged with everything it actually cost: materials, labor with overtime and burden, subs, equipment and fees.</small></div></li>
+      <li><div class="grow"><b>Where your estimates miss</b><small>Shows which costs keep coming in over or under your bids, and by how much, so you can price the next job right.</small></div></li>
+      <li><div class="grow"><b>Jobs going over budget</b><small>Flags open jobs that are eating into their margin while there's still time to fix it.</small></div></li>
+    </ul>
+    <p class="note">It fills in as you add jobs with their estimates, log expenses and track crew hours.</p>
+    <div class="btns"><button class="btn primary" data-act="job-new">Add a job</button><button class="btn" data-act="sample">See it with sample data</button></div></div>`;
   const now=today(),y=now.slice(0,4),from={all:'',ytd:y+'-01-01','12m':addDays(now,-365)}[UI.dash];
   const done=S.jobs.filter(j=>j.status==='done'&&(!from||(j.end||'')>=from)).map(j=>({j,s:jobStats(j,L)}));
   const active=S.jobs.filter(j=>j.status==='active').map(j=>({j,s:jobStats(j,L)}));
@@ -592,7 +597,7 @@ function pageDashboard(){
   if(done.length&&isFinite(dm)&&isFinite(em)&&Math.abs(dm-em)>0.02)insights.unshift([dm<em?'bad':'good',`<b>Margin ${pct(dm)}</b><span>You bid these jobs at a ${pct(em)} margin and actually made ${pct(dm)}. ${dm<em?`That gap is ${money(estProf-prof)} you planned to keep but didn't.`:'Your jobs are beating their estimates.'}</span>`]);
   if(done.length&&!insights.length)insights.push(['good','<b>On target</b><span>Your finished jobs are landing close to their estimates.</span>']);
   const maxM=Math.max(.3,...done.map(x=>Math.abs(x.s.margin)||0));
-  return `<div class="page-head"><div><h1>Profit</h1><p class="sub">Real revenue and profit on finished jobs, and how your estimates hold up.</p></div>
+  return `<div class="page-head"><div><h1>Profit</h1><p class="sub">Your real profit on every job, and where to tighten your estimates to keep more of each one.</p></div>
     <div class="seg" role="group" aria-label="Period">${[['all','All time'],['ytd','This year'],['12m','Last 12 months']].map(([k,l])=>`<button data-act="dash" data-v="${k}" aria-pressed="${UI.dash===k}">${l}</button>`).join('')}</div></div>
   <div class="stack">
   <div class="kpis">
@@ -792,7 +797,7 @@ function applyTheme(){const p=S.profile||{},[c,dk]=ACCENTS[p.accent]||ACCENTS.gr
   r.style.setProperty('--hi',c);r.style.setProperty('--hi-dk',dk);r.style.setProperty('--hi-soft',rgba(c,.10));r.style.setProperty('--glow',rgba(c,.28));
   r.dataset.mode=p.mode==='dark'?'dark':'light';$('meta[name="theme-color"]').content=p.mode==='dark'?'#0c0e11':'#ffffff';
   const co=p.company,logo=p.logo?`<img src="${esc(p.logo)}" alt="">`:'';
-  for(const id of ['co-name','co-top']){const el=$('#'+id);el.classList.toggle('empty',!co);el.innerHTML=co?`${logo}<span>${esc(co)}</span>`:(id==='co-name'&&!isEmp()?'<span>+ Add your company name</span>':'')}
+  for(const id of ['co-name','co-top']){const el=$('#'+id);el.classList.toggle('co-empty',!co);el.innerHTML=co?`${logo}<span>${esc(co)}</span>`:(id==='co-name'&&!isEmp()?'<span>+ Add your company name</span>':'')}
   $('.top').classList.toggle('has-co',!!co)}
 async function logoFrom(file){const bmp=await createImageBitmap(file);const k=Math.min(1,240/Math.max(bmp.width,bmp.height));const c=document.createElement('canvas');c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);return c.toDataURL('image/png')}
 let deferredInstall=null;
