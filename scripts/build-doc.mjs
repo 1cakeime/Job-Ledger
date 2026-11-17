@@ -50,16 +50,25 @@ async function load(){if(!token){app.innerHTML='<p class="err">This link is miss
   const {data,error}=await sbc.rpc('get_shared_doc',{p_token:token});
   if(error||!data){app.innerHTML='<p class="err">This document wasn\\'t found. It may have been withdrawn. Ask the sender for a new link.</p>';return}
   render(data)}
-function render(r){const d=r.data,est=d.kind==='estimate',t=docTotals(d),st=r.status,co=d.company||{};
+function render(r){const d=r.data,est=d.kind==='estimate',st=r.status,co=d.company||{};
+  const refs=new Set((d.payments||[]).map(p=>p.ref).filter(Boolean));for(const p of r.online||[])if(!refs.has(p.ref))(d.payments=d.payments||[]).push({amount:+p.amount,date:p.date,ref:p.ref});
+  const t=docTotals(d),due=Math.max(0,Math.round(t.balance*100)/100),justPaid=/[?&]paid=1/.test(location.search);
   document.title=DOC_KIND[d.kind]+' '+d.num+(co.company?' · '+co.company:'');
   const decided=st==='approved'||st==='declined';
   app.innerHTML=\`<div class="bar"><h1>\${esc(DOC_KIND[d.kind]+' '+d.num)}</h1><button class="btn" id="print">Print or save PDF</button></div>
     \${est?\`<div class="card" id="respond">\${decided?(st==='approved'?\`<p class="ok">Approved\${r.approved_name?' by '+esc(r.approved_name):''}. Thank you!</p>\`:'<p class="note">You declined this estimate. Contact us if you change your mind.</p>')
       :\`<h2>Approve this estimate</h2><p class="note">Total \${money2(t.total)}. Type your name and tap Approve to accept it. \${esc(co.company||'The contractor')} will be notified.</p>
         <input id="who" placeholder="Your full name" autocomplete="name"><div class="row"><button class="btn primary" id="approve">Approve estimate</button><button class="btn ghost" id="decline">Decline</button></div><p class="note err" id="msg" hidden></p>\`}</div>\`
-      :(d.st==='paid'?'<div class="card"><p class="ok">Paid in full. Thank you!</p></div>':\`<div class="card"><h2>Amount due: \${money2(Math.max(0,t.balance))}</h2><p class="note">\${d.due?'Due '+fmtDateY(d.due)+'. ':''}Contact \${esc(co.company||'us')}\${co.phone?' at '+esc(co.phone):''} with any questions about this invoice.</p></div>\`)}
+      :(due<0.005?'<div class="card"><p class="ok">Paid in full. Thank you!</p></div>':\`<div class="card"><h2>Amount due: \${money2(due)}</h2>
+        \${justPaid?'<p class="ok">Thank you! Your card payment went through. It can take a minute to show on this page.</p>':''}
+        \${r.can_pay&&!justPaid?\`<div class="row" style="margin:6px 0 10px"><button class="btn primary" id="pay">Pay \${money2(due)} by card</button></div><p class="note err" id="pmsg" hidden></p>\`:''}
+        <p class="note">\${d.due?'Due '+fmtDateY(d.due)+'. ':''}Contact \${esc(co.company||'us')}\${co.phone?' at '+esc(co.phone):''} with any questions about this invoice.</p></div>\`)}
     <div class="doc-wrap" style="margin-top:14px">\${docHTML(d,co)}</div>\`;
   $('#print').onclick=()=>window.print();
+  if($('#pay'))$('#pay').onclick=async()=>{const b=$('#pay'),m=$('#pmsg');b.disabled=true;b.textContent='Opening secure checkout…';
+    const {data,error}=await sbc.functions.invoke('payments',{body:{action:'checkout',token}});
+    if(error||!data?.url){let msg='Card payment isn\\'t available right now. Please try again later.';try{msg=(await error.context.json()).error||msg}catch(e){}m.hidden=false;m.textContent=msg;b.disabled=false;b.textContent='Pay '+money2(due)+' by card';return}
+    location.href=data.url};
   const go=async ok=>{const who=$('#who').value.trim(),m=$('#msg');if(ok&&who.length<2){m.hidden=false;m.textContent='Type your name first.';$('#who').focus();return}
     document.querySelectorAll('#respond .btn').forEach(b=>b.disabled=true);
     const {data,error}=await sbc.rpc('respond_shared_doc',{p_token:token,p_name:who,p_approve:ok});

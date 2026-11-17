@@ -1010,6 +1010,7 @@ function docView(d){const inv=d.kind==='invoice',t=docTotals(d),st=docStatus(d),
         ${!inv?'<button type="button" class="btn sm" data-doc="toinv">Turn into invoice</button>':''}
         ${cloud&&d.token?'<button type="button" class="btn sm ghost" data-doc="open">Open customer page</button>':''}
         <button type="button" class="btn sm ghost" data-doc="copy">Copy as text</button></div>
+      ${inv&&docsCardPay()&&st!=='paid'?'<p class="note">Your customer can pay this by card from the link.</p>':''}
       <div id="doc-send"></div>
       ${inv&&(d.payments||[]).length?`<ul class="list">${d.payments.map(p=>`<li><div class="grow"><b>${money2(p.amount)}</b><small>${fmtDateY(p.date)}${p.method?' · '+esc(p.method):''}</small></div><button type="button" class="btn sm ghost danger" data-doc="unpay" data-id="${p.id}">Remove</button></li>`).join('')}</ul>`:''}
       <div class="doc-wrap">${docHTML(d)}</div>`,
@@ -1049,7 +1050,7 @@ function payForm(d){const t=docTotals(d);
 
 // Shared links: a snapshot of the document in shared_docs, readable only by its random token.
 function docSnapshot(d){const j=job(d.jobId),p=S.profile||{};
-  return{...d,token:undefined,payments:(d.payments||[]).map(x=>({amount:x.amount,date:x.date})),jobName:j?.name||'',jobAddress:j?.address||'',
+  return{...d,token:undefined,payments:(d.payments||[]).map(x=>({amount:x.amount,date:x.date,ref:x.ref||undefined})),jobName:j?.name||'',jobAddress:j?.address||'',
     company:{company:p.company||'',name:p.name||'',logo:p.logo||'',address:p.address||'',phone:p.phone||'',email:p.email||'',website:p.website||'',license:p.license||''},accent:p.accent||'blue',st:docStatus(d)}}
 async function shareDoc(d){if(!isOwnerCloud())throw new Error('Sign in first');
   if(!d.token){const r=crypto.getRandomValues(new Uint8Array(18));d.token=[...r].map(x=>x.toString(16).padStart(2,'0')).join('');save()}
@@ -1057,13 +1058,28 @@ async function shareDoc(d){if(!isOwnerCloud())throw new Error('Sign in first');
   const {error}=await CLOUD.sb.from('shared_docs').upsert(row);if(error)throw error}
 async function unshareDoc(d){if(d.token&&isOwnerCloud())await CLOUD.sb.from('shared_docs').delete().eq('token',d.token).then(()=>{},()=>{})}
 // Pick up customer approvals and views made on the shared page.
-async function docsPull(){if(!isOwnerCloud()||!S.docs.some(d=>d.token))return false;
+async function docsPull(){if(!isOwnerCloud())return false;await billingLoad().catch(()=>{});if(!S.docs.some(d=>d.token))return false;
   const {data,error}=await CLOUD.sb.from('shared_docs').select('token,status,approved_name,approved_at,viewed_at').eq('company_id',CLOUD.company);if(error||!data)return false;let ch=false;
   for(const r of data){const d=S.docs.find(x=>x.token===r.token);if(!d)continue;
     if(r.status==='approved'&&d.status!=='approved'&&d.kind==='estimate'){Object.assign(d,{status:'approved',approvedBy:r.approved_name||'',approvedAt:r.approved_at});ch=true;toast(`${r.approved_name||'Your customer'} approved ${d.num}`)}
     else if(r.status==='declined'&&d.status!=='declined'&&d.status!=='approved'){d.status='declined';ch=true;toast(`${d.num} was declined`)}
     else if(r.viewed_at&&d.status==='sent'){d.status='viewed';ch=true}}
+  const pay=await CLOUD.sb.from('doc_payments').select('token,amount,stripe_session,paid_at').eq('company_id',CLOUD.company);
+  if(!pay.error)for(const p of pay.data||[]){const d=S.docs.find(x=>x.token===p.token);if(!d||(d.payments||[]).some(x=>x.ref===p.stripe_session))continue;
+    (d.payments=d.payments||[]).push({id:uid(),amount:+p.amount,date:String(p.paid_at).slice(0,10),method:'Card (online)',ref:p.stripe_session});ch=true;
+    toast(`${d.billTo?.name||'A customer'} paid ${money2(+p.amount)} on ${d.num}`);shareDoc(d).catch(()=>{})}
   if(ch)save();return ch}
+async function billingLoad(){if(!isOwnerCloud())return;const {data}=await CLOUD.sb.from('company_billing').select('stripe_account_id,charges_enabled,details_submitted').eq('company_id',CLOUD.company).maybeSingle();CLOUD.billing=data||null}
+async function billingCall(action){const {data,error}=await CLOUD.sb.functions.invoke('payments',{body:{action}});
+  if(error){let m=error.message;try{m=(await error.context.json()).error||m}catch(e){}throw new Error(m)}return data}
+function payCard(){if(!isOwnerCloud())return '';const b=CLOUD.billing,on=b?.charges_enabled;
+  return `<div class="card stack"><h2>Card payments</h2>
+    <p>${on?'<b>On.</b> Customers see a <b>Pay by card</b> button on every invoice link, and payments show up on the invoice by themselves.'
+      :b?.stripe_account_id?'Your Stripe account is connected but not finished. Stripe needs a few more details before customers can pay.'
+      :'Let customers pay invoices by card from the link you send. Money goes straight to your bank account through Stripe (about 2.9% + 30¢ per payment, charged by Stripe).'}</p>
+    <div class="btns">${on?'':`<button class="btn primary" data-act="pay-connect">${b?.stripe_account_id?'Finish Stripe setup':'Connect Stripe'}</button>`}${b?.stripe_account_id?'<button class="btn" data-act="pay-status">Check status</button>':''}</div>
+    <p class="note" id="pay-msg" hidden></p></div>`}
+const docsCardPay=()=>isOwnerCloud()&&CLOUD.billing?.charges_enabled;
 
 function docsCard(j){const ds=S.docs.filter(d=>d.jobId===j.id).sort((a,b)=>(b.date+b.num).localeCompare(a.date+a.num));
   const billed=sum(ds.filter(d=>d.kind==='invoice'),d=>docTotals(d).total),paid=sum(ds.filter(d=>d.kind==='invoice'),d=>docTotals(d).paid);
@@ -1660,6 +1676,7 @@ function pageSettings(){const st=S.settings;const iOS=/iphone|ipad|ipod/i.test(n
     <div class="btns"><button class="btn dark" data-act="export">Export backup</button><label class="btn" style="flex-direction:row;color:var(--ink)">Restore from backup<input type="file" accept="application/json,.json" id="import-file" hidden></label></div>
     <p class="note">${S.jobs.length} jobs · ${S.expenses.length} expenses · ${S.photos.length} photos · ${S.employees.length} employees · ${S.shifts.length} shifts</p></div>
   ${acctCard()}
+  ${payCard()}
   </div><div class="stack">
   ${accountCard()}
   <div class="card stack"><h2>Install the app</h2>
@@ -1705,6 +1722,9 @@ const ACT={
 'cust-new':()=>custForm(),'cust-edit':a=>custForm(cust(a.dataset.id)),'cust-job':a=>{const c=cust(a.dataset.id);jobForm(null,{client:c.name,phone:c.phone,address:c.address})},
 'acct-range':a=>{UI.acct=a.dataset.v;route()},'acct-csv':async a=>{const k=a.dataset.v,[,,tag]=acctRange(),name=`blue-board-${k}-${tag}.csv`;await saveFile(name,toCSV(acctCSV(k)),'text/csv')},
 'task-edit':a=>{const j=curJob(),t=j?.tasks?.find(x=>x.id===a.dataset.id);if(t)taskForm(j,t)},
+'pay-connect':async a=>{const m=$('#pay-msg');a.disabled=true;m.hidden=false;m.textContent='Opening Stripe…';
+  try{const {url}=await billingCall('connect');m.textContent='Finish the steps on Stripe\'s page, then come back here and tap Check status.';window.open(url,'_blank','noopener')}catch(e){m.textContent=e.message}a.disabled=false},
+'pay-status':async a=>{const m=$('#pay-msg');a.disabled=true;try{const r=await billingCall('status');await billingLoad();route();toast(r.charges_enabled?'Card payments are on':'Stripe still needs more details')}catch(e){m.hidden=false;m.textContent=e.message;a.disabled=false}},
 'doc-new':a=>{const j=curJob();docForm(newDoc(a.dataset.kind,j),true)},'doc-open':a=>{const d=S.docs.find(x=>x.id===a.dataset.id);if(d)docView(d)},
 'co-new':()=>coForm(curJob()),'co-edit':a=>{const j=curJob();coForm(j,j.changeOrders.find(c=>c.id===a.dataset.id))},
   'emp-new':()=>empForm(),'emp-edit':a=>empForm(emp(a.dataset.id)),

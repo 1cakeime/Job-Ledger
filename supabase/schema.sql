@@ -213,6 +213,33 @@ end $$;
 revoke all on function public.delete_my_account(boolean) from public, anon;
 grant execute on function public.delete_my_account(boolean) to authenticated;
 
+-- ============ Card payments (Stripe Connect) ============
+-- Written only by the "payments" Edge Function (service role). Owners can read their own rows.
+create table if not exists public.company_billing (
+  company_id uuid primary key references public.companies(id) on delete cascade,
+  stripe_account_id text unique,
+  charges_enabled boolean not null default false,
+  details_submitted boolean not null default false,
+  updated_at timestamptz not null default now()
+);
+alter table public.company_billing enable row level security;
+drop policy if exists billing_owner_read on public.company_billing;
+create policy billing_owner_read on public.company_billing for select using (public.is_owner(company_id));
+
+create table if not exists public.doc_payments (
+  id uuid primary key default gen_random_uuid(),
+  token text not null,
+  company_id uuid not null references public.companies(id) on delete cascade,
+  amount numeric not null,
+  method text not null default 'Card (online)',
+  stripe_session text unique,
+  paid_at timestamptz not null default now()
+);
+create index if not exists doc_payments_company on public.doc_payments(company_id);
+alter table public.doc_payments enable row level security;
+drop policy if exists doc_payments_owner_read on public.doc_payments;
+create policy doc_payments_owner_read on public.doc_payments for select using (public.is_owner(company_id));
+
 -- ============ Estimates & invoices: customer links ============
 -- The owner shares a snapshot of an estimate or invoice. Customers open it with a long random token
 -- (no account) through the two functions below; nobody can list or browse this table.
@@ -239,7 +266,9 @@ declare r shared_docs;
 begin
   update shared_docs set viewed_at = coalesce(viewed_at, now()) where token = p_token returning * into r;
   if r.token is null then return null; end if;
-  return jsonb_build_object('data', r.data, 'status', r.status, 'approved_name', r.approved_name, 'approved_at', r.approved_at);
+  return jsonb_build_object('data', r.data, 'status', r.status, 'approved_name', r.approved_name, 'approved_at', r.approved_at,
+    'can_pay', r.kind = 'invoice' and exists (select 1 from company_billing b where b.company_id = r.company_id and b.charges_enabled),
+    'online', coalesce((select jsonb_agg(jsonb_build_object('amount', p.amount, 'ref', p.stripe_session, 'date', p.paid_at::date)) from doc_payments p where p.token = r.token), '[]'::jsonb));
 end $$;
 
 create or replace function public.respond_shared_doc(p_token text, p_name text, p_approve boolean) returns jsonb
