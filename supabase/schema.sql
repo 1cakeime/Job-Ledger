@@ -337,3 +337,33 @@ revoke all on function public.register_device(text) from public, anon;
 revoke all on function public.unregister_device(text) from public, anon;
 grant execute on function public.register_device(text) to authenticated;
 grant execute on function public.unregister_device(text) to authenticated;
+
+-- ============ Punch lists: crew tick off tasks ============
+-- Tasks themselves live on the job in the owner's data; this table only records crew check-offs.
+create table if not exists public.task_checks (
+  company_id uuid not null references public.companies(id) on delete cascade,
+  task_id text not null,
+  job_id text not null,
+  done boolean not null,
+  employee_id text,
+  user_id uuid references auth.users(id) on delete set null,
+  done_at timestamptz not null default now(),
+  primary key (company_id, task_id)
+);
+alter table public.task_checks enable row level security;
+drop policy if exists task_checks_read on public.task_checks;
+create policy task_checks_read on public.task_checks for select using (public.is_member(company_id));
+create or replace function public.set_task(p_company uuid, p_job text, p_task text, p_done boolean) returns public.task_checks
+language plpgsql security definer set search_path = public as $$
+declare emp text; r task_checks;
+begin
+  emp := public.my_employee_id(p_company);
+  if emp is null then raise exception 'You are not on this company''s crew'; end if;
+  insert into task_checks(company_id, task_id, job_id, done, employee_id, user_id, done_at)
+    values (p_company, left(p_task, 64), left(p_job, 64), p_done, emp, auth.uid(), now())
+    on conflict (company_id, task_id) do update set done = excluded.done, employee_id = excluded.employee_id, user_id = excluded.user_id, done_at = now()
+    returning * into r;
+  return r;
+end $$;
+revoke all on function public.set_task(uuid, text, text, boolean) from public, anon;
+grant execute on function public.set_task(uuid, text, text, boolean) to authenticated;

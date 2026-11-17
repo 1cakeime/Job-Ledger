@@ -642,6 +642,7 @@ svg.seal .seal-light{display:none}
 .doc-notes{white-space:pre-line;color:#3b4157;margin:18px 0 0;padding-top:12px;border-top:1px solid #eceef5;font-size:13px}.doc-ok{margin:12px 0 0;color:#127a3d;font-weight:700}
 input[type=date],input[type=time]{min-width:0;max-width:100%;width:100%;display:block;-webkit-appearance:none;appearance:none}
 .wk-off{font-size:12px;font-weight:700;color:var(--warn);background:var(--warn-bg);border-radius:10px;padding:4px 10px;width:max-content;max-width:100%}
+.task-add{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;margin-top:10px}.task-add select{width:auto;max-width:110px}
 </style>
 </head>
 <body>
@@ -712,7 +713,7 @@ const DB={db:null,
   put(store,k,v){return this.tx(store,'readwrite',s=>s.put(v,k))},
   del(store,k){return this.tx(store,'readwrite',s=>s.delete(k))},
   clear(store){return this.tx(store,'readwrite',s=>s.clear())}};
-const blank=()=>({v:1,profile:{},settings:{company:'',burden:15,ot:true,otThreshold:40},jobs:[],expenses:[],employees:[],shifts:[],photos:[],docs:[],reports:[],timeOff:[]});
+const blank=()=>({v:1,profile:{},settings:{company:'',burden:15,ot:true,otThreshold:40},jobs:[],expenses:[],employees:[],shifts:[],photos:[],docs:[],reports:[],timeOff:[],customers:[]});
 let S=blank(), saveT=null, memOnly=false;
 function save(){if(isEmp())return;if(isOwnerCloud())cloudQueue();clearTimeout(saveT);saveT=setTimeout(()=>{if(!memOnly)DB.put('kv','state',S).catch(()=>toast('Could not save on this device'))},250)}
 const memPhotos=new Map();
@@ -824,11 +825,11 @@ const moneyInp=(name,val,extra='')=>`<input name="${name}" type="text" inputmode
 function armTwoStep(btn,label='Tap again to confirm'){if(btn.classList.contains('armed'))return true;btn.classList.add('armed');const t=btn.textContent;btn.textContent=label;setTimeout(()=>{btn.classList.remove('armed');btn.textContent=t},4000);return false}
 
 /* ---------- forms ---------- */
-function jobForm(j){const isNew=!j;j=j||{status:'active',est:{},start:today()};const e=j.est||{};
+function jobForm(j,pre){const isNew=!j;j=j||{status:'active',est:{},start:today(),...(pre||{})};const e=j.est||{};
   openForm({title:isNew?'New job':'Edit job',submit:isNew?'Create job':'Save',
     body:`<div class="fields">
       ${field('Job name',inp('name',j.name,'text','required placeholder="e.g. Smith kitchen remodel"'),'full')}
-      ${field('Client',inp('client',j.client))}${field('Phone',inp('phone',j.phone,'tel'))}
+      ${field('Client',inp('client',j.client,'text','list="cust-list" autocomplete="off"')+`<datalist id="cust-list">${S.customers.map(c=>`<option value="${esc(c.name)}">`).join('')}</datalist>`)}${field('Phone',inp('phone',j.phone,'tel'))}
       ${field('Address',inp('address',j.address),'full')}
       ${field('Status',`<select name="status">${Object.entries(STATUS).map(([k,v])=>opt(k,v,j.status)).join('')}</select>`)}
       ${field('Contract price (revenue)',moneyInp('price',j.price))}
@@ -838,7 +839,7 @@ function jobForm(j){const isNew=!j;j=j||{status:'active',est:{},start:today()};c
       <p class="note" style="margin-top:8px">Fill these in from your bid. Blue Board compares them to what you actually spend, so you can see where your estimates run high or low.</p></fieldset>
       ${planFields(j)}
       ${field('Notes',`<textarea name="notes">${esc(j.notes)}</textarea>`)}`,
-    onOpen:planWire,
+    onOpen:f=>{planWire(f);f.elements.client.addEventListener('change',()=>{const c=S.customers.find(x=>normName(x.name)===normName(f.elements.client.value));if(!c)return;if(!f.elements.phone.value)f.elements.phone.value=c.phone||'';if(!f.elements.address.value)f.elements.address.value=c.address||''})},
     onDelete:isNew?null:async()=>{for(const p of S.photos.filter(p=>p.jobId===j.id))await photoDel(p.id);
       S.photos=S.photos.filter(p=>p.jobId!==j.id);S.expenses=S.expenses.filter(x=>x.jobId!==j.id);S.shifts=S.shifts.filter(x=>x.jobId!==j.id);S.jobs=S.jobs.filter(x=>x.id!==j.id);save();toast('Job deleted');location.hash='#/jobs'},
     deleteLabel:'Delete job',
@@ -849,7 +850,7 @@ function jobForm(j){const isNew=!j;j=j||{status:'active',est:{},start:today()};c
       const o=isNew?{id:jid,createdAt:Date.now(),changeOrders:[]}:j;
       Object.assign(o,{name:fd.get('name').trim(),client:fd.get('client').trim(),phone:fd.get('phone').trim(),address:fd.get('address').trim(),status:fd.get('status'),price:num(fd.get('price')),start:fd.get('start'),end:fd.get('end'),notes:fd.get('notes'),
         est:Object.fromEntries(EST.map(([k])=>[k,num(fd.get('est_'+k))]))});
-      o.plan=plan;if(isNew)S.jobs.push(o);const r=syncPlan(o,{double:!!fd.get('dbl')});save();
+      linkJobCustomer(o);o.plan=plan;if(isNew)S.jobs.push(o);const r=syncPlan(o,{double:!!fd.get('dbl')});save();
       const msg=[isNew?'Job created':'Saved'];if(r.added)msg.push(`${r.added} shift${r.added>1?'s':''} scheduled`);if(r.removed)msg.push(`${r.removed} removed`);if(r.skipped)msg.push(`${r.skipped} skipped (already booked)`);if(r.off)msg.push(`${r.off} skipped (time off)`);
       if(plan.crew.length&&o.status==='bid')msg.push('crew will be scheduled when the job is Active');toast(msg.join(' · '));if(isNew)location.hash='#/job/'+o.id;offerCrewTexts(r.list)}})}
 const WD=[['1','Mon'],['2','Tue'],['3','Wed'],['4','Thu'],['5','Fri'],['6','Sat'],['0','Sun']];
@@ -897,13 +898,37 @@ function expenseForm(x,jobId){const isNew=!x;x=x||{date:today(),cat:'materials',
       ${field('Vendor / store',inp('vendor',x.vendor,'text','placeholder="Where you bought it"'))}
       ${field('What was it for',`<textarea name="desc" placeholder="e.g. 40 sheets 1/2&quot; drywall, screws, mud">${esc(x.desc)}</textarea>`,'full')}
       ${field('Paid with',`<select name="paid">${['Company card','Cash','Check','Account / invoice','Employee (reimburse)'].map(v=>opt(v,v,x.paid||'Company card')).join('')}</select>`)}
-      <label>Receipt photo<div style="display:flex;gap:8px;align-items:center">${rec}<input name="receipt" type="file" accept="image/*" capture="environment"></div></label></div>`,
-    onOpen:f=>hydratePhotos(f),
+      <label>Receipt photo<div style="display:flex;gap:8px;align-items:center">${rec}<input name="receipt" type="file" accept="image/*" capture="environment"></div></label>
+      <p class="note full" id="scan-note"${RS()?'':' hidden'}>${RS()?'Snap the receipt first and Blue Board fills in the amount, date and store.':''}</p></div>`,
+    onOpen:f=>{hydratePhotos(f);f.receipt.addEventListener('change',()=>scanReceipt(f.receipt.files[0],f))},
     onDelete:isNew?null:async()=>{if(x.photoId){await photoDel(x.photoId);S.photos=S.photos.filter(p=>p.id!==x.photoId)}S.expenses=S.expenses.filter(e=>e.id!==x.id);save();toast('Expense deleted')},
     onSubmit:async fd=>{const amt=num(fd.get('amount'));if(!amt){toast('Enter the amount');return false}
       const o=isNew?{id:uid()}:x;Object.assign(o,{jobId:fd.get('jobId'),amount:amt,date:fd.get('date')||today(),cat:fd.get('cat'),vendor:fd.get('vendor').trim(),desc:fd.get('desc').trim(),paid:fd.get('paid')});
       const file=fd.get('receipt');if(file&&file.size){if(o.photoId){await photoDel(o.photoId);S.photos=S.photos.filter(p=>p.id!==o.photoId)}o.photoId=await addPhoto(file,o.jobId,'receipt')}
       if(isNew)S.expenses.push(o);save();toast(isNew?'Expense added':'Saved')}})}
+
+/* ---------- receipt scanning (iPhone app: Apple's on-device text recognition) ---------- */
+const RS=()=>window.Capacitor?.isNativePlatform?.()?window.Capacitor.Plugins?.ReceiptScan:null;
+const blobB64=b=>new Promise((r,j)=>{const fr=new FileReader();fr.onload=()=>r(String(fr.result).split(',')[1]);fr.onerror=j;fr.readAsDataURL(b)});
+function parseReceipt(lines){const L=lines.map(x=>x.trim()).filter(Boolean),M=/\$?\s*(\d{1,3}(?:,\d{3})*|\d+)\.(\d{2})\b/g;
+  const amts=l=>[...l.matchAll(M)].map(m=>+(m[1].replace(/,/g,'')+'.'+m[2]));
+  let total=0;for(let i=0;i<L.length;i++){const l=L[i];if(!/(total|amount due|balance due|amount paid|grand)/i.test(l)||/(sub\s*-?total|savings|you saved|tax|discount|items?\b|qty)/i.test(l))continue;
+    const a=amts(l).concat(amts(L[i+1]||''));if(a.length)total=Math.max(total,a[a.length-1]===undefined?0:Math.max(...a))}
+  if(!total){const all=L.flatMap(amts).filter(n=>n<100000);if(all.length)total=Math.max(...all)}
+  let date='';const mo={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12},fix=(y,m,d)=>{y=+y;if(y<100)y+=2000;m=+m;d=+d;if(m<1||m>12||d<1||d>31||y<2000||y>2100)return'';return `${y}-${pad(m)}-${pad(d)}`};
+  for(const l of L){let m=l.match(/\b(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})\b/);if(m&&(date=fix(m[3],m[1],m[2])))break;
+    m=l.match(/\b(20\d{2})-(\d{2})-(\d{2})\b/);if(m&&(date=fix(m[1],m[2],m[3])))break;
+    m=l.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2}),?\s+(\d{4})\b/i);if(m&&(date=fix(m[3],mo[m[1].toLowerCase()],m[2])))break}
+  if(date>today())date='';
+  const vendor=(L.find(l=>/[a-z]{3}/i.test(l)&&!/(receipt|welcome|thank|store\s*#|^\d|www\.|\.com|tel|phone|invoice|order)/i.test(l)&&(l.replace(/[^a-z]/gi,'').length/l.length)>.6)||'').slice(0,60);
+  return{total,date,vendor}}
+async function scanReceipt(file,f){const P=RS();if(!P||!file)return;const note=$('#scan-note',f);note.hidden=false;note.textContent='Reading the receipt…';
+  try{const b=await downscale(file,2000),{lines}=await P.recognize({image:await blobB64(b)}),r=parseReceipt(lines||[]),got=[];
+    if(r.total&&!num(f.amount.value)){f.amount.value=r.total.toFixed(2);got.push('amount')}
+    if(r.date&&r.date!==f.date.value){f.date.value=r.date;got.push('date')}
+    if(r.vendor&&!f.vendor.value.trim()){f.vendor.value=r.vendor;got.push('store')}
+    note.textContent=got.length?`Filled in the ${got.join(', ')} from the receipt. Check them before saving.`:'Couldn\'t read the total from this photo. Enter it by hand.'}
+  catch(e){note.textContent='Couldn\'t read this receipt. Enter the details by hand.'}}
 
 function coForm(j,c){const isNew=!c;c=c||{date:today()};
   openForm({title:isNew?'Add change order':'Edit change order',
@@ -930,7 +955,7 @@ function docLinesFor(j,kind){const items=[{desc:j.name+(kind==='estimate'?'':' (
     const before=sum(S.docs.filter(d=>d.kind==='invoice'&&d.jobId===j.id),d=>docTotals(d).sub);if(before)items.push({desc:'Less previously invoiced',qty:1,rate:-before})}
   return items}
 function newDoc(kind,j,from){const d={id:uid(),kind,num:nextDocNum(kind),jobId:j?.id||'',date:today(),status:'draft',taxRate:from?.taxRate??(num(S.settings.taxRate)||0),
-    billTo:{name:j?.client||'',address:j?.address||'',phone:j?.phone||'',email:''},items:from?from.items.map(i=>({...i})):docLinesFor(j||{name:'Work'},kind),payments:[],
+    billTo:{name:j?.client||'',address:j?.address||'',phone:j?.phone||'',email:cust(j?.customerId)?.email||''},items:from?from.items.map(i=>({...i})):docLinesFor(j||{name:'Work'},kind),payments:[],
     notes:from?.notes||(kind==='estimate'?(S.settings.estTerms||'This estimate is valid for 30 days.'):(S.settings.invTerms||'Thank you for your business.'))};
   if(kind==='invoice')d.due=addDays(d.date,num(S.settings.dueDays)||14);else d.valid=addDays(d.date,30);if(from)d.fromId=from.id;return d}
 
@@ -1116,7 +1141,7 @@ async function offDecide(id,ok){const r=(CLOUD.timeReqs||[]).find(x=>x.id===id);
 /* ---------- crew side: reports and time-off requests ---------- */
 function crewExtras(){const mine=CLOUD.myReports||[],reqs=CLOUD.myTimeOff||[],t=today();
   const st={pending:['active','Waiting'],approved:['done','Approved'],denied:['bad','Denied']};
-  return `<div class="grid2"><div class="card"><div class="card-head"><h2>Daily report</h2><button class="btn sm primary" data-act="report-new">+ New report</button></div>
+  return `${myTasksCard()}<div class="grid2"><div class="card"><div class="card-head"><h2>Daily report</h2><button class="btn sm primary" data-act="report-new">+ New report</button></div>
       ${mine.length?`<ul class="list">${mine.slice(0,4).map(r=>`<li><div class="grow"><b>${esc(job(r.job_id)?.name||'Job')}</b><small>${fmtDate(r.date)}${r.photos?.length?` · ${r.photos.length} photo${r.photos.length>1?'s':''}`:''}${r.notes?' · '+esc(r.notes.slice(0,80)):''}</small></div></li>`).join('')}</ul>`
         :'<p class="note">Tell your boss what got done today and what you need. Add photos of the work.</p>'}</div>
     <div class="card"><div class="card-head"><h2>Time off</h2><button class="btn sm" data-act="off-req">Request time off</button></div>
@@ -1130,14 +1155,15 @@ function offRequestForm(){openForm({title:'Request time off',submit:'Send reques
 async function empExtrasLoad(){const sb=CLOUD.sb;if(!sb||!isEmp())return;
   try{const [a,b]=await Promise.all([sb.from('daily_reports').select('id,job_id,date,notes,photos').eq('user_id',CLOUD.user.id).order('date',{ascending:false}).limit(20),
     sb.from('time_off').select('*').eq('user_id',CLOUD.user.id).order('start_date',{ascending:false}).limit(30)]);
-    if(!a.error)CLOUD.myReports=a.data;if(!b.error)CLOUD.myTimeOff=b.data}catch(e){}}
+    if(!a.error)CLOUD.myReports=a.data;if(!b.error)CLOUD.myTimeOff=b.data;await taskChecksLoad()}catch(e){}}
 async function ownerExtrasLoad(){const sb=CLOUD.sb;if(!sb||!isOwnerCloud())return false;let ch=false;
   try{const since=addDays(today(),-120);const [a,b]=await Promise.all([sb.from('daily_reports').select('*').eq('company_id',CLOUD.company).gte('date',since).order('date',{ascending:false}).limit(300),
     sb.from('time_off').select('*').eq('company_id',CLOUD.company).order('created_at',{ascending:false}).limit(200)]);
     if(!a.error){const fresh=a.data.filter(r=>CLOUD.crewReports&&!CLOUD.crewReports.some(x=>x.id===r.id));if(JSON.stringify(a.data)!==JSON.stringify(CLOUD.crewReports||[]))ch=true;CLOUD.crewReports=a.data;
       if(fresh.length)toast(fresh.length===1?`New daily report from ${emp(fresh[0].employee_id)?.name||'your crew'}`:`${fresh.length} new daily reports`)}
     if(!b.error){const newReq=b.data.filter(r=>r.status==='pending'&&CLOUD.timeReqs&&!CLOUD.timeReqs.some(x=>x.id===r.id));if(JSON.stringify(b.data)!==JSON.stringify(CLOUD.timeReqs||[]))ch=true;CLOUD.timeReqs=b.data;
-      if(newReq.length)toast(`${emp(newReq[0].employee_id)?.name||'Someone'} asked for time off`)}}catch(e){}
+      if(newReq.length)toast(`${emp(newReq[0].employee_id)?.name||'Someone'} asked for time off`)}
+    if(await taskChecksLoad())ch=true}catch(e){}
   return ch}
 
 /* ---------- phone notifications (iPhone app only) ---------- */
@@ -1149,6 +1175,111 @@ async function pushSetup(){const P=PN();if(!P||!CLOUD.user||pushSetup.on)return;
     let p=await P.checkPermissions();if(p.receive==='prompt'||p.receive==='prompt-with-rationale')p=await P.requestPermissions();if(p.receive==='granted')await P.register()}catch(e){}}
 async function pushOff(){if(pushSetup.token&&CLOUD.sb)try{await CLOUD.sb.rpc('unregister_device',{p_token:pushSetup.token})}catch(e){}}
 function notify(o){if(!CLOUD.sb||!CLOUD.company||!CLOUD.user)return;CLOUD.sb.functions.invoke('notify',{body:{company_id:CLOUD.company,...o}}).catch(()=>{})}
+
+/* ---------- customers ---------- */
+// Customers are kept in S.customers and linked from jobs (j.customerId). Jobs made before this existed
+// get a customer created from their client name the first time customers are needed.
+const normName=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
+const cust=id=>S.customers.find(c=>c.id===id);
+function custSync(){let ch=false;
+  for(const j of S.jobs){if(j.customerId&&cust(j.customerId))continue;const n=normName(j.client);if(!n)continue;
+    let c=S.customers.find(x=>normName(x.name)===n);
+    if(!c){c={id:uid(),name:j.client.trim(),phone:j.phone||'',email:'',address:j.address||'',notes:''};S.customers.push(c)}
+    j.customerId=c.id;ch=true}
+  if(ch&&!isEmp())save();return ch}
+function custStats(c){const jobs=S.jobs.filter(j=>j.customerId===c.id),ids=new Set(jobs.map(j=>j.id)),docs=S.docs.filter(d=>ids.has(d.jobId)||d.customerId===c.id);
+  const inv=docs.filter(d=>d.kind==='invoice'&&d.status!=='draft');
+  return{jobs,docs,billed:sum(inv,d=>docTotals(d).total),paid:sum(inv,d=>docTotals(d).paid),owed:sum(inv,d=>Math.max(0,docTotals(d).balance)),
+    last:jobs.map(j=>j.start||'').sort().pop()||''}}
+function pageCustomers(){custSync();const q=normName(UI.custQ);
+  const list=S.customers.map(c=>({c,s:custStats(c)})).filter(({c})=>!q||[c.name,c.phone,c.email,c.address].some(v=>normName(v).includes(q)))
+    .sort((a,b)=>(b.s.owed>0)-(a.s.owed>0)||(b.s.last||'').localeCompare(a.s.last||'')||a.c.name.localeCompare(b.c.name));
+  const owed=sum(S.customers,c=>custStats(c).owed);
+  return `<div class="page-head"><div><h1>Customers</h1><p class="sub">${S.customers.length} customer${S.customers.length===1?'':'s'}${owed>0.005?` · ${money2(owed)} owed to you`:''}</p></div><button class="btn primary" data-act="cust-new">+ Add customer</button></div>
+  <div class="card stack"><input id="cust-q" placeholder="Search name, phone, email, address" value="${esc(UI.custQ||'')}" autocomplete="off">
+    ${list.length?`<ul class="list">${list.map(({c,s})=>`<li class="click" data-href="#/customer/${c.id}"><span class="avatar sm">${esc(initials(c.name))}</span><div class="grow"><b>${esc(c.name)}</b><small>${[c.phone,`${s.jobs.length} job${s.jobs.length===1?'':'s'}`,s.billed?`billed ${money(s.billed)}`:''].filter(Boolean).map(esc).join(' · ')}</small></div>${s.owed>0.005?`<b class="num neg">${money2(s.owed)} owed</b>`:''}</li>`).join('')}</ul>`
+      :emptyBox(S.customers.length?'No customers match that search.':'Customers are added automatically from your jobs, or add one here.')}</div>`}
+function pageCustomer(id){custSync();const c=cust(id);if(!c)return emptyBox('That customer was not found.','<a class="btn" href="#/customers">Back to customers</a>');
+  const s=custStats(c),L=laborCalc();const sms=smsLink(c.phone,'');
+  return `<div class="page-head"><div><a href="#/customers" class="note" style="text-decoration:none">← Customers</a><h1 style="margin-top:4px">${esc(c.name)}</h1>
+    <p class="sub">${[c.phone&&`<a href="tel:${esc(c.phone)}">${esc(c.phone)}</a>`,c.email&&`<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>`,c.address&&esc(c.address)].filter(Boolean).join(' · ')||'No contact details yet'}</p></div>
+    <div class="btns">${sms?`<a class="btn" href="sms:${esc(c.phone.replace(/[^\d+]/g,''))}">Text</a>`:''}<button class="btn" data-act="cust-edit" data-id="${c.id}">Edit</button><button class="btn primary" data-act="cust-job" data-id="${c.id}">+ New job</button></div></div>
+  <div class="stack"><div class="kpis"><div class="kpi lead"><span>Billed</span><b>${money(s.billed)}</b><small>${s.docs.filter(d=>d.kind==='invoice').length} invoices</small></div>
+    <div class="kpi"><span>Paid</span><b>${money(s.paid)}</b><small>&nbsp;</small></div><div class="kpi"><span>Owed</span><b class="${s.owed>0.005?'neg':''}">${money2(s.owed)}</b><small>&nbsp;</small></div>
+    <div class="kpi"><span>Jobs</span><b>${s.jobs.length}</b><small>${s.jobs.filter(j=>j.status==='active').length} active</small></div></div>
+  <div class="grid2"><div class="card"><div class="card-head"><h2>Jobs</h2></div>
+      ${s.jobs.length?`<ul class="list">${s.jobs.sort((a,b)=>(b.start||'').localeCompare(a.start||'')).map(j=>{const st=jobStats(j,L);return `<li class="click" data-href="#/job/${j.id}"><div class="grow"><b>${esc(j.name)}</b><small>${j.start?fmtDateY(j.start):''}${j.address?' · '+esc(j.address):''}</small></div>${statusBadge(j.status)}<b class="num">${money(st.rev)}</b></li>`}).join('')}</ul>`:'<p class="note">No jobs yet.</p>'}</div>
+    <div class="stack"><div class="card"><div class="card-head"><h2>Estimates &amp; invoices</h2></div>
+      ${s.docs.length?`<ul class="list">${s.docs.sort((a,b)=>(b.date+b.num).localeCompare(a.date+a.num)).map(d=>`<li class="click" data-act="doc-open" data-id="${d.id}"><div class="grow"><b>${docTitle(d)}</b><small>${fmtDate(d.date)} · ${esc(job(d.jobId)?.name||'')}</small></div>${docBadge(d)}<b class="num">${money2(docTotals(d).total)}</b></li>`).join('')}</ul>`:'<p class="note">None yet. Open one of their jobs to make an estimate or invoice.</p>'}</div>
+    ${c.notes?`<div class="card"><h2>Notes</h2><p style="white-space:pre-line;margin:6px 0 0">${esc(c.notes)}</p></div>`:''}</div></div></div>`}
+function custForm(c){const isNew=!c;c=c||{};
+  openForm({title:isNew?'Add customer':'Edit customer',
+    body:`<div class="fields">${field('Name',inp('name',c.name,'text','required autocomplete="off"'),'full')}${field('Phone',inp('phone',c.phone,'tel'))}${field('Email',inp('email',c.email,'email'))}
+      ${field('Address',inp('address',c.address),'full')}${field('Notes',`<textarea name="notes" rows="3" placeholder="Gate code, how they like to be contacted…">${esc(c.notes||'')}</textarea>`,'full')}</div>`,
+    onDelete:isNew?null:()=>{S.jobs.forEach(j=>{if(j.customerId===c.id)delete j.customerId});S.customers=S.customers.filter(x=>x.id!==c.id);save();location.hash='#/customers';toast('Customer removed. Their jobs are kept.')},deleteLabel:'Remove customer',
+    onSubmit:fd=>{const name=fd.get('name').trim();if(!name){toast('Enter a name');return false}
+      const o=isNew?{id:uid()}:c,old=c.name;Object.assign(o,{name,phone:fd.get('phone').trim(),email:fd.get('email').trim(),address:fd.get('address').trim(),notes:fd.get('notes').trim()});
+      if(isNew)S.customers.push(o);else for(const j of S.jobs)if(j.customerId===o.id&&(j.client===old||!j.client))j.client=o.name;
+      save();toast(isNew?'Customer added':'Saved');if(isNew)location.hash='#/customer/'+o.id}})}
+// Link a job to a customer by its client name, creating the customer if new. Called when a job is saved.
+function linkJobCustomer(j){const n=normName(j.client);if(!n){delete j.customerId;return}
+  let c=S.customers.find(x=>normName(x.name)===n);if(!c){c={id:uid(),name:j.client.trim(),phone:j.phone||'',email:'',address:j.address||'',notes:''};S.customers.push(c)}
+  else{if(!c.phone&&j.phone)c.phone=j.phone;if(!c.address&&j.address)c.address=j.address}j.customerId=c.id}
+
+/* ---------- export for the accountant ---------- */
+const csvCell=v=>{if(typeof v==='number')return String(Math.round(v*100)/100);v=String(v??'');if(/^[=+\-@\t\r]/.test(v))v="'"+v;return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+const toCSV=rows=>rows.map(r=>r.map(csvCell).join(',')).join('\r\n')+'\r\n';
+function acctRange(){const y=new Date().getFullYear(),k=UI.acct||'ytd';
+  return k==='last'?[`${y-1}-01-01`,`${y-1}-12-31`,`${y-1}`]:k==='12m'?[addDays(today(),-365),today(),'last-12-months']:k==='all'?['0000-01-01','9999-12-31','all-time']:[`${y}-01-01`,today(),`${y}`]}
+function acctCSV(kind){const [from,to]=acctRange(),inR=d=>d&&d>=from&&d<=to,cn=j=>cust(j?.customerId)?.name||j?.client||'';
+  if(kind==='invoices')return [['Invoice','Date','Due','Customer','Job','Subtotal','Sales tax','Total','Paid','Balance','Status'],
+    ...S.docs.filter(d=>d.kind==='invoice'&&d.status!=='draft'&&inR(d.date)).sort((a,b)=>a.date.localeCompare(b.date)).map(d=>{const t=docTotals(d),j=job(d.jobId);return [d.num,d.date,d.due||'',d.billTo?.name||cn(j),j?.name||'',t.sub,t.tax,t.total,t.paid,Math.max(0,t.balance),DOC_ST[docStatus(d)]?.[1]||'']})];
+  if(kind==='payments')return [['Date','Invoice','Customer','Job','Method','Amount'],
+    ...S.docs.filter(d=>d.kind==='invoice').flatMap(d=>(d.payments||[]).filter(p=>inR(p.date)).map(p=>{const j=job(d.jobId);return [p.date,d.num,d.billTo?.name||cn(j),j?.name||'',p.method||'',+p.amount||0]})).sort((a,b)=>a[0].localeCompare(b[0]))];
+  if(kind==='expenses')return [['Date','Vendor','Category','Job','Description','Paid with','Amount','Receipt photo'],
+    ...S.expenses.filter(x=>inR(x.date)).sort((a,b)=>a.date.localeCompare(b.date)).map(x=>[x.date,x.vendor||'',CAT_NAME[x.cat]||'Other',job(x.jobId)?.name||'',x.desc||'',x.paid||'',+x.amount||0,x.photoId?'Yes':'No'])];
+  const L=laborCalc();return [['Job','Customer','Status','Start','Finish','Revenue','Materials','Labor','Subcontractors','Equipment','Other','Total cost','Profit','Margin %'],
+    ...S.jobs.filter(j=>inR(j.end||j.start)||(j.status!=='done'&&k0(j))).map(j=>{const st=jobStats(j,L);return [j.name,cn(j),STATUS[j.status]||j.status,j.start||'',j.end||'',st.rev,st.cost.materials,st.cost.labor,st.cost.subs,st.cost.equipment,st.cost.other,st.total,st.profit,isFinite(st.margin)?Math.round(st.margin*1000)/10:'']})];
+  function k0(j){return (j.start||'')<=to}}
+function acctCard(){const k=UI.acct||'ytd',[from,to]=acctRange();
+  const n={invoices:acctCSV('invoices').length-1,payments:acctCSV('payments').length-1,expenses:acctCSV('expenses').length-1,jobs:acctCSV('jobs').length-1};
+  return `<div class="card stack"><h2>Export for your accountant</h2><p>Spreadsheet files (CSV) that open in Excel, Google Sheets or Numbers and import into QuickBooks.</p>
+    <div class="seg" role="group" aria-label="Period">${[['ytd','This year'],['last','Last year'],['12m','Last 12 months'],['all','All time']].map(([v,l])=>`<button data-act="acct-range" data-v="${v}" aria-pressed="${k===v}">${l}</button>`).join('')}</div>
+    <div class="btns">${[['invoices','Invoices'],['payments','Payments received'],['expenses','Expenses'],['jobs','Job profit']].map(([v,l])=>`<button class="btn" data-act="acct-csv" data-v="${v}">${l} <small class="note">(${n[v]})</small></button>`).join('')}</div>
+    <p class="note">${k==='all'?'Everything in Blue Board.':`${fmtDateY(from)} – ${fmtDateY(to)}.`} Payroll files are under Crew &amp; Pay → Payroll.</p></div>`}
+
+/* ---------- punch lists ---------- */
+// Tasks live on the job (j.tasks) and reach the crew through company_public. Crew tick them off with the
+// set_task function (table task_checks); the owner's app merges those ticks back into the job.
+const isoNow=()=>new Date().toISOString();
+function taskDone(t){const c=(CLOUD.taskChecks||[]).find(x=>x.task_id===t.id);return c&&(!t.doneAt||c.done_at>t.doneAt)?c.done:!!t.done}
+function tasksCard(j){const ts=j.tasks||[],open=ts.filter(t=>!t.done),done=ts.filter(t=>t.done);
+  const li=t=>{const e=emp(t.empId);return `<li><label class="check grow" style="margin:0"><input type="checkbox" data-task="${t.id}"${t.done?' checked':''}><span${t.done?' style="text-decoration:line-through;color:var(--muted)"':''}>${esc(t.text)}${t.done&&t.doneBy?` <small class="note">· ${esc(t.doneBy)}</small>`:''}</span></label>
+    ${e?`<span class="avatar sm" style="background:${e.color}" title="${esc(e.name)}">${esc(initials(e.name))}</span>`:''}<button class="btn sm ghost" data-act="task-edit" data-id="${t.id}" aria-label="Edit task">Edit</button></li>`};
+  return `<div class="card"><div class="card-head"><h2>Punch list</h2>${ts.length?`<span class="note">${done.length} of ${ts.length} done</span>`:''}</div>
+    ${ts.length?`<div class="bar" style="margin-bottom:8px"><i style="width:${Math.round(done.length/ts.length*100)}%"></i></div><ul class="list">${open.map(li).join('')}${done.map(li).join('')}</ul>`:''}
+    <form class="task-add" id="task-add"><input name="text" placeholder="Add a task, e.g. Patch hallway drywall" maxlength="200" autocomplete="off">
+      <select name="empId" aria-label="Assign to"><option value="">Anyone</option>${S.employees.filter(e=>e.active!==false).map(e=>opt(e.id,e.name.split(' ')[0],'')).join('')}</select><button class="btn sm primary" type="submit">Add</button></form>
+    ${ts.length?'':`<p class="note" style="margin-top:8px">A checklist for this job.${isOwnerCloud()?' Your crew see their tasks and tick them off from their phones.':''}</p>`}</div>`}
+function taskForm(j,t){openForm({title:'Edit task',
+    body:`<div class="fields">${field('Task',inp('text',t.text,'text','required maxlength="200"'),'full')}
+      ${field('Assigned to',`<select name="empId"><option value="">Anyone</option>${S.employees.filter(e=>e.active!==false||e.id===t.empId).map(e=>opt(e.id,e.name,t.empId)).join('')}</select>`,'full')}</div>`,
+    onDelete:()=>{j.tasks=j.tasks.filter(x=>x.id!==t.id);save();toast('Task removed')},deleteLabel:'Remove task',
+    onSubmit:fd=>{const text=fd.get('text').trim();if(!text){toast('Type the task');return false}Object.assign(t,{text,empId:fd.get('empId')});save();toast('Task saved')}})}
+// Crew: their open tasks on jobs they're scheduled on this week (or assigned to them anywhere).
+function myTasksCard(){const me=CLOUD.employeeId,wk=weekStart(today()),mine=new Set(S.shifts.filter(s=>s.empId===me&&s.date>=addDays(wk,-7)&&s.date<=addDays(wk,13)).map(s=>s.jobId));
+  const rows=[];for(const j of S.jobs)for(const t of j.tasks||[])if(t.empId===me||(!t.empId&&mine.has(j.id)))rows.push({j,t,done:taskDone(t)});
+  if(!rows.length)return '';const open=rows.filter(r=>!r.done);
+  return `<div class="card"><div class="card-head"><h2>My tasks</h2><span class="note">${open.length} to do</span></div><ul class="list">
+    ${rows.sort((a,b)=>a.done-b.done).slice(0,30).map(r=>`<li><label class="check grow" style="margin:0"><input type="checkbox" data-mytask="${r.t.id}" data-job="${r.j.id}"${r.done?' checked':''}><span${r.done?' style="text-decoration:line-through;color:var(--muted)"':''}>${esc(r.t.text)}<small class="note" style="display:block">${esc(r.j.name)}</small></span></label></li>`).join('')}</ul></div>`}
+async function crewSetTask(jobId,taskId,done){const {data,error}=await CLOUD.sb.rpc('set_task',{p_company:CLOUD.company,p_job:jobId,p_task:taskId,p_done:done});
+  if(error){toast('Could not save: '+errMsg(error));return false}CLOUD.taskChecks=(CLOUD.taskChecks||[]).filter(x=>x.task_id!==taskId).concat([data]);
+  if(done)notify({to:'owner',title:'Task done',body:`${emp(CLOUD.employeeId)?.name||'Crew'}: ${S.jobs.find(j=>j.id===jobId)?.tasks?.find(t=>t.id===taskId)?.text||'a task'}`,hash:'#/job/'+jobId});return true}
+async function taskChecksLoad(){if(!CLOUD.sb||!CLOUD.company)return false;const {data,error}=await CLOUD.sb.from('task_checks').select('task_id,job_id,done,employee_id,done_at').eq('company_id',CLOUD.company);
+  if(error)return false;CLOUD.taskChecks=data;if(!isOwnerCloud())return false;let ch=false;
+  for(const c of data){const j=job(c.job_id),t=j?.tasks?.find(x=>x.id===c.task_id);if(!t)continue;
+    if(!t.doneAt||c.done_at>t.doneAt){if(t.done!==c.done||t.doneAt!==c.done_at){Object.assign(t,{done:c.done,doneAt:c.done_at,doneBy:c.done?(emp(c.employee_id)?.name||'Crew'):''});ch=true}}}
+  if(ch)save();return ch}
 
 function empForm(e){const isNew=!e;e=e||{burden:S.settings.burden,active:true,color:EMP_COLORS[S.employees.length%EMP_COLORS.length]};
   openForm({title:isNew?'Add employee':'Edit employee',
@@ -1321,7 +1452,7 @@ function pageJob(id){const j=job(id);if(!j)return emptyBox('That job was not fou
   if(!isDone&&s.planned){const le=+e.labor||0,lt=s.cost.labor+s.planned;ins.push([le&&lt>le?'bad':'',`<b>Scheduled</b><span>${hrs(s.plannedH)} of crew time still on the calendar (about ${money(s.planned)}). Labor so far plus scheduled: ${money(lt)}${le?` of the ${money(le)} labor estimate`:''}.</span>`])}
   if(!isDone&&s.estTotal)ins.push(['',`<b>Projection</b><span>Assumes each category ends at its estimate, or at what's already spent and scheduled if that's higher.</span>`]);
   return `<div class="page-head"><div><a href="#/jobs" class="note" style="text-decoration:none">← Jobs</a><h1 style="margin-top:4px">${esc(j.name)}</h1>
-    <p class="sub">${esc(j.client||'')}${j.phone?' · <a href="tel:'+esc(j.phone)+'">'+esc(j.phone)+'</a>':''}${j.address?` · <a href="${mapUrl}" target="_blank" rel="noopener">${esc(j.address)}</a>`:''}</p>
+    <p class="sub">${j.customerId&&cust(j.customerId)?`<a href="#/customer/${j.customerId}">${esc(j.client||'')}</a>`:esc(j.client||'')}${j.phone?' · <a href="tel:'+esc(j.phone)+'">'+esc(j.phone)+'</a>':''}${j.address?` · <a href="${mapUrl}" target="_blank" rel="noopener">${esc(j.address)}</a>`:''}</p>
     <p class="sub">${statusBadge(j.status)} ${j.start?fmtDateY(j.start):''}${j.end?' – '+fmtDateY(j.end):''}</p></div>
     <div class="btns"><select id="job-status" aria-label="Job status" style="width:auto">${Object.entries(STATUS).map(([k,v])=>opt(k,v,j.status)).join('')}</select><button class="btn" data-act="job-edit">Edit job</button></div></div>
   <div class="stack">
@@ -1357,6 +1488,7 @@ function pageJob(id){const j=job(id);if(!j)return emptyBox('That job was not fou
       <tfoot><tr><td>Total</td><td class="n">${hrs(s.hours)}</td><td class="n">${money(sum(Object.values(byEmp),r=>r.wage))}</td><td class="n">${money(s.cost.labor)}</td></tr></tfoot></table></div>
       <p class="note" style="margin-top:8px">Cost includes labor burden and overtime. Only shifts marked Worked count.</p>`:emptyBox('No hours logged yet. Schedule the crew or log hours worked.')}</div>
 
+    ${tasksCard(j)}
     ${docsCard(j)}
     <div class="card"><div class="card-head"><h2>Change orders</h2><button class="btn sm" data-act="co-new">+ Add</button></div>
       ${(j.changeOrders||[]).length?`<ul class="list">${j.changeOrders.map(c=>`<li class="click" data-act="co-edit" data-id="${c.id}"><div class="grow"><b>${esc(c.desc)}</b><small>${fmtDate(c.date)}</small></div><b class="num ${c.amount<0?'neg':''}">${c.amount>=0?'+':''}${money(c.amount)}</b></li>`).join('')}</ul>`:'<p class="note">Extra work the client approved. It\'s added to the job\'s revenue.</p>'}</div>
@@ -1527,6 +1659,7 @@ function pageSettings(){const st=S.settings;const iOS=/iphone|ipad|ipod/i.test(n
   <div class="card stack"><h2>Backup</h2><p>${isOwnerCloud()?'Your data is saved to your account and synced to every device you sign in on. You can still export a backup file for your records.':'Your jobs, expenses, photos and crew are saved <b>on this device only</b>. Export a backup file regularly and keep it somewhere safe (email it to yourself or save it to cloud storage). Restore it here on a new phone or computer.'}</p>
     <div class="btns"><button class="btn dark" data-act="export">Export backup</button><label class="btn" style="flex-direction:row;color:var(--ink)">Restore from backup<input type="file" accept="application/json,.json" id="import-file" hidden></label></div>
     <p class="note">${S.jobs.length} jobs · ${S.expenses.length} expenses · ${S.photos.length} photos · ${S.employees.length} employees · ${S.shifts.length} shifts</p></div>
+  ${acctCard()}
   </div><div class="stack">
   ${accountCard()}
   <div class="card stack"><h2>Install the app</h2>
@@ -1545,11 +1678,11 @@ function route(){const h=(location.hash||'#/schedule').slice(2),[page,id]=h.spli
   else if(CLOUD.mode==='signedout'||(page==='signin'&&!CLOUD.user))P=pageAuth;
   else if(CLOUD.mode==='onboard')P=pageOnboard;
   else if(isEmp())P={schedule:pageSchedule,crew:pageEmpCrew,pay:pageMyPay,profile:pageEmpAccount}[page]||pageSchedule;
-  else P={dashboard:pageDashboard,jobs:pageJobs,job:()=>pageJob(id),schedule:pageSchedule,crew:pageCrew,settings:pageSettings,profile:pageProfile}[page]||pageSchedule;
+  else P={dashboard:pageDashboard,jobs:pageJobs,job:()=>pageJob(id),customers:pageCustomers,customer:()=>pageCustomer(id),schedule:pageSchedule,crew:pageCrew,settings:pageSettings,profile:pageProfile}[page]||pageSchedule;
   document.body.classList.toggle('emp',isEmp());document.body.classList.toggle('gate',P===pageAuth||P===pageOnboard||P===pageReset||P===pageNewPw);
   $('#crew-label').textContent=isEmp()?'My crew':'Crew & Pay';renderMenu();
   const keepScroll=route.last===h;const y=scrollY;v.innerHTML=P();route.last=h;
-  const navKey=page==='job'?'jobs':P===pageSchedule?'schedule':P===pageMyPay?'pay':P===pageEmpCrew?'crew':P===pageEmpAccount?'profile':page;
+  const navKey=page==='job'?'jobs':page==='customer'?'customers':P===pageSchedule?'schedule':P===pageMyPay?'pay':P===pageEmpCrew?'crew':P===pageEmpAccount?'profile':page;
   $$('[data-nav],[data-menu]').forEach(a=>a.removeAttribute('aria-current'));$$(`[data-nav="${navKey}"],[data-menu="${navKey}"]`).forEach(a=>a.setAttribute('aria-current','page'));
   const pr=S.profile||{},me=isEmp()?emp(CLOUD.employeeId):null;$('#menu-who').innerHTML=me?`<span class="avatar" style="background:${me.color}">${esc(initials(me.name))}</span><span><b>${esc(me.name)}</b><small>${esc(me.role||'Crew')}</small></span>`:`<span class="avatar">${esc(initials(pr.name||pr.company))}</span><span><b>${esc(pr.name||'Set up your profile')}</b><small>${esc(pr.company||'Name, company, license')}</small></span>`;
   closeMenu();applyTheme();document.title=(S.profile?.company?S.profile.company+' · ':'')+'Blue Board';
@@ -1569,6 +1702,9 @@ const ACT={
 'rphoto':a=>openForm({title:'Photo',closeLabel:'Close',body:`<div class="viewer"><img data-photo="${esc(a.dataset.id)}" alt="Report photo"></div>`,onOpen:f=>hydratePhotos(f)}),
 'off-new':()=>offForm(),'off-edit':a=>offForm(S.timeOff.find(t=>t.id===a.dataset.id)),'off-ok':a=>offDecide(a.dataset.id,true),'off-no':a=>offDecide(a.dataset.id,false),'off-req':()=>offRequestForm(),
 'off-clear':()=>{const ids=new Set(offShifts().map(s=>s.id));S.shifts=S.shifts.filter(s=>!ids.has(s.id));save();route();toast(`${ids.size} shift${ids.size>1?'s':''} removed`)},
+'cust-new':()=>custForm(),'cust-edit':a=>custForm(cust(a.dataset.id)),'cust-job':a=>{const c=cust(a.dataset.id);jobForm(null,{client:c.name,phone:c.phone,address:c.address})},
+'acct-range':a=>{UI.acct=a.dataset.v;route()},'acct-csv':async a=>{const k=a.dataset.v,[,,tag]=acctRange(),name=`blue-board-${k}-${tag}.csv`;await saveFile(name,toCSV(acctCSV(k)),'text/csv')},
+'task-edit':a=>{const j=curJob(),t=j?.tasks?.find(x=>x.id===a.dataset.id);if(t)taskForm(j,t)},
 'doc-new':a=>{const j=curJob();docForm(newDoc(a.dataset.kind,j),true)},'doc-open':a=>{const d=S.docs.find(x=>x.id===a.dataset.id);if(d)docView(d)},
 'co-new':()=>coForm(curJob()),'co-edit':a=>{const j=curJob();coForm(j,j.changeOrders.find(c=>c.id===a.dataset.id))},
   'emp-new':()=>empForm(),'emp-edit':a=>empForm(emp(a.dataset.id)),
@@ -1611,8 +1747,11 @@ const ACT={
 };
 document.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(a&&!a.closest('dialog')){e.preventDefault();ACT[a.dataset.act]?.(a,e);return}
   const r=e.target.closest('[data-href]');if(r&&!e.target.closest('a,button,input,select,textarea'))location.hash=r.dataset.href});
-document.addEventListener('input',e=>{if(e.target.id==='jobs-q'){UI.jobsQ=e.target.value;const pos=e.target.selectionStart;route();const i=$('#jobs-q');i.focus();i.setSelectionRange(pos,pos)}});
+document.addEventListener('input',e=>{if(e.target.id==='jobs-q'){UI.jobsQ=e.target.value;const pos=e.target.selectionStart;route();const i=$('#jobs-q');i.focus();i.setSelectionRange(pos,pos)}
+  if(e.target.id==='cust-q'){UI.custQ=e.target.value;const pos=e.target.selectionStart;route();const i=$('#cust-q');i.focus();i.setSelectionRange(pos,pos)}});
 document.addEventListener('change',async e=>{const t=e.target;
+  if(t.dataset.task){const j=curJob(),k=j?.tasks?.find(x=>x.id===t.dataset.task);if(k){Object.assign(k,{done:t.checked,doneAt:isoNow(),doneBy:t.checked?(S.profile?.name||'You'):''});save();route()}return}
+  if(t.dataset.mytask){t.disabled=true;const ok=await crewSetTask(t.dataset.job,t.dataset.mytask,t.checked);if(!ok)t.checked=!t.checked;t.disabled=false;softRender();return}
   if(t.id==='job-status'){const j=curJob();j.status=t.value;if(t.value==='done'&&!j.end)j.end=today();const r=syncPlan(j);save();toast('Marked '+STATUS[t.value]+(r.added?` · ${r.added} shifts scheduled`:'')+(r.removed?` · ${r.removed} upcoming shifts removed`:''));route()}
   else if(t.id==='logo-file'){const f=t.files[0];if(!f)return;try{S.profile.logo=await logoFrom(f);save();toast('Logo saved');route()}catch(err){toast('That image could not be read')}}
   else if(t.id==='job-notes'){curJob().notes=t.value;save();toast('Notes saved')}
@@ -1627,7 +1766,7 @@ window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredIns
 
 const ICON={user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',dl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>',out:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/></svg>'};
 function renderMenu(){const it=[],mi=(h,k,ic,l)=>`<a class="item" href="${h}" data-menu="${k}">${ic}${l}</a>`;
-  if(isEmp())it.push(mi('#/profile','profile',ICON.user,'My account'));else it.push(mi('#/profile','profile',ICON.user,'Profile'),mi('#/settings','settings',ICON.gear,'Settings'));
+  if(isEmp())it.push(mi('#/profile','profile',ICON.user,'My account'));else it.push(mi('#/customers','customers',ICON.user,'Customers'),mi('#/profile','profile',ICON.user,'Profile'),mi('#/settings','settings',ICON.gear,'Settings'));
   it.push('<div class="sep"></div>');if(!isEmp())it.push(`<button class="item" type="button" data-act="export">${ICON.dl}Export backup</button>`);
   it.push(CLOUD.user?`<button class="item" type="button" data-act="signout">${ICON.out}Sign out</button><div class="menu-sync">${esc(syncText())}</div>`:mi('#/signin','signin',ICON.user,'Sign in or create account'));
   $('#menu-items').innerHTML=it.join('')}
@@ -1691,7 +1830,7 @@ async function cloudPush(){if(!isOwnerCloud())return;const sb=CLOUD.sb,cid=CLOUD
 function publicDoc(){const cut=addDays(today(),-120),p=S.profile||{};
   return{company:{name:p.company||'',logo:p.logo||'',accent:p.accent==='green'?'blue':(p.accent||'blue'),mode:p.mode||'light'},
     settings:{ot:S.settings.ot!==false,otThreshold:num(S.settings.otThreshold)||40,requireLocation:!!S.settings.requireLocation,showPay:S.settings.showPay!==false},
-    jobs:S.jobs.map(j=>({id:j.id,name:j.name,address:j.address||'',status:j.status,start:j.start||'',end:j.end||'',color:jobColor(j)})),
+    jobs:S.jobs.map(j=>({id:j.id,name:j.name,address:j.address||'',status:j.status,start:j.start||'',end:j.end||'',color:jobColor(j),tasks:j.status==='done'?[]:(j.tasks||[]).map(t=>({id:t.id,text:t.text,empId:t.empId||'',done:!!t.done,doneAt:t.doneAt||''}))})),
     employees:S.employees.map(e=>({id:e.id,name:e.name,role:e.role||'',color:e.color,active:e.active!==false})),
     timeOff:S.timeOff.filter(t=>t.to>=addDays(today(),-30)).map(t=>({empId:t.empId,from:t.from,to:t.to})),
     shifts:S.shifts.filter(s=>s.date>=cut).map(s=>({id:s.id,empId:s.empId,jobId:s.jobId,date:s.date,start:s.start,end:s.end,breakMin:+s.breakMin||0,status:s.status,note:s.note||''}))}}
@@ -1903,6 +2042,8 @@ document.addEventListener('submit',async e=>{const f=e.target;
       if(!data.session){err.hidden=false;err.textContent='Check your email for a confirmation link, then come back and sign in.';return}
       CLOUD.user=data.session.user;LS.set('local',null);await loadMembership();location.hash='#/schedule';route();toast(up?'Account created':'Signed in')}
     catch(x){err.hidden=false;err.textContent=/invalid login/i.test(errMsg(x))?'Wrong email or password.':errMsg(x)}finally{btn.disabled=false}}
+  else if(f.id==='task-add'){e.preventDefault();const j=curJob(),text=f.text.value.trim();if(!j||!text)return;
+    (j.tasks=j.tasks||[]).push({id:uid(),text,empId:f.empId.value,done:false,createdAt:isoNow()});save();UI.taskEmp=f.empId.value;route();const n=$('#task-add');if(n){n.empId.value=UI.taskEmp||'';n.text.focus()}}
   else if(f.id==='forgot-form'){e.preventDefault();const sb=sbClient(),msg=$('#forgot-msg'),btn=$('[type=submit]',f),email=f.email.value.trim();
     if(!sb){msg.hidden=false;msg.textContent='Can\'t reach the sign-in service. Check your connection.';return}
     if(!/^\S+@\S+\.\S+$/.test(email)){msg.hidden=false;msg.textContent='Enter the email you signed up with.';return}
