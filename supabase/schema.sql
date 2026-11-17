@@ -399,3 +399,103 @@ begin
 end $$;
 revoke all on function public.set_task(uuid, text, text, boolean) from public, anon;
 grant execute on function public.set_task(uuid, text, text, boolean) to authenticated;
+
+-- ============ Customer page: milestones and picks the customer makes ============
+-- The owner publishes a snapshot of a job's customer page (dates, milestones, picks to make).
+-- The customer opens it with a long random token (no account) through the two functions below.
+create table if not exists public.customer_portals (
+  token text primary key check (length(token) >= 32),
+  company_id uuid not null references public.companies(id) on delete cascade,
+  job_id text not null,
+  data jsonb not null,
+  viewed_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+alter table public.customer_portals enable row level security;
+drop policy if exists portals_owner on public.customer_portals;
+create policy portals_owner on public.customer_portals for all using (public.is_owner(company_id)) with check (public.is_owner(company_id));
+
+-- One row per pick the customer has made. Written only through portal_decide.
+create table if not exists public.portal_choices (
+  token text not null references public.customer_portals(token) on delete cascade,
+  company_id uuid not null references public.companies(id) on delete cascade,
+  item_id text not null,
+  option_id text,
+  label text not null default '' check (length(label) <= 200),
+  note text not null default '' check (length(note) <= 1000),
+  name text not null default '' check (length(name) <= 120),
+  decided_at timestamptz not null default now(),
+  notified_at timestamptz,
+  primary key (token, item_id)
+);
+alter table public.portal_choices enable row level security;
+drop policy if exists choices_owner_read on public.portal_choices;
+create policy choices_owner_read on public.portal_choices for select using (public.is_owner(company_id));
+drop policy if exists choices_owner_delete on public.portal_choices;
+create policy choices_owner_delete on public.portal_choices for delete using (public.is_owner(company_id));
+
+create or replace function public.get_portal(p_token text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare r customer_portals;
+begin
+  update customer_portals set viewed_at = coalesce(viewed_at, now()) where token = p_token returning * into r;
+  if r.token is null then return null; end if;
+  return jsonb_build_object('data', r.data,
+    'choices', coalesce((select jsonb_agg(jsonb_build_object('item_id', c.item_id, 'option_id', c.option_id, 'label', c.label, 'note', c.note, 'name', c.name, 'at', c.decided_at))
+                         from portal_choices c where c.token = r.token), '[]'::jsonb));
+end $$;
+
+create or replace function public.portal_decide(p_token text, p_item text, p_option text, p_note text, p_name text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare r customer_portals; it jsonb; o jsonb; lbl text := '';
+begin
+  select * into r from customer_portals where token = p_token;
+  if r.token is null then raise exception 'Not found'; end if;
+  select e into it from jsonb_array_elements(r.data->'items') e where e->>'id' = p_item and e->>'kind' = 'pick';
+  if it is null then raise exception 'That choice was removed'; end if;
+  if coalesce(it->>'locked', '') = 'true' then raise exception 'This choice is locked. Contact your contractor to change it.'; end if;
+  if nullif(p_option, '') is not null then
+    select e into o from jsonb_array_elements(it->'options') e where e->>'id' = p_option;
+    if o is null then raise exception 'That option was removed'; end if;
+    lbl := left(coalesce(o->>'label', ''), 200);
+  elsif length(trim(coalesce(p_note, ''))) < 1 then
+    raise exception 'Pick an option or type your answer';
+  end if;
+  insert into portal_choices(token, company_id, item_id, option_id, label, note, name, decided_at)
+    values (r.token, r.company_id, p_item, nullif(p_option, ''), lbl, left(trim(coalesce(p_note, '')), 1000), left(trim(coalesce(p_name, '')), 120), now())
+    on conflict (token, item_id) do update set option_id = excluded.option_id, label = excluded.label, note = excluded.note, name = excluded.name,
+      decided_at = now(),
+      -- a quick second change doesn't send a second phone alert
+      notified_at = case when portal_choices.notified_at < now() - interval '2 minutes' then null else portal_choices.notified_at end;
+  return public.get_portal(p_token);
+end $$;
+revoke all on function public.get_portal(text) from public;
+revoke all on function public.portal_decide(text, text, text, text, text) from public;
+grant execute on function public.get_portal(text) to anon, authenticated;
+grant execute on function public.portal_decide(text, text, text, text, text) to anon, authenticated;
+
+-- Photos, files and voice memos on a customer page. Public bucket: files open by their exact link,
+-- which holds the page's random token, and nobody can list the bucket. Only the owner can upload or delete.
+insert into storage.buckets (id, name, public, file_size_limit) values ('portal', 'portal', true, 26214400) on conflict (id) do nothing;
+drop policy if exists portal_owner_read on storage.objects;
+create policy portal_owner_read on storage.objects for select to authenticated
+  using (bucket_id = 'portal' and public.is_owner(((storage.foldername(name))[1])::uuid));
+drop policy if exists portal_owner_insert on storage.objects;
+create policy portal_owner_insert on storage.objects for insert to authenticated
+  with check (bucket_id = 'portal' and public.is_owner(((storage.foldername(name))[1])::uuid));
+drop policy if exists portal_owner_delete on storage.objects;
+create policy portal_owner_delete on storage.objects for delete to authenticated
+  using (bucket_id = 'portal' and public.is_owner(((storage.foldername(name))[1])::uuid));
+
+-- Customer codes: the short code (like ABCD-EFGH) a customer types into the app to open their page.
+-- Same alphabet and length as crew invite codes. Unlike the page link, a code can be typed in by hand.
+alter table public.customer_portals add column if not exists code text;
+create unique index if not exists customer_portals_code on public.customer_portals(code) where code is not null;
+create or replace function public.portal_token_for_code(p_code text) returns text
+language sql stable security definer set search_path = public as $$
+  select token from customer_portals
+   where code = upper(regexp_replace(coalesce(p_code, ''), '[^A-Za-z0-9]', '', 'g')) and length(code) = 8;
+$$;
+revoke all on function public.portal_token_for_code(text) from public;
+grant execute on function public.portal_token_for_code(text) to anon, authenticated;
