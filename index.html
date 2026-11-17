@@ -1082,7 +1082,7 @@ function reportForm(r,pre={}){const isNew=!r,crew=isEmp();r=r||{date:today(),job
       if(crew){const sb=CLOUD.sb,photos=[];
         for(const file of files){try{const b=await downscale(file),id='reports/'+uid()+uid()+'.jpg';const {error}=await sb.storage.from('photos').upload(`${CLOUD.company}/${id}`,b,{contentType:b.type||'image/jpeg'});if(!error)photos.push(id)}catch(e){}}
         const {error}=await sb.from('daily_reports').insert({company_id:CLOUD.company,user_id:CLOUD.user.id,employee_id:CLOUD.employeeId,job_id:jobId,date,notes,photos});
-        if(error){toast('Could not send: '+errMsg(error));return false}await empExtrasLoad();toast(files.length&&photos.length<files.length?'Report sent, but some photos didn\'t upload':'Report sent');return}
+        if(error){toast('Could not send: '+errMsg(error));return false}notify({to:'owner',title:'Daily report',body:`${emp(CLOUD.employeeId)?.name||'Crew'} · ${job(jobId)?.name||'Job'}: ${notes.slice(0,140)||'photos added'}`,hash:'#/job/'+jobId});await empExtrasLoad();toast(files.length&&photos.length<files.length?'Report sent, but some photos didn\'t upload':'Report sent');return}
       const o=isNew?{id:uid(),photoIds:[]}:r;Object.assign(o,{jobId,date,notes});for(const file of files)o.photoIds.push(await addPhoto(file,jobId,'report'));
       if(isNew)S.reports.push(o);save();toast(isNew?'Report added':'Report saved')}})}
 
@@ -1110,6 +1110,7 @@ function offForm(x){const isNew=!x;x=x||{from:today(),to:today(),empId:S.employe
 async function offDecide(id,ok){const r=(CLOUD.timeReqs||[]).find(x=>x.id===id);if(!r)return;
   const {error}=await CLOUD.sb.from('time_off').update({status:ok?'approved':'denied',decided_at:new Date().toISOString()}).eq('id',id);if(error)return toast(errMsg(error));
   r.status=ok?'approved':'denied';if(ok&&!S.timeOff.some(t=>t.reqId===id))S.timeOff.push({id:uid(),reqId:id,empId:r.employee_id,from:r.start_date,to:r.end_date,note:r.reason||''});
+  notify({employee_ids:[r.employee_id],title:ok?'Time off approved':'Time off denied',body:`${offRange({from:r.start_date,to:r.end_date})}`,hash:'#/schedule'});
   save();route();const n=ok?offShifts().filter(s=>s.empId===r.employee_id).length:0;toast(ok?(n?`Approved. ${n} scheduled shift${n>1?'s':''} fall on those days.`:'Time off approved'):'Request denied')}
 
 /* ---------- crew side: reports and time-off requests ---------- */
@@ -1125,7 +1126,7 @@ function offRequestForm(){openForm({title:'Request time off',submit:'Send reques
     body:`<div class="fields">${field('First day off',inp('from',addDays(today(),7),'date'))}${field('Last day off',inp('to',addDays(today(),7),'date'))}${field('Reason (optional)',inp('reason','','text','placeholder="Vacation, appointment…" maxlength="200"'),'full')}</div>`,
     onSubmit:async fd=>{const from=fd.get('from'),to=fd.get('to')||from;if(!from){toast('Pick the first day off');return false}if(to<from){toast('The last day is before the first day');return false}
       const {error}=await CLOUD.sb.from('time_off').insert({company_id:CLOUD.company,user_id:CLOUD.user.id,employee_id:CLOUD.employeeId,start_date:from,end_date:to,reason:fd.get('reason').trim()||null});
-      if(error){toast('Could not send: '+errMsg(error));return false}await empExtrasLoad();toast('Request sent to your boss')}})}
+      if(error){toast('Could not send: '+errMsg(error));return false}notify({to:'owner',title:'Time-off request',body:`${emp(CLOUD.employeeId)?.name||'Crew'} asked for ${offRange({from,to})} off`,hash:'#/crew'});await empExtrasLoad();toast('Request sent to your boss')}})}
 async function empExtrasLoad(){const sb=CLOUD.sb;if(!sb||!isEmp())return;
   try{const [a,b]=await Promise.all([sb.from('daily_reports').select('id,job_id,date,notes,photos').eq('user_id',CLOUD.user.id).order('date',{ascending:false}).limit(20),
     sb.from('time_off').select('*').eq('user_id',CLOUD.user.id).order('start_date',{ascending:false}).limit(30)]);
@@ -1138,6 +1139,16 @@ async function ownerExtrasLoad(){const sb=CLOUD.sb;if(!sb||!isOwnerCloud())retur
     if(!b.error){const newReq=b.data.filter(r=>r.status==='pending'&&CLOUD.timeReqs&&!CLOUD.timeReqs.some(x=>x.id===r.id));if(JSON.stringify(b.data)!==JSON.stringify(CLOUD.timeReqs||[]))ch=true;CLOUD.timeReqs=b.data;
       if(newReq.length)toast(`${emp(newReq[0].employee_id)?.name||'Someone'} asked for time off`)}}catch(e){}
   return ch}
+
+/* ---------- phone notifications (iPhone app only) ---------- */
+const PN=()=>window.Capacitor?.isNativePlatform?.()?window.Capacitor.Plugins?.PushNotifications:null;
+async function pushSetup(){const P=PN();if(!P||!CLOUD.user||pushSetup.on)return;pushSetup.on=true;
+  try{await P.addListener('registration',t=>{pushSetup.token=t.value;CLOUD.sb.rpc('register_device',{p_token:t.value}).then(()=>{},()=>{})});
+    await P.addListener('pushNotificationActionPerformed',a=>{const h=a.notification?.data?.hash;if(h&&/^#\//.test(h))location.hash=h});
+    await P.addListener('pushNotificationReceived',n=>{toast(n.title?`${n.title}: ${n.body||''}`:(n.body||'New notification'));poll()});
+    let p=await P.checkPermissions();if(p.receive==='prompt'||p.receive==='prompt-with-rationale')p=await P.requestPermissions();if(p.receive==='granted')await P.register()}catch(e){}}
+async function pushOff(){if(pushSetup.token&&CLOUD.sb)try{await CLOUD.sb.rpc('unregister_device',{p_token:pushSetup.token})}catch(e){}}
+function notify(o){if(!CLOUD.sb||!CLOUD.company||!CLOUD.user)return;CLOUD.sb.functions.invoke('notify',{body:{company_id:CLOUD.company,...o}}).catch(()=>{})}
 
 function empForm(e){const isNew=!e;e=e||{burden:S.settings.burden,active:true,color:EMP_COLORS[S.employees.length%EMP_COLORS.length]};
   openForm({title:isNew?'Add employee':'Edit employee',
@@ -1163,6 +1174,7 @@ function crewText(e,list){const j=job(list[0].jobId)||{},ds=[...new Set(list.map
 function offerCrewTexts(shifts){if(isEmp())return;const t=today(),by=new Map();
   for(const x of shifts||[]){if(x.status!=='scheduled'||x.date<t)continue;const k=x.empId+'|'+x.jobId;if(!by.has(k))by.set(k,[]);by.get(k).push(x)}
   if(!by.size)return;const rows=[...by.values()].map(list=>{const e=emp(list[0].empId)||{};return{e,msg:crewText(e,list)}});
+  if(isOwnerCloud())for(const list of by.values())notify({employee_ids:[list[0].empId],title:'You\'re on the schedule',body:crewText(emp(list[0].empId)||{},list).split('\n').slice(0,3).join(' '),hash:'#/schedule'});
   setTimeout(()=>openForm({title:rows.length>1?'Text your crew?':`Text ${rows[0].e.name||'your crew'}?`,
     body:`<p class="note">Opens Messages on your phone with the details filled in. Tap Send to text them from your number.</p>
       <ul class="list">${rows.map((r,i)=>{const href=smsLink(r.e.phone,r.msg);return `<li style="display:block"><b>${esc(r.e.name||'Crew member')}</b><small style="display:block;white-space:pre-line;margin:4px 0 10px">${esc(r.msg)}</small>
@@ -1656,8 +1668,8 @@ async function loadMembership(){const sb=CLOUD.sb;await acceptPending();
   const {data,error}=await sb.from('members').select('company_id,role,employee_id').eq('user_id',CLOUD.user.id);
   if(error){const c=JSON.parse(LS.get('role')||'null');if(c){Object.assign(CLOUD,{mode:c.mode,company:c.company,employeeId:c.employeeId||null,sync:'offline'});if(c.mode==='employee')empApplyCache();return}CLOUD.mode='onboard';return}
   const own=data.find(m=>m.role==='owner'),em=data.find(m=>m.role==='employee');
-  if(own){Object.assign(CLOUD,{mode:'owner',company:own.company_id});LS.set('role',JSON.stringify({mode:'owner',company:own.company_id}));await ownerPull(true);await ownerExtrasLoad();startPolling()}
-  else if(em){Object.assign(CLOUD,{mode:'employee',company:em.company_id,employeeId:em.employee_id});LS.set('role',JSON.stringify({mode:'employee',company:em.company_id,employeeId:em.employee_id}));await empLoad();await empExtrasLoad();startPolling()}
+  if(own){Object.assign(CLOUD,{mode:'owner',company:own.company_id});LS.set('role',JSON.stringify({mode:'owner',company:own.company_id}));await ownerPull(true);await ownerExtrasLoad();startPolling();pushSetup()}
+  else if(em){Object.assign(CLOUD,{mode:'employee',company:em.company_id,employeeId:em.employee_id});LS.set('role',JSON.stringify({mode:'employee',company:em.company_id,employeeId:em.employee_id}));await empLoad();await empExtrasLoad();startPolling();pushSetup()}
   else CLOUD.mode='onboard'}
 
 /* ----- owner: the whole company lives in the account; employees get a money-free copy ----- */
@@ -1852,7 +1864,7 @@ Object.assign(ACT,{
   'auth-tab':a=>{const em=$('#auth-form [name=email],#forgot-form [name=email]')?.value;if(em)UI.authEmail=em;UI.authTab=a.dataset.v;UI.authNote='';route()},
   'go-local':()=>{LS.set('local','1');CLOUD.mode='local';location.hash='#/schedule';route()},
   'signout':async a=>{closeMenu();if(isOwnerCloud()&&LS.get('dirty')==='1'&&!armTwoStep(a,'Changes not synced yet. Tap again'))return;
-    clearInterval(CLOUD.pollT);try{await CLOUD.sb.auth.signOut()}catch(e){}
+    clearInterval(CLOUD.pollT);await pushOff();try{await CLOUD.sb.auth.signOut()}catch(e){}
     if(isOwnerCloud()){S=blank();if(!memOnly){await DB.put('kv','state',S).catch(()=>{});await DB.clear('photos').catch(()=>{})}}
     else if(isEmp()){S=blank();if(!memOnly){const st=await DB.get('kv','state').catch(()=>null);if(st)S=normState(st)}}
     ['role','stateAt','dirty','company','empCache','local'].forEach(k=>LS.set(k,null));Object.assign(CLOUD,{mode:'signedout',user:null,company:null,employeeId:null,punches:[],members:[],pub:null,sync:''});

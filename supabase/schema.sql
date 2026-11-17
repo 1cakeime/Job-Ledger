@@ -310,3 +310,30 @@ drop policy if exists timeoff_decide on public.time_off;
 create policy timeoff_decide on public.time_off for update using (public.is_owner(company_id)) with check (public.is_owner(company_id));
 drop policy if exists timeoff_delete on public.time_off;
 create policy timeoff_delete on public.time_off for delete using ((user_id = auth.uid() and status = 'pending') or public.is_owner(company_id));
+
+-- ============ Phone notifications (iPhone app) ============
+-- One row per phone. The "notify" Edge Function reads these with the service role.
+create table if not exists public.device_tokens (
+  token text primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  platform text not null default 'ios',
+  updated_at timestamptz not null default now()
+);
+alter table public.device_tokens enable row level security;
+drop policy if exists tokens_own on public.device_tokens;
+create policy tokens_own on public.device_tokens for select using (user_id = auth.uid());
+create or replace function public.register_device(p_token text) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'Sign in first'; end if;
+  insert into device_tokens(token, user_id, updated_at) values (left(p_token, 200), auth.uid(), now())
+    on conflict (token) do update set user_id = auth.uid(), updated_at = now();
+end $$;
+create or replace function public.unregister_device(p_token text) returns void
+language sql security definer set search_path = public as $$
+  delete from device_tokens where token = p_token and user_id = auth.uid();
+$$;
+revoke all on function public.register_device(text) from public, anon;
+revoke all on function public.unregister_device(text) from public, anon;
+grant execute on function public.register_device(text) to authenticated;
+grant execute on function public.unregister_device(text) to authenticated;
