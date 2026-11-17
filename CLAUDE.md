@@ -17,7 +17,8 @@ not only on the device.
 - `sw.js` – service worker. **Bump `VERSION`** whenever a cached file (see `SHELL`) changes.
 - `vendor/` – vendored Supabase client and fonts (Manrope, DM Sans). No CDNs.
 - `supabase/schema.sql` – database schema and SQL functions.
-- `supabase/functions/notify` (push notifications), `supabase/functions/payments` (Stripe Connect).
+- `supabase/functions/notify` (push notifications), `supabase/functions/payments` (Stripe Connect),
+  `supabase/functions/join` (crew sign-up from an invite code, no confirmation email).
 - `ios/` – Xcode project (Capacitor 8, Swift Package Manager). `ios/App/App/ReceiptScan.swift`
   is a native receipt-OCR plugin.
 - `www/` – build output for Capacitor (gitignored; made by `scripts/build-www.mjs`).
@@ -47,7 +48,7 @@ Pushing to `main` updates the live site immediately, so make sure it works first
 ## Supabase
 SQL changes and Edge Function deploys are done by a person in the Supabase dashboard; Claude
 has no admin access. When changing the database, update `supabase/schema.sql` and give the
-exact SQL to run. Function deploys: `payments` must have Verify JWT **off**. Secrets
+exact SQL to run. Function deploys: `payments` and `join` must have Verify JWT **off**. Secrets
 (APNs keys, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) are set in the dashboard, never in code.
 
 ## Domain

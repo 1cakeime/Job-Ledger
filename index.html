@@ -1821,6 +1821,12 @@ async function emailLinkStart(sb){const H=new URLSearchParams((location.hash||''
   catch(e){UI.authNote='That email link didn\'t work. Try again below.';clean('#/signin');return}
   if(type==='recovery'){UI.recovery=true;clean('#/newpw')}else{clean('#/schedule');setTimeout(()=>toast(type==='signup'?'Email confirmed. You\'re signed in.':'Signed in'),600)}}
 
+// Crew sign-up with an invite code: the "join" function makes the account already confirmed, so no
+// confirmation email. Returns true when the account was made; throws the function's message on a
+// real error (bad code, email taken); returns false if the function isn't deployed, to use normal sign-up.
+async function joinWithCode(sb,code,email,password){const {error}=await sb.functions.invoke('join',{body:{code,email,password}});if(!error)return true;
+  const res=error.context;let msg='';if(res&&typeof res.json==='function'&&res.status===400){try{msg=(await res.json()).error||''}catch(e){}}
+  if(msg)throw new Error(msg);return false}
 async function acceptPending(){const code=LS.get('invite');if(!code||!CLOUD.user)return false;LS.set('invite',null);
   const {error}=await CLOUD.sb.rpc('accept_invite',{p_code:code.replace(/[^A-Z0-9]/gi,'')});
   if(error){toast(errMsg(error));return false}toast('You joined the crew');return true}
@@ -2060,7 +2066,8 @@ document.addEventListener('submit',async e=>{const f=e.target;
   if(f.id==='auth-form'){e.preventDefault();const sb=sbClient(),err=$('#auth-err'),btn=$('[type=submit]',f);if(!sb){err.hidden=false;err.textContent='Can\'t reach the sign-in service. Check your connection.';return}
     const email=f.email.value.trim(),password=f.password.value;if(!email||password.length<6){err.hidden=false;err.textContent='Enter your email and a password of at least 6 characters.';return}
     btn.disabled=true;err.hidden=true;try{const up=f.dataset.tab==='up';
-      const {data,error}=up?await sb.auth.signUp({email,password,options:{emailRedirectTo:SITE_URL}}):await sb.auth.signInWithPassword({email,password});if(error)throw error;
+      const code=up&&LS.get('invite'),joined=code?await joinWithCode(sb,code,email,password):false;
+      const {data,error}=up&&!joined?await sb.auth.signUp({email,password,options:{emailRedirectTo:SITE_URL}}):await sb.auth.signInWithPassword({email,password});if(error)throw error;
       if(!data.session){err.hidden=false;err.textContent='Check your email for a confirmation link, then come back and sign in.';return}
       CLOUD.user=data.session.user;LS.set('local',null);await loadMembership();location.hash='#/schedule';route();toast(up?'Account created':'Signed in')}
     catch(x){err.hidden=false;err.textContent=/invalid login/i.test(errMsg(x))?'Wrong email or password.':errMsg(x)}finally{btn.disabled=false}}
