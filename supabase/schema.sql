@@ -492,10 +492,33 @@ create policy portal_owner_delete on storage.objects for delete to authenticated
 -- Same alphabet and length as crew invite codes. Unlike the page link, a code can be typed in by hand.
 alter table public.customer_portals add column if not exists code text;
 create unique index if not exists customer_portals_code on public.customer_portals(code) where code is not null;
+-- Wrong guesses are counted so nobody can try codes until one works: 10 misses per address in
+-- 10 minutes, and 500 misses across everyone in 10 minutes, then the box says to wait.
+-- At that ceiling an attacker gets about 72,000 guesses a day against 32^8 (about 1.1 trillion) codes.
+create table if not exists public.portal_code_fails (
+  at timestamptz not null default now(),
+  ip text not null default ''
+);
+create index if not exists portal_code_fails_at on public.portal_code_fails(at);
+alter table public.portal_code_fails enable row level security;
+-- No policies: only portal_token_for_code (security definer) reads or writes it.
+
 create or replace function public.portal_token_for_code(p_code text) returns text
-language sql stable security definer set search_path = public as $$
-  select token from customer_portals
-   where code = upper(regexp_replace(coalesce(p_code, ''), '[^A-Za-z0-9]', '', 'g')) and length(code) = 8;
-$$;
+language plpgsql volatile security definer set search_path = public as $$
+declare v_ip text; v_code text; v_token text;
+begin
+  v_ip := left(trim(split_part(coalesce(current_setting('request.headers', true)::json->>'x-forwarded-for', ''), ',', 1)), 64);
+  if (select count(*) from portal_code_fails where at > now() - interval '10 minutes' and ip = v_ip) >= 10
+     or (select count(*) from portal_code_fails where at > now() - interval '10 minutes') >= 500 then
+    raise exception 'Too many tries. Wait a few minutes and try again.';
+  end if;
+  v_code := upper(regexp_replace(coalesce(p_code, ''), '[^A-Za-z0-9]', '', 'g'));
+  select token into v_token from customer_portals where code = v_code and length(code) = 8;
+  if v_token is null then
+    insert into portal_code_fails(ip) values (v_ip);
+    delete from portal_code_fails where at < now() - interval '1 day';
+  end if;
+  return v_token;
+end $$;
 revoke all on function public.portal_token_for_code(text) from public;
 grant execute on function public.portal_token_for_code(text) to anon, authenticated;

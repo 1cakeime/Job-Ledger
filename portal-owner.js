@@ -809,7 +809,7 @@ async function portalLookupCode(code) {
   const sb = sbClient();
   if (!sb) throw new Error("Can't reach Blue Board. Check your connection.");
   const { data, error } = await sb.rpc("portal_token_for_code", { p_code: code });
-  if (error) throw new Error("That didn't go through. Check your connection and try again.");
+  if (error) throw new Error(/Too many tries/.test(error.message || "") ? "Too many tries. Wait a few minutes and try again." : "That didn't go through. Check your connection and try again.");
   return data || "";
 }
 const portalAuthBase = pageAuth;
