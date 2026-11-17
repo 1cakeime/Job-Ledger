@@ -643,6 +643,8 @@ svg.seal .seal-light{display:none}
 input[type=date],input[type=time]{min-width:0;max-width:100%;width:100%;display:block;-webkit-appearance:none;appearance:none}
 .wk-off{font-size:12px;font-weight:700;color:var(--warn);background:var(--warn-bg);border-radius:10px;padding:4px 10px;width:max-content;max-width:100%}
 .task-add{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;margin-top:10px}.task-add select{width:auto;max-width:110px}
+/* keep pop-ups clear of the iPhone status bar and home indicator */
+dialog,.dlg-form{max-height:calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
 </style>
 </head>
 <body>
