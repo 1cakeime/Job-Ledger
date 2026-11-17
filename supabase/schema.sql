@@ -512,7 +512,7 @@ create or replace function public.portal_token_for_code(p_code text) returns tex
 language plpgsql volatile security definer set search_path = public as $$
 declare h json; v_ip text; v_code text; v_token text;
 begin
-  h := coalesce(current_setting('request.headers', true), '{}')::json;
+  h := coalesce(nullif(current_setting('request.headers', true), ''), '{}')::json;
   v_ip := left(coalesce(nullif(trim(h->>'cf-connecting-ip'), ''),
                         trim(regexp_replace(coalesce(h->>'x-forwarded-for', ''), '^.*,', ''))), 64);
   insert into portal_code_tries(ip) values (v_ip);
