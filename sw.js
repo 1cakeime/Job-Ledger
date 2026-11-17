@@ -1,5 +1,5 @@
 // Blue Board service worker: makes the app open offline. Bump VERSION on each release.
-const VERSION = 'bb-v15';
+const VERSION = 'bb-v16';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './vendor/supabase.js', './vendor/manrope.woff2', './vendor/dmsans.woff2'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
