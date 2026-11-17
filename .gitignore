@@ -2,3 +2,4 @@
 job-ledger-backup-*.json
 node_modules/
 www/
+build/
