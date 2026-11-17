@@ -54,3 +54,11 @@ exact SQL to run. Function deploys: `payments` and `join` must have Verify JWT *
 ## Domain
 getblueboard.com DNS is on Cloudflare pointing at GitHub Pages. Keep the records DNS-only
 (grey cloud); proxying breaks GitHub's HTTPS certificate.
+
+## Field tools (added 2026-11-17)
+In `index.html` under "field tools": owner photo upload queue (`UPQ`, retries until uploaded), crew
+outbox (`OB`, reports/photos/task checks saved on the phone and sent when there's signal), video,
+photo markup (`markup()`), before/after tags and slider, voice notes (`micBtn`), arrival alerts
+(job `lat`/`lng`, `geoCheck`, `nearBanner`), duplicate-address check on new jobs, customer photo
+links (`shared_docs` kind `photos`, rendered by `doc.html`), and CSV / photo import from Jobber and
+CompanyCam (Settings).

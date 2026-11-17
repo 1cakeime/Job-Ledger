@@ -247,7 +247,7 @@ create table if not exists public.shared_docs (
   token text primary key check (length(token) >= 32),
   company_id uuid not null references public.companies(id) on delete cascade,
   doc_id text not null,
-  kind text not null check (kind in ('estimate','invoice')),
+  kind text not null check (kind in ('estimate','invoice','photos')),
   data jsonb not null,
   status text not null default 'sent' check (status in ('sent','approved','declined')),
   approved_name text,
@@ -256,6 +256,9 @@ create table if not exists public.shared_docs (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+-- 'photos' = a customer photo link (gallery of signed photo URLs). Added 2026-11-17; this keeps older databases in step.
+alter table public.shared_docs drop constraint if exists shared_docs_kind_check;
+alter table public.shared_docs add constraint shared_docs_kind_check check (kind in ('estimate','invoice','photos'));
 alter table public.shared_docs enable row level security;
 drop policy if exists shared_docs_owner on public.shared_docs;
 create policy shared_docs_owner on public.shared_docs for all using (public.is_owner(company_id)) with check (public.is_owner(company_id));

@@ -39,7 +39,26 @@ footer{margin-top:22px;text-align:center;font-size:12.5px;color:var(--muted)}foo
 .doc-sum{display:grid;grid-template-columns:1fr auto;gap:4px 18px;margin:14px 0 0 auto;max-width:300px}.doc-sum dt{color:#5b6280}.doc-sum dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
 .doc-sum .tot{font-weight:800;color:#141824;font-size:16px;border-top:1px solid #d8dce8;padding-top:6px}
 .doc-notes{white-space:pre-line;color:#3b4157;margin:18px 0 0;padding-top:12px;border-top:1px solid #eceef5;font-size:13px}.doc-ok{margin:12px 0 0;color:#127a3d;font-weight:700}
-@media print{body{background:#fff}.bar,.card,footer{display:none!important}main{padding:0;max-width:none}.doc-wrap{border:0;box-shadow:none;border-radius:0}}
+.pr{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:20px;margin-top:4px}
+.pr-head{display:flex;gap:12px;align-items:center;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.pr-head b{display:block;font:800 17px Manrope,sans-serif}.pr-head small{color:var(--muted);font-size:13px}
+.pr-logo{width:52px;height:52px;object-fit:contain;border-radius:10px}
+.pr-meta h2{font:800 20px/1.25 Manrope,sans-serif;margin:16px 0 2px}.pr-note{white-space:pre-line;margin:10px 0 0}
+.pr h3{font:800 16px Manrope,sans-serif;margin:20px 0 8px}
+.pr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:18px}
+.pr-grid figure{margin:0;break-inside:avoid}.pr-grid img,.pr-grid video{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:14px;display:block;background:#000}
+.pr-grid figcaption{font-size:13.5px;margin-top:6px}.pr-grid figcaption small{display:block;color:var(--muted);font-size:12px}
+.ba{position:relative;aspect-ratio:4/3;border-radius:18px;overflow:hidden;background:#000;--x:50%;user-select:none;-webkit-user-select:none;touch-action:pan-y;cursor:ew-resize}
+.ba img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.ba-before{position:absolute;inset:0;clip-path:inset(0 calc(100% - var(--x)) 0 0)}
+.ba::after{content:"";position:absolute;top:0;bottom:0;left:var(--x);width:3px;margin-left:-1.5px;background:#fff;box-shadow:0 0 8px rgba(0,0,0,.4);pointer-events:none}
+.ba::before{content:"";position:absolute;top:50%;left:var(--x);width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.35);z-index:2;pointer-events:none}
+.ba-range{position:absolute;left:0;bottom:0;width:100%;height:4px;margin:0;opacity:0;pointer-events:none}
+.ba-l,.ba-r{position:absolute;top:10px;padding:4px 10px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;font-weight:700;z-index:2;pointer-events:none}
+.ba-l{left:10px}.ba-r{right:10px}.ba-print{display:none}
+@media print{body{background:#fff}.bar,.card,footer{display:none!important}main{padding:0;max-width:none}.doc-wrap{border:0;box-shadow:none;border-radius:0}
+  .pr{border:0;padding:0}.ba{display:none}.ba-print{display:grid;grid-template-columns:1fr 1fr;gap:10px}.ba-print figure{margin:0}.ba-print img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px}
+  .pr-grid{grid-template-columns:1fr 1fr}.pr-grid video{display:none}}
 </style></head>
 <body><main><div id="app"><p class="note">Loading…</p></div>
 <footer>Sent with <a href="https://getblueboard.com/">Blue Board</a></footer></main>
@@ -76,7 +95,20 @@ async function load(){if(!token){app.innerHTML='<p class="err">This link is miss
   const {data,error}=await sbc.rpc('get_shared_doc',{p_token:token});
   if(error||!data){app.innerHTML='<p class="err">This document wasn\'t found. It may have been withdrawn. Ask the sender for a new link.</p>';return}
   render(data)}
-function render(r){const d=r.data,est=d.kind==='estimate',st=r.status,co=d.company||{};
+// Photo links: a branded gallery with an optional before-and-after slider. Printable as a PDF.
+function renderPhotos(r){var d=r.data,co=d.company||{},items=d.items||[];document.title=(d.title||'Job photos')+(co.company?' · '+co.company:'');
+  var contact=[co.phone,co.email,co.website,co.license?'Lic. '+co.license:''].filter(Boolean).map(esc).join(' · ');
+  var h='<div class="bar"><h1>'+esc(d.title||'Job photos')+'</h1><button class="btn" id="print">Print or save PDF</button></div><div class="pr">';
+  h+='<header class="pr-head">'+(co.logo?'<img class="pr-logo" src="'+esc(co.logo)+'" alt="">':'')+'<div><b>'+esc(co.company||'')+'</b><small>'+contact+'</small></div></header>';
+  h+='<div class="pr-meta"><h2>'+esc(d.jobName||'')+'</h2><p class="note">'+(d.jobAddress?esc(d.jobAddress)+' · ':'')+fmtDateY(d.date)+' · '+items.length+(items.length===1?' item':' items')+'</p>'+(d.note?'<p class="pr-note">'+esc(d.note)+'</p>':'')+'</div>';
+  if(d.pair)h+='<h3>Before &amp; after</h3><div class="ba"><img src="'+esc(d.pair.after)+'" alt="After"><div class="ba-before"><img src="'+esc(d.pair.before)+'" alt="Before"></div><input class="ba-range" type="range" min="0" max="100" value="50" aria-label="Slide to compare before and after"><span class="ba-l">Before</span><span class="ba-r">After</span></div>'
+    +'<div class="ba-print"><figure><img src="'+esc(d.pair.before)+'" alt=""><figcaption>Before</figcaption></figure><figure><img src="'+esc(d.pair.after)+'" alt=""><figcaption>After</figcaption></figure></div>';
+  h+='<div class="pr-grid">'+items.map(function(x){return '<figure>'+(x.video?'<video src="'+esc(x.url)+'" controls playsinline preload="metadata"></video>':'<a href="'+esc(x.url)+'" target="_blank" rel="noopener"><img src="'+esc(x.url)+'" alt="'+esc(x.caption||'Job photo')+'"></a>')
+    +'<figcaption>'+(x.tag?'<b>'+(x.tag==='before'?'Before':'After')+'</b> ':'')+esc(x.caption||'')+'<small>'+fmtDateY(x.date)+'</small></figcaption></figure>'}).join('')+'</div></div>';
+  app.innerHTML=h;$('#print').onclick=function(){window.print()};
+  var ba=document.querySelector('.ba');if(ba){var set=function(ev){var b=ba.getBoundingClientRect(),x=Math.max(0,Math.min(100,(ev.clientX-b.left)/b.width*100));ba.style.setProperty('--x',x+'%')};
+    ba.addEventListener('pointerdown',function(e){set(e);var up=function(){removeEventListener('pointermove',set);removeEventListener('pointerup',up)};addEventListener('pointermove',set);addEventListener('pointerup',up)})}}
+function render(r){if(r.data&&r.data.kind==='photos')return renderPhotos(r);const d=r.data,est=d.kind==='estimate',st=r.status,co=d.company||{};
   const refs=new Set((d.payments||[]).map(p=>p.ref).filter(Boolean));for(const p of r.online||[])if(!refs.has(p.ref))(d.payments=d.payments||[]).push({amount:+p.amount,date:p.date,ref:p.ref});
   const t=docTotals(d),due=Math.max(0,Math.round(t.balance*100)/100),justPaid=/[?&]paid=1/.test(location.search);
   document.title=DOC_KIND[d.kind]+' '+d.num+(co.company?' · '+co.company:'');

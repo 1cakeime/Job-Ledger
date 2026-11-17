@@ -645,6 +645,54 @@ input[type=date],input[type=time]{min-width:0;max-width:100%;width:100%;display:
 .task-add{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;margin-top:10px}.task-add select{width:auto;max-width:110px}
 /* keep pop-ups clear of the iPhone status bar and home indicator */
 dialog,.dlg-form{max-height:calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
+/* ===== field tools ===== */
+.photos video{width:100%;height:100%;object-fit:cover;display:block;background:#000;pointer-events:none}
+.vid-badge{position:absolute;top:50%;left:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center;pointer-events:none}
+.vid-badge svg{width:18px;height:18px;margin-left:2px}
+.photos .tag,.psel .tag{position:absolute;top:6px;left:6px;font:800 10px/1 var(--font-body,inherit);letter-spacing:.06em;text-transform:uppercase;padding:4px 7px;border-radius:999px;background:#fff;color:#10142b;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.viewer video{width:100%;max-height:60vh;background:#000;border-radius:14px;display:block}
+.pv-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+.mini-h{font:800 14px/1.2 Manrope,sans-serif;margin:16px 0 6px}
+.mp-list:empty{display:none}.mp-list{margin-top:10px}
+.mp-item{position:relative}.mp-item .mp-open{width:100%;aspect-ratio:1}
+.mp-item img,.mp-item video{width:100%;height:100%;object-fit:cover;display:block}
+.photos .mp-x{position:absolute;top:-6px;right:-6px;width:26px;height:26px;aspect-ratio:auto;padding:0;border-radius:50%;border:0;background:#10142b;color:#fff;font-size:16px;line-height:1;cursor:pointer;z-index:2}
+.psel label{position:relative;display:block;aspect-ratio:1;border-radius:14px;overflow:hidden;background:var(--surface3);cursor:pointer;margin:0}
+.psel img,.psel video{width:100%;height:100%;object-fit:cover;display:block}
+.psel input{position:absolute;top:8px;right:8px;width:22px;height:22px;z-index:2;accent-color:var(--hi);margin:0}
+.psel label:has(input:checked){box-shadow:inset 0 0 0 3px var(--hi)}
+.psel label:has(input:checked) img,.psel label:has(input:checked) video{opacity:.85}
+.mic{appearance:none;border:0;background:var(--surface2);color:var(--ink);width:30px;height:30px;border-radius:50%;display:inline-grid;place-items:center;margin-left:8px;vertical-align:middle;cursor:pointer}
+.mic svg{width:16px;height:16px}
+label:has(> .mic){position:relative}label > .mic{position:absolute;right:0;top:-6px;margin:0}.mic.on{background:#e5484d;color:#fff;animation:micp 1s ease-in-out infinite}
+@keyframes micp{50%{box-shadow:0 0 0 6px rgba(229,72,77,.25)}}
+.near{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;padding:12px 14px;margin:0 0 14px;border-radius:20px;background:var(--grad);color:#fff;box-shadow:var(--shadow)}
+.near .grow{min-width:0;flex:1 1 180px}.near b{display:block;font:800 16px/1.25 Manrope,sans-serif}.near small{opacity:.85}
+.near .btn:not(.primary){background:rgba(255,255,255,.18)!important;color:#fff!important;box-shadow:none!important}
+.near .btn.primary{background:#fff!important;color:#10142b!important}
+.near-pin{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.2);display:grid;place-items:center;flex:none}.near-pin svg{width:20px;height:20px}
+.loc-row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.steps{margin:0;padding-left:18px;display:grid;gap:6px;font-size:14px}
+.ba{position:relative;aspect-ratio:4/3;max-width:100%;border-radius:18px;overflow:hidden;background:#000;--x:50%;user-select:none;-webkit-user-select:none;touch-action:pan-y;cursor:ew-resize}
+.ba img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.ba-before{position:absolute;inset:0;clip-path:inset(0 calc(100% - var(--x)) 0 0)}
+.ba::after{content:"";position:absolute;top:0;bottom:0;left:var(--x);width:3px;margin-left:-1.5px;background:#fff;box-shadow:0 0 8px rgba(0,0,0,.4);pointer-events:none}
+.ba::before{content:"";position:absolute;top:50%;left:var(--x);width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.35);z-index:2;pointer-events:none}
+.ba-range{position:absolute;left:0;bottom:0;width:100%;height:4px;margin:0;opacity:0;pointer-events:none}
+.ba-l,.ba-r{position:absolute;top:10px;padding:4px 10px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;font-weight:700;z-index:2;pointer-events:none}
+.ba-l{left:10px}.ba-r{right:10px}
+dialog.mk{width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;border:0;border-radius:0;background:#0b0e1a;color:#fff;padding:0;box-shadow:none;animation:none}
+dialog.mk[open]{display:flex;flex-direction:column}
+.mk-top,.mk-bottom{display:flex;gap:8px;align-items:center;padding:10px max(12px,env(safe-area-inset-right)) 10px max(12px,env(safe-area-inset-left))}
+.mk-top{padding-top:calc(10px + env(safe-area-inset-top))}.mk-top .sp{flex:1}.mk .btn.ghost{color:#fff}
+.mk-bottom{flex-direction:column;align-items:stretch;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+.mk-stage{flex:1;min-height:0;position:relative;margin:4px 8px}
+.mk-stage canvas{position:absolute;inset:0;margin:auto;max-width:100%;max-height:100%;touch-action:none;border-radius:6px}
+.mk-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.mk .seg{background:rgba(255,255,255,.1)!important;border:0}.mk .seg button{color:#fff}.mk .seg button[aria-pressed="true"]{background:#fff!important;color:#10142b}
+.mk-colors{display:flex;gap:10px}.mk-colors button{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,.35);cursor:pointer;padding:0}
+.mk-colors button[aria-pressed="true"]{outline:3px solid #fff;outline-offset:2px}
+.mk-text{width:100%;padding:10px 14px;border-radius:12px;border:0;font:inherit;font-size:16px;color:#10142b;background:#fff}
 </style>
 </head>
 <body>
@@ -751,22 +799,22 @@ const DB={db:null,
   put(store,k,v){return this.tx(store,'readwrite',s=>s.put(v,k))},
   del(store,k){return this.tx(store,'readwrite',s=>s.delete(k))},
   clear(store){return this.tx(store,'readwrite',s=>s.clear())}};
-const blank=()=>({v:1,profile:{},settings:{company:'',burden:15,ot:true,otThreshold:40},jobs:[],expenses:[],employees:[],shifts:[],photos:[],docs:[],reports:[],timeOff:[],customers:[]});
+const blank=()=>({v:1,profile:{},settings:{company:'',burden:15,ot:true,otThreshold:40},jobs:[],expenses:[],employees:[],shifts:[],photos:[],docs:[],reports:[],timeOff:[],customers:[],shares:[]});
 let S=blank(), saveT=null, memOnly=false;
 function save(){if(isEmp())return;if(isOwnerCloud())cloudQueue();clearTimeout(saveT);saveT=setTimeout(()=>{if(!memOnly)DB.put('kv','state',S).catch(()=>toast('Could not save on this device'))},250)}
 const memPhotos=new Map();
-async function photoPut(id,blob){if(memOnly)memPhotos.set(id,blob);else await DB.put('photos',id,blob);uploadPhoto(id,blob)}
+async function photoPut(id,blob){if(memOnly)memPhotos.set(id,blob);else await DB.put('photos',id,blob);forgetURL(id);if(isOwnerCloud()){UPQ.add(id);flushUploads()}}
 async function photoGet(id){let b=memOnly?memPhotos.get(id):await DB.get('photos',id).catch(()=>null);
   if(!b&&isOwnerCloud()){try{const {data}=await CLOUD.sb.storage.from('photos').download(photoPath(id));if(data){b=data;if(memOnly)memPhotos.set(id,b);else DB.put('photos',id,b).catch(()=>{})}}catch(e){}}return b}
-async function photoDel(id){if(memOnly)memPhotos.delete(id);else await DB.del('photos',id);if(isOwnerCloud())CLOUD.sb.storage.from('photos').remove([photoPath(id)]).catch(()=>{});const u=urlCache.get(id);if(u){URL.revokeObjectURL(u);urlCache.delete(id)}}
+async function photoDel(id){UPQ.del(id);if(memOnly)memPhotos.delete(id);else await DB.del('photos',id);if(isOwnerCloud())CLOUD.sb.storage.from('photos').remove([photoPath(id)]).catch(()=>{});const u=urlCache.get(id);if(u){URL.revokeObjectURL(u);urlCache.delete(id)}}
 const urlCache=new Map();
 async function photoURL(id){if(urlCache.has(id))return urlCache.get(id);const b=await photoGet(id);if(!b)return'';const u=URL.createObjectURL(b);urlCache.set(id,u);return u}
-function hydratePhotos(root=document){$$('img[data-photo]',root).forEach(async img=>{const u=await photoURL(img.dataset.photo);if(u)img.src=u})}
+function hydratePhotos(root=document){$$('[data-photo]',root).forEach(async el=>{const u=await photoURL(el.dataset.photo);if(!u)return;el.src=el.tagName==='VIDEO'&&!el.controls?u+'#t=0.1':u})}
 async function downscale(file,max=1600){
   try{const bmp=await createImageBitmap(file,{imageOrientation:'from-image'});const k=Math.min(1,max/Math.max(bmp.width,bmp.height));
     const c=document.createElement('canvas');c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
     return await Promise.race([new Promise(r=>c.toBlob(b=>r(b||file),'image/jpeg',.82)),new Promise(r=>setTimeout(()=>r(file),8000))])}catch(e){return file}}
-async function addPhoto(file,jobId,kind='job'){const id=uid();await photoPut(id,await downscale(file));S.photos.push({id,jobId,kind,date:today(),caption:''});return id}
+async function addPhoto(file,jobId,kind='job'){const b=await prepMedia(file);if(!b)return null;const id=uid();await photoPut(id,b);S.photos.push({id,jobId,kind,date:today(),caption:'',...(isVideoBlob(b)?{type:'video'}:{})});return id}
 
 /* ---------- calculations ---------- */
 const job=id=>S.jobs.find(j=>j.id===id), emp=id=>S.employees.find(e=>e.id===id);
@@ -868,7 +916,9 @@ function jobForm(j,pre){const isNew=!j;j=j||{status:'active',est:{},start:today(
     body:`<div class="fields">
       ${field('Job name',inp('name',j.name,'text','required placeholder="e.g. Smith kitchen remodel"'),'full')}
       ${field('Client',inp('client',j.client,'text','list="cust-list" autocomplete="off"')+`<datalist id="cust-list">${S.customers.map(c=>`<option value="${esc(c.name)}">`).join('')}</datalist>`)}${field('Phone',inp('phone',j.phone,'tel'))}
-      ${field('Address',inp('address',j.address),'full')}
+      ${field('Address',inp('address',j.address,'text','autocomplete="off"'),'full')}
+      <div class="full" id="dup-warn">${isNew&&UI.nearJob&&job(UI.nearJob)?dupHTML([job(UI.nearJob)]).replace('Already a job here','You\'re standing at an existing job'):''}</div>
+      <div class="full loc-row"><button type="button" class="btn sm" id="job-here">Set location to where I am</button><span class="note" id="job-loc">${j.lat!=null?`Location saved${j.locFrom?` (from ${esc(j.locFrom)}'s clock-in)`:''}. Crew get an alert when they arrive.`:'Optional. Crew get an alert offering this job when they arrive.'}</span></div>
       ${field('Status',`<select name="status">${Object.entries(STATUS).map(([k,v])=>opt(k,v,j.status)).join('')}</select>`)}
       ${field('Contract price (revenue)',moneyInp('price',j.price))}
       ${field('Start',inp('start',j.start,'date'))}${field('Finish',inp('end',j.end,'date'))}</div>
@@ -877,17 +927,27 @@ function jobForm(j,pre){const isNew=!j;j=j||{status:'active',est:{},start:today(
       <p class="note" style="margin-top:8px">Fill these in from your bid. Blue Board compares them to what you actually spend, so you can see where your estimates run high or low.</p></fieldset>
       ${planFields(j)}
       ${field('Notes',`<textarea name="notes">${esc(j.notes)}</textarea>`)}`,
-    onOpen:f=>{planWire(f);f.elements.client.addEventListener('change',()=>{const c=S.customers.find(x=>normName(x.name)===normName(f.elements.client.value));if(!c)return;if(!f.elements.phone.value)f.elements.phone.value=c.phone||'';if(!f.elements.address.value)f.elements.address.value=c.address||''})},
+    onOpen:f=>{planWire(f);
+      const dup=()=>{const list=dupJobs(f.elements.address.value,j.id,f.dataset.lat?{lat:+f.dataset.lat,lng:+f.dataset.lng}:null);if(list.length||!UI.nearJob||!isNew)$('#dup-warn',f).innerHTML=dupHTML(list);f.dataset.dupOk=''};
+      let dt;f.elements.address.addEventListener('input',()=>{clearTimeout(dt);dt=setTimeout(dup,400)});
+      f.addEventListener('click',e=>{if(e.target.closest('[data-dup-open]'))$('#dlg').close()});
+      $('#job-here',f).onclick=async()=>{const b=$('#job-here',f),n=$('#job-loc',f);b.disabled=true;n.textContent='Getting your location…';const loc=await getLoc();b.disabled=false;
+        if(!loc){n.textContent='Couldn\'t get your location. Turn on location for Blue Board and try again.';return}
+        f.dataset.lat=loc.lat;f.dataset.lng=loc.lng;n.textContent=`Location set (within about ${Math.round(loc.acc||0)} m). Save to keep it.`;dup()};
+      f.elements.client.addEventListener('change',()=>{const c=S.customers.find(x=>normName(x.name)===normName(f.elements.client.value));if(!c)return;if(!f.elements.phone.value)f.elements.phone.value=c.phone||'';if(!f.elements.address.value)f.elements.address.value=c.address||''})},
     onDelete:isNew?null:async()=>{for(const p of S.photos.filter(p=>p.jobId===j.id))await photoDel(p.id);
       S.photos=S.photos.filter(p=>p.jobId!==j.id);S.expenses=S.expenses.filter(x=>x.jobId!==j.id);S.shifts=S.shifts.filter(x=>x.jobId!==j.id);S.jobs=S.jobs.filter(x=>x.id!==j.id);save();toast('Job deleted');location.hash='#/jobs'},
     deleteLabel:'Delete job',
     onSubmit:(fd,f)=>{const plan=readPlan(fd),status=fd.get('status'),jid=isNew?(f.dataset.newId||(f.dataset.newId=uid())):j.id;
       if(plan.crew.length){if(!plan.to){toast('Pick the last day to schedule the crew');return false}if(plan.to<plan.from){toast('The last day is before the first day');return false}if(!plan.days.length){toast('Pick at least one work day');return false}}
+      if(isNew&&f.dataset.dupOk!=='1'){const list=dupJobs(fd.get('address'),null,f.dataset.lat?{lat:+f.dataset.lat,lng:+f.dataset.lng}:null);
+        if(list.length){f.dataset.dupOk='1';$('#dup-warn',f).innerHTML=dupHTML(list);$('#dup-warn',f).scrollIntoView({block:'nearest'});toast('There\'s already a job at this address. Save again to make a new one anyway.');return false}}
       const conf=planConflicts(jid,plan,status);
       if(conf.length&&f.dataset.warned!=='1'){f.dataset.warned='1';$('#plan-warn',f).innerHTML=`<div class="insight warn"><b>Already booked</b><span>${conf.slice(0,5).map(c=>`${esc(emp(c.empId)?.name)} on ${fmtDate(c.date)} (${esc(job(c.other)?.name||'another job')})`).join(', ')}${conf.length>5?` and ${conf.length-5} more`:''}. Those days will be skipped. <label class="check" style="margin-top:6px"><input type="checkbox" name="dbl"> Book them anyway</label></span></div>`;$('#plan-warn',f).scrollIntoView({block:'nearest'});toast('Some crew are already booked. Check, then save again.');return false}
       const o=isNew?{id:jid,createdAt:Date.now(),changeOrders:[]}:j;
       Object.assign(o,{name:fd.get('name').trim(),client:fd.get('client').trim(),phone:fd.get('phone').trim(),address:fd.get('address').trim(),status:fd.get('status'),price:num(fd.get('price')),start:fd.get('start'),end:fd.get('end'),notes:fd.get('notes'),
         est:Object.fromEntries(EST.map(([k])=>[k,num(fd.get('est_'+k))]))});
+      if(f.dataset.lat){o.lat=+f.dataset.lat;o.lng=+f.dataset.lng;delete o.locFrom}
       linkJobCustomer(o);o.plan=plan;if(isNew)S.jobs.push(o);const r=syncPlan(o,{double:!!fd.get('dbl')});save();
       const msg=[isNew?'Job created':'Saved'];if(r.added)msg.push(`${r.added} shift${r.added>1?'s':''} scheduled`);if(r.removed)msg.push(`${r.removed} removed`);if(r.skipped)msg.push(`${r.skipped} skipped (already booked)`);if(r.off)msg.push(`${r.off} skipped (time off)`);
       if(plan.crew.length&&o.status==='bid')msg.push('crew will be scheduled when the job is Active');toast(msg.join(' · '));if(isNew)location.hash='#/job/'+o.id;offerCrewTexts(r.list)}})}
@@ -1139,30 +1199,31 @@ function allReports(jobId){const own=S.reports.filter(r=>!jobId||r.jobId===jobId
   return own.concat(crew).sort((a,b)=>(b.date||'').localeCompare(a.date||''))}
 function reportItem(r,showJob){return `<li style="display:block"><div class="split"><b>${esc(r.who)}${showJob?` · ${esc(job(r.jobId)?.name||'Job')}`:''}</b><small class="note">${fmtDate(r.date)}</small></div>
   ${r.notes?`<p style="margin:4px 0 0;white-space:pre-line">${esc(r.notes)}</p>`:''}
-  ${r.photos.length?`<div class="photos" style="margin-top:8px">${r.photos.map(id=>`<button data-act="rphoto" data-id="${esc(id)}"><img data-photo="${esc(id)}" alt="Report photo" loading="lazy"></button>`).join('')}</div>`:''}
+  ${r.photos.length?`<div class="photos" style="margin-top:8px">${r.photos.map(id=>`<button data-act="rphoto" data-id="${esc(id)}">${mediaTag(id,isVidPath(id)||S.photos.find(p=>p.id===id)?.type==='video','Report photo')}</button>`).join('')}</div>`:''}
   ${r.mine?`<div class="btns" style="margin-top:6px"><button class="btn sm ghost" data-act="report-edit" data-id="${r.id}">Edit</button></div>`:''}</li>`}
 function reportsCard(j){const rs=allReports(j.id);
   return `<div class="card"><div class="card-head"><h2>Daily reports</h2><button class="btn sm" data-act="report-new">+ Add report</button></div>
     ${rs.length?`<ul class="list">${rs.slice(0,UI.allReports===j.id?999:5).map(r=>reportItem(r)).join('')}</ul>${rs.length>5&&UI.allReports!==j.id?`<button class="btn sm ghost" data-act="reports-all" data-id="${j.id}">Show all ${rs.length}</button>`:''}`
       :`<p class="note">What got done each day, problems, and photos. ${isOwnerCloud()?'Your crew can add reports from their phones too.':''}</p>`}</div>`}
-function reportForm(r,pre={}){const isNew=!r,crew=isEmp();r=r||{date:today(),jobId:pre.jobId||''};
-  let jobs=S.jobs.filter(j=>j.status!=='done'||j.id===r.jobId);if(crew){const mine=new Set(S.shifts.filter(s=>s.empId===CLOUD.employeeId&&s.date>=addDays(today(),-7)).map(s=>s.jobId));jobs=jobs.filter(j=>mine.has(j.id)||j.status==='active')}
-  if(!r.jobId){const s=S.shifts.find(s=>s.date===today()&&(!crew||s.empId===CLOUD.employeeId));r.jobId=s?.jobId||jobs[0]?.id||''}
+function reportForm(r,pre={}){const isNew=!r,crew=isEmp();r=r||{date:today(),jobId:pre.jobId||''};const picks=[];
+  let jobs=S.jobs.filter(j=>j.status!=='done'||j.id===r.jobId);if(crew){const mine=new Set(S.shifts.filter(s=>s.empId===CLOUD.employeeId&&s.date>=addDays(today(),-7)).map(s=>s.jobId));jobs=jobs.filter(j=>mine.has(j.id)||j.status==='active'||j.id===r.jobId)}
+  if(!r.jobId){const s=S.shifts.find(s=>s.date===today()&&(!crew||s.empId===CLOUD.employeeId));r.jobId=UI.nearJob||s?.jobId||jobs[0]?.id||''}
   if(!jobs.length){toast('No jobs to report on yet');return}
-  openForm({title:isNew?'Daily report':'Edit report',submit:isNew?'Send report':'Save',
+  openForm({title:isNew?'Daily report':'Edit report',submit:isNew?(crew?'Send report':'Save report'):'Save',
     body:`<div class="fields">${field('Job',`<select name="jobId">${jobs.map(j=>opt(j.id,j.name,r.jobId)).join('')}</select>`)}${field('Date',inp('date',r.date,'date'))}</div>
-      ${field('What got done, problems, what\'s needed',`<textarea name="notes" rows="5" placeholder="Hung drywall in the basement. Need 6 more sheets and mud for tomorrow.">${esc(r.notes||'')}</textarea>`,'full')}
-      ${isNew?`<label class="btn sm" style="flex-direction:row;color:var(--ink);width:max-content">Add photos<input type="file" accept="image/*" multiple name="rphotos" hidden></label><p class="note" id="rp-count"></p>`:''}`,
-    onOpen:f=>{const i=f.querySelector('[name=rphotos]');if(i)i.addEventListener('change',()=>{$('#rp-count',f).textContent=i.files.length?`${i.files.length} photo${i.files.length>1?'s':''} added`:''})},
+      ${field('What got done, problems, what\'s needed'+micBtn('notes'),`<textarea name="notes" rows="5" placeholder="Hung drywall in the basement. Need 6 more sheets and mud for tomorrow.">${esc(r.notes||'')}</textarea>`,'full')}${VOICE_TIP}
+      ${isNew?mediaPickerHTML():''}
+      ${isNew&&crew?'<p class="note">No signal? It saves on your phone and sends by itself when you\'re back in range.</p>':''}`,
+    onOpen:f=>{if(isNew)mediaPicker(f,picks)},
     onDelete:isNew||crew?null:async()=>{for(const id of r.photoIds||[]){await photoDel(id);S.photos=S.photos.filter(p=>p.id!==id)}S.reports=S.reports.filter(x=>x.id!==r.id);save();toast('Report deleted')},
-    onSubmit:async(fd,f)=>{const notes=fd.get('notes').trim(),files=[...(f.querySelector('[name=rphotos]')?.files||[])];
-      if(!notes&&!files.length){toast('Write a few words or add a photo');return false}
+    onSubmit:async(fd)=>{const notes=fd.get('notes').trim();
+      if(!notes&&!picks.length){toast('Write a few words or add a photo');return false}
       const jobId=fd.get('jobId'),date=fd.get('date')||today();
-      if(crew){const sb=CLOUD.sb,photos=[];
-        for(const file of files){try{const b=await downscale(file),id='reports/'+uid()+uid()+'.jpg';const {error}=await sb.storage.from('photos').upload(`${CLOUD.company}/${id}`,b,{contentType:b.type||'image/jpeg'});if(!error)photos.push(id)}catch(e){}}
-        const {error}=await sb.from('daily_reports').insert({company_id:CLOUD.company,user_id:CLOUD.user.id,employee_id:CLOUD.employeeId,job_id:jobId,date,notes,photos});
-        if(error){toast('Could not send: '+errMsg(error));return false}notify({to:'owner',title:'Daily report',body:`${emp(CLOUD.employeeId)?.name||'Crew'} · ${job(jobId)?.name||'Job'}: ${notes.slice(0,140)||'photos added'}`,hash:'#/job/'+jobId});await empExtrasLoad();toast(files.length&&photos.length<files.length?'Report sent, but some photos didn\'t upload':'Report sent');return}
-      const o=isNew?{id:uid(),photoIds:[]}:r;Object.assign(o,{jobId,date,notes});for(const file of files)o.photoIds.push(await addPhoto(file,jobId,'report'));
+      if(crew){const id=uid(),media=[];for(const [i,p] of picks.entries()){const key=`ob/${id}/${i}`;await obBlobPut(key,p.blob);media.push({key,ext:mediaExt(p.blob)})}
+        OB.push({id,type:'report',jobId,date,notes,media,at:Date.now()});obSave();picks.forEach(p=>URL.revokeObjectURL(p.url));
+        await flushOutbox(true);toast(OB.some(x=>x.id===id)?'Saved on your phone. It will send when you have signal.':'Report sent');return}
+      const o=isNew?{id:uid(),photoIds:[]}:r;Object.assign(o,{jobId,date,notes});
+      for(const p of picks){const pid=uid();await photoPut(pid,p.blob);S.photos.push({id:pid,jobId,kind:'report',date,caption:'',...(p.video?{type:'video'}:{})});o.photoIds.push(pid);URL.revokeObjectURL(p.url)}
       if(isNew)S.reports.push(o);save();toast(isNew?'Report added':'Report saved')}})}
 
 /* ---------- time off ---------- */
@@ -1195,7 +1256,9 @@ async function offDecide(id,ok){const r=(CLOUD.timeReqs||[]).find(x=>x.id===id);
 /* ---------- crew side: reports and time-off requests ---------- */
 function crewExtras(){const mine=CLOUD.myReports||[],reqs=CLOUD.myTimeOff||[],t=today();
   const st={pending:['active','Waiting'],approved:['done','Approved'],denied:['bad','Denied']};
-  return `${myTasksCard()}<div class="grid2"><div class="card"><div class="card-head"><h2>Daily report</h2><button class="btn sm primary" data-act="report-new">+ New report</button></div>
+  const waiting=OB.filter(x=>x.type==='report');
+  return `${myTasksCard()}<div class="grid2"><div class="card"><div class="card-head"><h2>Daily report</h2><button class="btn sm primary" data-act="report-new">+ Photos &amp; report</button></div>
+      ${waiting.length?`<ul class="list" style="margin-bottom:8px">${waiting.map(r=>`<li><div class="grow"><b>${esc(job(r.jobId)?.name||'Job')}</b><small>${fmtDate(r.date)}${r.media.length?` · ${r.media.length} photo${r.media.length>1?'s':''}`:''}${r.notes?' · '+esc(r.notes.slice(0,80)):''}</small></div><span class="badge warn">Waiting for signal</span></li>`).join('')}</ul>`:''}
       ${mine.length?`<ul class="list">${mine.slice(0,4).map(r=>`<li><div class="grow"><b>${esc(job(r.job_id)?.name||'Job')}</b><small>${fmtDate(r.date)}${r.photos?.length?` · ${r.photos.length} photo${r.photos.length>1?'s':''}`:''}${r.notes?' · '+esc(r.notes.slice(0,80)):''}</small></div></li>`).join('')}</ul>`
         :'<p class="note">Tell your boss what got done today and what you need. Add photos of the work.</p>'}</div>
     <div class="card"><div class="card-head"><h2>Time off</h2><button class="btn sm" data-act="off-req">Request time off</button></div>
@@ -1326,11 +1389,12 @@ function myTasksCard(){const me=CLOUD.employeeId,wk=weekStart(today()),mine=new 
   if(!rows.length)return '';const open=rows.filter(r=>!r.done);
   return `<div class="card"><div class="card-head"><h2>My tasks</h2><span class="note">${open.length} to do</span></div><ul class="list">
     ${rows.sort((a,b)=>a.done-b.done).slice(0,30).map(r=>`<li><label class="check grow" style="margin:0"><input type="checkbox" data-mytask="${r.t.id}" data-job="${r.j.id}"${r.done?' checked':''}><span${r.done?' style="text-decoration:line-through;color:var(--muted)"':''}>${esc(r.t.text)}<small class="note" style="display:block">${esc(r.j.name)}</small></span></label></li>`).join('')}</ul></div>`}
-async function crewSetTask(jobId,taskId,done){const {data,error}=await CLOUD.sb.rpc('set_task',{p_company:CLOUD.company,p_job:jobId,p_task:taskId,p_done:done});
-  if(error){toast('Could not save: '+errMsg(error));return false}CLOUD.taskChecks=(CLOUD.taskChecks||[]).filter(x=>x.task_id!==taskId).concat([data]);
+async function crewSetTask(jobId,taskId,done){if(!navigator.onLine)return queueTask(jobId,taskId,done);
+  const {data,error}=await CLOUD.sb.rpc('set_task',{p_company:CLOUD.company,p_job:jobId,p_task:taskId,p_done:done});
+  if(error){if(isNetErr(error))return queueTask(jobId,taskId,done);toast('Could not save: '+errMsg(error));return false}CLOUD.taskChecks=(CLOUD.taskChecks||[]).filter(x=>x.task_id!==taskId).concat([data]);
   if(done)notify({to:'owner',title:'Task done',body:`${emp(CLOUD.employeeId)?.name||'Crew'}: ${S.jobs.find(j=>j.id===jobId)?.tasks?.find(t=>t.id===taskId)?.text||'a task'}`,hash:'#/job/'+jobId});return true}
 async function taskChecksLoad(){if(!CLOUD.sb||!CLOUD.company)return false;const {data,error}=await CLOUD.sb.from('task_checks').select('task_id,job_id,done,employee_id,done_at').eq('company_id',CLOUD.company);
-  if(error)return false;CLOUD.taskChecks=data;if(!isOwnerCloud())return false;let ch=false;
+  if(error)return false;CLOUD.taskChecks=data;if(isEmp())obTasks();if(!isOwnerCloud())return false;let ch=false;
   for(const c of data){const j=job(c.job_id),t=j?.tasks?.find(x=>x.id===c.task_id);if(!t)continue;
     if(!t.doneAt||c.done_at>t.doneAt){if(t.done!==c.done||t.doneAt!==c.done_at){Object.assign(t,{done:c.done,doneAt:c.done_at,doneBy:c.done?(emp(c.employee_id)?.name||'Crew'):''});ch=true}}}
   if(ch)save();return ch}
@@ -1404,13 +1468,244 @@ function shiftForm(s,pre={}){const isNew=!s;
       const moved=['empId','jobId','start','end'].some(k=>s[k]!==base[k])||s.date!==date;
       if(s.empId!==base.empId){s.rate=e.rate;s.burden=e.burden}Object.assign(s,base,{date});un=payTouch(s.empId,s.date)||un;save();toast(un?'Saved.'+again:'Saved');if(moved)offerCrewTexts([s])}})}
 
-function photoViewer(p){const j=job(p.jobId);
-  openForm({title:p.kind==='receipt'?'Receipt':'Photo',submit:'Save caption',
-    body:`<div class="viewer"><img data-photo="${p.id}" alt="${esc(p.caption||'Job photo')}"></div>
-      <p class="note">${esc(j?.name||'')} · ${fmtDateY(p.date)}</p>${field('Caption',inp('caption',p.caption,'text','placeholder="e.g. Rough-in before drywall"'))}`,
-    onOpen:f=>hydratePhotos(f),
-    onDelete:async()=>{await photoDel(p.id);S.photos=S.photos.filter(x=>x.id!==p.id);S.expenses.forEach(x=>{if(x.photoId===p.id)delete x.photoId});save();toast('Photo deleted')},
-    onSubmit:fd=>{p.caption=fd.get('caption').trim();save()}})}
+/* ---------- field tools: offline uploads, video, photo markup, before & after, voice notes, arrival alerts, customer photo links, importing ---------- */
+const MAX_VIDEO=50*1024*1024;
+const isVideoBlob=b=>!!b&&/^video\//.test(b.type||'');
+const isVidPath=id=>/\.(mp4|mov|m4v|webm)$/i.test(String(id));
+const mediaExt=b=>({'video/quicktime':'mov','video/mp4':'mp4','video/webm':'webm','image/png':'png'}[b?.type]||(isVideoBlob(b)?'mp4':'jpg'));
+const isNetErr=e=>!navigator.onLine||/fetch|network|load failed|offline|timed? ?out|connection/i.test(String(e?.message||e||''));
+const PLAY_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>';
+const mediaTag=(id,video,alt='Job photo')=>video?`<video data-photo="${esc(id)}" muted playsinline preload="metadata" aria-label="${esc(alt)}"></video><span class="vid-badge">${PLAY_SVG}</span>`:`<img data-photo="${esc(id)}" alt="${esc(alt)}">`;
+function forgetURL(id){const u=urlCache.get(id);if(u){URL.revokeObjectURL(u);urlCache.delete(id)}}
+async function prepMedia(file){if(/^video\//.test(file.type||'')){if(file.size>MAX_VIDEO){toast('That video is too big. Keep videos under 50 MB, about a minute long.');return null}return file}return downscale(file)}
+
+/* Owner photos: saved on the phone first, then uploaded from a queue that retries until it works. */
+const UPQ={get(){try{return JSON.parse(LS.get('upq')||'[]')}catch(e){return[]}},set(a){a=[...new Set(a)];LS.set('upq',a.length?JSON.stringify(a):null)},
+  add(id){this.set(this.get().concat(id))},del(id){this.set(this.get().filter(x=>x!==id))}};
+let upBusy=false;
+async function flushUploads(){if(upBusy||!isOwnerCloud()||!navigator.onLine)return;upBusy=true;
+  try{for(const id of UPQ.get()){const b=memOnly?memPhotos.get(id):await DB.get('photos',id).catch(()=>null);if(!b){UPQ.del(id);continue}if(await uploadPhoto(id,b))UPQ.del(id);else break}}
+  finally{upBusy=false;syncBadge()}}
+
+/* Crew: reports, photos and task check-offs go into an outbox on the phone and send when there's signal. */
+let OB=[];
+async function obLoad(){try{if(!memOnly)OB=(await DB.get('kv','outbox'))||[]}catch(e){}}
+function obSave(){if(!memOnly)DB.put('kv','outbox',OB).catch(()=>{})}
+async function obBlobPut(k,b){if(memOnly)memPhotos.set(k,b);else await DB.put('photos',k,b)}
+async function obBlobGet(k){return memOnly?memPhotos.get(k):DB.get('photos',k).catch(()=>null)}
+async function obBlobDel(k){if(memOnly)memPhotos.delete(k);else await DB.del('photos',k).catch(()=>{})}
+let obBusy=false;
+async function flushOutbox(quiet){if(obBusy||!isEmp()||!CLOUD.sb||!CLOUD.user||!navigator.onLine||!OB.length)return 0;obBusy=true;let sent=0;
+  try{for(const it of [...OB]){try{
+      if(it.type==='task'){const {error}=await CLOUD.sb.rpc('set_task',{p_company:CLOUD.company,p_job:it.jobId,p_task:it.taskId,p_done:it.done});if(error)throw error}
+      else if(it.type==='report'){const paths=[];
+        for(const m of it.media){if(!m.path){m.path=`reports/${uid()}${uid()}.${m.ext}`;obSave()}
+          if(!m.up){const b=await obBlobGet(m.key);if(b){const {error}=await CLOUD.sb.storage.from('photos').upload(`${CLOUD.company}/${m.path}`,b,{contentType:b.type||'image/jpeg'});if(error&&!/exist|duplicate/i.test(error.message||''))throw error}m.up=true;obSave()}
+          paths.push(m.path)}
+        const {error}=await CLOUD.sb.from('daily_reports').insert({company_id:CLOUD.company,user_id:CLOUD.user.id,employee_id:CLOUD.employeeId,job_id:it.jobId,date:it.date,notes:it.notes,photos:paths});if(error)throw error;
+        for(const m of it.media)await obBlobDel(m.key);
+        notify({to:'owner',title:'Daily report',body:`${emp(CLOUD.employeeId)?.name||'Crew'} · ${job(it.jobId)?.name||'Job'}: ${it.notes.slice(0,140)||'photos added'}`,hash:'#/job/'+it.jobId})}
+      OB=OB.filter(x=>x.id!==it.id);obSave();sent++}
+    catch(e){if(isNetErr(e))break;it.tries=(it.tries||0)+1;if(it.tries>=5){OB=OB.filter(x=>x.id!==it.id);toast(`A ${it.type==='task'?'task check-off':'report'} couldn't be sent: ${errMsg(e)}`)}obSave()}}}
+  finally{obBusy=false}
+  if(sent){await empExtrasLoad();if(!quiet){softRender();toast(sent===1?'Saved item sent':`${sent} saved items sent`)}}
+  return sent}
+function obTasks(){for(const it of OB)if(it.type==='task')CLOUD.taskChecks=(CLOUD.taskChecks||[]).filter(x=>x.task_id!==it.taskId).concat([{task_id:it.taskId,job_id:it.jobId,done:it.done,employee_id:CLOUD.employeeId,done_at:new Date(it.at).toISOString()}])}
+function queueTask(jobId,taskId,done){OB=OB.filter(x=>!(x.type==='task'&&x.taskId===taskId));OB.push({id:uid(),type:'task',jobId,taskId,done,at:Date.now()});obSave();obTasks();toast('Saved. It will sync when you have signal.');return true}
+
+/* Voice notes: a mic button where the browser can turn speech into text. Elsewhere the keyboard's mic does it. */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const micBtn=name=>SR?`<button type="button" class="mic" data-mic="${name}" aria-label="Talk instead of typing" title="Talk instead of typing"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>`:'';
+const VOICE_TIP=SR?'':'<p class="note">Tip: tap the microphone on your keyboard to talk instead of typing.</p>';
+let micRec=null;
+document.addEventListener('click',e=>{const b=e.target.closest('[data-mic]');if(!b)return;e.preventDefault();const el=b.closest('form')?.elements[b.dataset.mic];if(!el||!SR)return;
+  if(micRec){micRec.stop();return}const r=new SR();micRec=r;r.lang=navigator.language||'en-US';r.interimResults=false;b.classList.add('on');
+  r.onresult=ev=>{const t=[...ev.results].map(x=>x[0].transcript).join(' ').trim();if(t)el.value=(el.value.trim()?el.value.trim()+' ':'')+t};
+  r.onend=r.onerror=()=>{b.classList.remove('on');micRec=null};try{r.start()}catch(err){micRec=null;b.classList.remove('on')}});
+
+/* Photo markup: arrows, circles, freehand and text labels, drawn with a thumb. Resolves to a new JPEG, or null if cancelled. */
+function markup(blob){return new Promise(async done=>{let bmp;try{bmp=await createImageBitmap(blob)}catch(e){toast('That photo can\'t be marked up');return done(null)}
+  const W=bmp.width,H=bmp.height,sw=Math.max(4,Math.round(Math.max(W,H)/170)),shapes=[];let tool='arrow',color='#FF3B30',cur=null;
+  const TOOLS=[['arrow','Arrow'],['circle','Circle'],['pen','Draw'],['text','Text']],COLORS=[['#FF3B30','Red'],['#FFCC00','Yellow'],['#2D5BFF','Blue'],['#FFFFFF','White']];
+  const d=document.createElement('dialog');d.className='mk';
+  d.innerHTML=`<div class="mk-top"><button type="button" class="btn ghost sm" data-mk="cancel">Cancel</button><span class="sp"></span><button type="button" class="btn sm" data-mk="undo">Undo</button><button type="button" class="btn primary sm" data-mk="save">Save</button></div>
+    <div class="mk-stage"><canvas width="${W}" height="${H}"></canvas></div>
+    <div class="mk-bottom"><input class="mk-text" placeholder="Type a label, then tap the photo where it goes" maxlength="40" hidden>
+      <div class="mk-row"><div class="seg" role="group" aria-label="Tool">${TOOLS.map(([k,l])=>`<button type="button" data-tool="${k}" aria-pressed="${k===tool}">${l}</button>`).join('')}</div>
+      <div class="mk-colors" role="group" aria-label="Color">${COLORS.map(([c,l])=>`<button type="button" data-color="${c}" aria-label="${l}" aria-pressed="${c===color}" style="background:${c}"></button>`).join('')}</div></div></div>`;
+  document.body.appendChild(d);const cv=d.querySelector('canvas'),ctx=cv.getContext('2d'),txt=d.querySelector('.mk-text');
+  const draw=s=>{ctx.lineCap='round';ctx.lineJoin='round';
+    for(const pass of [0,1]){ctx.strokeStyle=ctx.fillStyle=pass?s.color:'rgba(0,0,0,.45)';ctx.lineWidth=pass?sw:sw+Math.max(3,sw*.6);
+      if(s.t==='pen'){ctx.beginPath();s.pts.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.stroke()}
+      else if(s.t==='circle'){ctx.beginPath();ctx.ellipse((s.x1+s.x2)/2,(s.y1+s.y2)/2,Math.max(2,Math.abs(s.x2-s.x1)/2),Math.max(2,Math.abs(s.y2-s.y1)/2),0,0,Math.PI*2);ctx.stroke()}
+      else if(s.t==='arrow'){const a=Math.atan2(s.y2-s.y1,s.x2-s.x1),h=sw*4.5;ctx.beginPath();ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);
+        ctx.moveTo(s.x2-h*Math.cos(a-.5),s.y2-h*Math.sin(a-.5));ctx.lineTo(s.x2,s.y2);ctx.lineTo(s.x2-h*Math.cos(a+.5),s.y2-h*Math.sin(a+.5));ctx.stroke()}
+      else if(s.t==='text'){ctx.font=`800 ${sw*7}px Manrope, system-ui, sans-serif`;ctx.textBaseline='middle';if(pass)ctx.fillText(s.text,s.x,s.y);else{ctx.lineWidth=sw*1.6;ctx.strokeText(s.text,s.x,s.y)}}}};
+  const render=()=>{ctx.drawImage(bmp,0,0);shapes.forEach(draw);if(cur)draw(cur)};render();
+  const pt=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height]};
+  cv.addEventListener('pointerdown',e=>{e.preventDefault();const [x,y]=pt(e);
+    if(tool==='text'){const t=txt.value.trim();if(!t){txt.focus();toast('Type the label first');return}shapes.push({t:'text',x,y,text:t,color});txt.value='';render();return}
+    try{cv.setPointerCapture(e.pointerId)}catch(err){}cur=tool==='pen'?{t:'pen',pts:[[x,y]],color}:{t:tool,x1:x,y1:y,x2:x,y2:y,color};render()});
+  cv.addEventListener('pointermove',e=>{if(!cur)return;const [x,y]=pt(e);if(cur.t==='pen')cur.pts.push([x,y]);else{cur.x2=x;cur.y2=y}render()});
+  const end=()=>{if(!cur)return;if(cur.t==='pen'?cur.pts.length>1:Math.hypot(cur.x2-cur.x1,cur.y2-cur.y1)>sw*2)shapes.push(cur);cur=null;render()};
+  cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+  const close=v=>{d.close();d.remove();try{bmp.close()}catch(e){}done(v)};
+  d.addEventListener('cancel',e=>{e.preventDefault();close(null)});
+  d.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+    if(b.dataset.tool){tool=b.dataset.tool;$$('[data-tool]',d).forEach(x=>x.setAttribute('aria-pressed',String(x===b)));txt.hidden=tool!=='text';if(tool==='text')txt.focus()}
+    else if(b.dataset.color){color=b.dataset.color;$$('[data-color]',d).forEach(x=>x.setAttribute('aria-pressed',String(x===b)))}
+    else if(b.dataset.mk==='undo'){shapes.pop();render()}
+    else if(b.dataset.mk==='cancel')close(null);
+    else if(b.dataset.mk==='save'){if(!shapes.length)return close(null);cur=null;render();cv.toBlob(o=>close(o),'image/jpeg',.86)}});
+  d.showModal()})}
+
+/* Picked photos and videos inside a form, before they're saved. Tap a photo to mark it up. */
+function mediaPicker(f,picks){const list=$('.mp-list',f);
+  const draw=()=>{list.innerHTML=picks.map((p,i)=>`<div class="mp-item"><button type="button" class="mp-open" data-i="${i}" aria-label="${p.video?'Video':'Mark up photo'}">${p.video?`<video src="${p.url}#t=0.1" muted playsinline preload="metadata"></video><span class="vid-badge">${PLAY_SVG}</span>`:`<img src="${p.url}" alt="">`}</button><button type="button" class="mp-x" data-x="${i}" aria-label="Remove">×</button></div>`).join('');
+    const n=$('.mp-note',f);if(n)n.hidden=!picks.some(p=>!p.video)};
+  f.addEventListener('change',async e=>{if(!e.target.matches('[data-mp]'))return;const files=[...e.target.files];e.target.value='';
+    for(const file of files){const b=await prepMedia(file);if(b)picks.push({blob:b,url:URL.createObjectURL(b),video:isVideoBlob(b)})}draw()});
+  list.addEventListener('click',async e=>{const x=e.target.closest('[data-x]');if(x){const p=picks.splice(+x.dataset.x,1)[0];URL.revokeObjectURL(p.url);draw();return}
+    const o=e.target.closest('[data-i]');if(!o)return;const p=picks[+o.dataset.i];if(p.video)return;const out=await markup(p.blob);if(out){URL.revokeObjectURL(p.url);Object.assign(p,{blob:out,url:URL.createObjectURL(out)});draw()}});
+  draw()}
+const mediaPickerHTML=()=>`<div class="btns"><label class="btn sm" style="flex-direction:row;color:var(--ink)">Take photo or video<input type="file" accept="image/*,video/*" capture="environment" data-mp hidden></label><label class="btn sm" style="flex-direction:row;color:var(--ink)">Choose from library<input type="file" accept="image/*,video/*" multiple data-mp hidden></label></div>
+  <div class="photos mp-list"></div><p class="note mp-note" hidden>Tap a photo to draw arrows, circles or labels on it.</p>`;
+
+/* Before & after slider. */
+const baSlider=(b,a)=>`<div class="ba"><img data-photo="${esc(a)}" alt="After"><div class="ba-before"><img data-photo="${esc(b)}" alt="Before"></div><input class="ba-range" type="range" min="0" max="100" value="50" aria-label="Slide to compare before and after"><span class="ba-l">Before</span><span class="ba-r">After</span></div>`;
+document.addEventListener('pointerdown',e=>{const ba=e.target.closest('.ba');if(!ba)return;
+  const set=ev=>{const r=ba.getBoundingClientRect(),x=Math.max(0,Math.min(100,(ev.clientX-r.left)/r.width*100));ba.style.setProperty('--x',x+'%');const rg=ba.querySelector('.ba-range');if(rg)rg.value=Math.round(x)};
+  set(e);const up=()=>{removeEventListener('pointermove',set);removeEventListener('pointerup',up);removeEventListener('pointercancel',up)};addEventListener('pointermove',set);addEventListener('pointerup',up);addEventListener('pointercancel',up)});
+document.addEventListener('input',e=>{if(e.target.classList?.contains('ba-range'))e.target.closest('.ba').style.setProperty('--x',e.target.value+'%')});
+
+function photoViewer(p){const j=job(p.jobId),vid=p.type==='video',rec=p.kind==='receipt';
+  openForm({title:rec?'Receipt':vid?'Video':'Photo',submit:'Save',
+    body:`<div class="viewer">${vid?`<video data-photo="${p.id}" controls playsinline></video>`:`<img data-photo="${p.id}" alt="${esc(p.caption||'Job photo')}">`}</div>
+      <p class="note">${esc(j?.name||'')} · ${fmtDateY(p.date)}</p>
+      ${rec?'':`<div class="pv-tools">${vid?'':`<button type="button" class="btn sm primary" id="pv-mark">Mark up</button>`}${p.orig?'<button type="button" class="btn sm" id="pv-restore">Restore original</button>':''}
+        <div class="seg" role="group" aria-label="Before or after">${[['','No tag'],['before','Before'],['after','After']].map(([k,l])=>`<button type="button" data-tag="${k}" aria-pressed="${(p.tag||'')===k}">${l}</button>`).join('')}</div></div>`}
+      ${field('Caption'+micBtn('caption'),inp('caption',p.caption,'text','placeholder="e.g. Rough-in before drywall"'))}${VOICE_TIP}`,
+    onOpen:f=>{hydratePhotos(f);f.dataset.tag=p.tag||'';
+      $$('[data-tag]',f).forEach(b=>b.onclick=()=>{f.dataset.tag=b.dataset.tag;$$('[data-tag]',f).forEach(x=>x.setAttribute('aria-pressed',String(x===b)))});
+      const show=async()=>{forgetURL(p.id);const img=$('.viewer img',f);if(img)img.src=await photoURL(p.id)};
+      const mk=$('#pv-mark',f);if(mk)mk.onclick=async()=>{const b=await photoGet(p.id);if(!b)return toast('This photo hasn\'t downloaded yet. Try again with signal.');const out=await markup(b);if(!out)return;
+        if(!p.orig){const oid=uid();await photoPut(oid,b);p.orig=oid}await photoPut(p.id,out);save();await show();toast('Markup saved')};
+      const rs=$('#pv-restore',f);if(rs)rs.onclick=async()=>{const b=await photoGet(p.orig);if(!b)return toast('The original isn\'t available offline');await photoPut(p.id,b);await photoDel(p.orig);delete p.orig;rs.remove();save();await show();toast('Original restored')}},
+    onDelete:async()=>{await photoDel(p.id);if(p.orig)await photoDel(p.orig);S.photos=S.photos.filter(x=>x.id!==p.id);S.expenses.forEach(x=>{if(x.photoId===p.id)delete x.photoId});save();toast(vid?'Video deleted':'Photo deleted')},
+    onSubmit:(fd,f)=>{p.caption=fd.get('caption').trim();const t=f.dataset.tag;if(t)p.tag=t;else delete p.tag;save()}})}
+
+/* Arrival alerts: when someone opens the app at a job's location, offer that job. */
+const distM=(a,b,c,d)=>{const R=6371e3,r=x=>x*Math.PI/180,dl=r(c-a),dn=r(d-b),h=Math.sin(dl/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
+async function geoCheck(){if(LS.get('geo')!=='1'||document.hidden)return;if(Date.now()-(geoCheck.t||0)<60000)return;geoCheck.t=Date.now();
+  const loc=await getLoc();if(!loc)return;let best=null;
+  for(const j of S.jobs){if(j.status==='done'||j.lat==null)continue;const d=distM(loc.lat,loc.lng,j.lat,j.lng);if(d<=150+Math.min(loc.acc||0,100)&&(!best||d<best.d))best={j,d}}
+  const id=best?.j.id||null;if(id!==UI.nearJob){UI.nearJob=id;softRender()}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)geoCheck()});
+function nearBanner(page,id){const j=job(UI.nearJob);if(!j||j.status==='done'||(page==='job'&&id===j.id)||LS.get('nearHide')===j.id+today())return '';
+  const crew=isEmp(),onClock=crew&&CLOUD.punches.some(p=>!p.out_at);
+  return `<div class="near"><span class="near-pin" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></span>
+    <div class="grow"><b>You're at ${esc(j.name)}</b><small>${esc(j.address||'Near this job')}</small></div>
+    <div class="btns">${crew?`${onClock?'':`<button class="btn sm primary" data-act="clock-in" data-job="${j.id}">Clock in here</button>`}<button class="btn sm" data-act="near-report">Photos &amp; report</button>`
+      :`<a class="btn sm primary" href="#/job/${j.id}">Open job</a><button class="btn sm" data-act="near-photo">Take photo</button>`}<button class="btn sm ghost" data-act="near-hide">Not now</button></div></div>`}
+function quickCapture(jobId){const i=document.createElement('input');i.type='file';i.accept='image/*,video/*';i.capture='environment';
+  i.onchange=async()=>{const f=i.files[0];if(!f)return;const id=await addPhoto(f,jobId);if(!id)return;save();toast('Saved to '+(job(jobId)?.name||'the job'));route()};i.click()}
+
+/* Duplicate jobs: the same street address, or the spot you're standing on. */
+const normAddr=s=>{let a=String(s||'').toLowerCase().split(',')[0].replace(/[.#]/g,' ');
+  for(const [w,x] of [['street','st'],['avenue','ave'],['road','rd'],['drive','dr'],['lane','ln'],['court','ct'],['boulevard','blvd'],['place','pl'],['circle','cir'],['highway','hwy'],['north','n'],['south','s'],['east','e'],['west','w']])a=a.replace(new RegExp('\\b'+w+'\\b','g'),x);
+  return a.replace(/\s+/g,' ').trim()};
+function dupJobs(addr,exceptId,loc){const a=normAddr(addr);
+  return S.jobs.filter(j=>j.id!==exceptId&&((a.length>4&&normAddr(j.address)===a)||(loc&&j.lat!=null&&distM(loc.lat,loc.lng,j.lat,j.lng)<100)))}
+const dupHTML=list=>list.length?`<div class="insight warn"><b>Already a job here</b><span>${list.slice(0,3).map(j=>`<a href="#/job/${j.id}" data-dup-open>${esc(j.name)}</a> (${esc(STATUS[j.status]||j.status)})`).join(', ')}. Open it instead of making a second folder for the same address.</span></div>`:'';
+
+/* Customer photo links: pick photos, get one link (and a PDF) for the homeowner or adjuster. */
+const SHARE_TTL=365*24*3600;
+function jobMedia(j){const own=S.photos.filter(p=>p.jobId===j.id&&p.kind!=='receipt').map(p=>({id:p.id,path:photoPath(p.id),video:p.type==='video',caption:p.caption||'',date:p.date,tag:p.tag||'',own:true}));
+  const crew=(CLOUD.crewReports||[]).filter(r=>r.job_id===j.id).flatMap(r=>(r.photos||[]).map(ph=>({id:ph,path:photoPath(ph),video:isVidPath(ph),caption:'',date:r.date,tag:''})));
+  return own.concat(crew).sort((a,b)=>(b.date||'').localeCompare(a.date||''))}
+function shareForm(j){if(!isOwnerCloud())return openForm({title:'Send photos',closeLabel:'Close',body:'<p>Create a free account (Settings) to send customers a photo link. Until then your photos stay on this device.</p>'});
+  const m=jobMedia(j);if(!m.length)return toast('Add some photos first');
+  openForm({title:'Send photos to customer',submit:'Make link',
+    body:`${field('Title',inp('title',`${j.name} · photo update`,'text','maxlength="120"'))}
+      ${field('Message (optional)'+micBtn('note'),`<textarea name="note" rows="2" placeholder="Here's where things stand this week."></textarea>`)}
+      <div class="split" style="margin:10px 0 8px"><span class="note" id="pick-n">0 selected</span><button type="button" class="btn sm ghost" id="pick-all">Select all</button></div>
+      <div class="photos psel">${m.map(x=>`<label><input type="checkbox" name="pick" value="${esc(x.id)}">${mediaTag(x.id,x.video)}${x.tag?`<span class="tag">${x.tag==='before'?'Before':'After'}</span>`:''}</label>`).join('')}</div>`,
+    onOpen:f=>{hydratePhotos(f);const n=()=>$('#pick-n',f).textContent=`${$$('[name=pick]:checked',f).length} selected`;f.addEventListener('change',n);
+      $('#pick-all',f).onclick=()=>{const all=$$('[name=pick]',f),on=all.some(x=>!x.checked);all.forEach(x=>x.checked=on);n()}},
+    onSubmit:async(fd,f)=>{const ids=fd.getAll('pick');if(!ids.length){toast('Pick at least one photo');return false}
+      const btn=$('[type=submit]',f);btn.textContent='Uploading…';
+      try{const s=await makeShare(j,ids,fd.get('title').trim()||j.name,fd.get('note').trim());setTimeout(()=>shareResult(s),60)}catch(e){toast(errMsg(e));btn.textContent='Make link';return false}}})}
+async function makeShare(j,ids,title,note){const m=jobMedia(j),sel=ids.map(id=>m.find(x=>x.id===id)).filter(Boolean);
+  for(const x of sel)if(x.own){const b=await photoGet(x.id);if(!b||!(await uploadPhoto(x.id,b)))throw new Error('Couldn\'t upload the photos. Check your signal and try again.');UPQ.del(x.id)}
+  const {data,error}=await CLOUD.sb.storage.from('photos').createSignedUrls(sel.map(x=>x.path),SHARE_TTL);if(error)throw error;
+  const items=sel.map((x,i)=>({url:data[i]?.signedUrl,video:x.video,caption:x.caption,date:x.date,tag:x.tag})).filter(x=>x.url);
+  if(!items.length)throw new Error('Couldn\'t get those photos ready. Try again.');
+  const bef=items.filter(x=>x.tag==='before'&&!x.video),aft=items.filter(x=>x.tag==='after'&&!x.video),p=S.profile||{};
+  const s={id:uid(),jobId:j.id,title,note,date:today(),count:items.length};const r=crypto.getRandomValues(new Uint8Array(18));s.token=[...r].map(x=>x.toString(16).padStart(2,'0')).join('');
+  const snap={kind:'photos',title,note,date:today(),jobName:j.name,jobAddress:j.address||'',items,pair:bef.length&&aft.length?{before:bef[bef.length-1].url,after:aft[0].url}:null,
+    company:{company:p.company||'',name:p.name||'',logo:p.logo||'',phone:p.phone||'',email:p.email||'',website:p.website||'',license:p.license||''},accent:p.accent||'blue'};
+  const {error:e2}=await CLOUD.sb.from('shared_docs').upsert({token:s.token,company_id:CLOUD.company,doc_id:s.id,kind:'photos',data:snap,updated_at:new Date().toISOString()});
+  if(e2){if(/check constraint|violates/i.test(e2.message||''))throw new Error('Photo links need a one-time database update in Supabase (the shared_docs part of supabase/schema.sql).');throw e2}
+  (S.shares=S.shares||[]).push(s);save();return s}
+function shareResult(s){const j=job(s.jobId),url=SITE_URL+'doc.html#'+s.token,c=j?.customerId?cust(j.customerId):null,first=(j?.client||'').split(' ')[0],co=S.profile?.company||'';
+  const msg=`Hi${first?' '+first:''}, here are photos from ${co||'us'} of ${j?.name||'your job'}: ${url}`;
+  const sms=smsLink(j?.phone||c?.phone,msg),mail=c?.email?`mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent(s.title)}&body=${encodeURIComponent(msg)}`:'';
+  openForm({title:'Photo link ready',closeLabel:'Done',
+    body:`<div class="insight good"><b>${s.count} item${s.count>1?'s':''}</b><span style="word-break:break-all">${esc(url)}</span></div>
+      <div class="btns" style="margin-top:12px">${sms?`<a class="btn sm primary" href="${esc(sms)}">Text ${esc(first||'customer')}</a>`:''}${mail?`<a class="btn sm" href="${esc(mail)}">Email</a>`:''}<button type="button" class="btn sm" id="sh-copy">Copy message</button><a class="btn sm" href="${esc(url)}" target="_blank" rel="noopener">Open or save PDF</a></div>
+      <p class="note" style="margin-top:10px">Opens in any browser, no app or account needed. The page has a button to print or save it as a PDF, for an insurance adjuster for example. The link works for a year.</p>`,
+    onOpen:f=>{$('#sh-copy',f).onclick=async()=>{try{await navigator.clipboard.writeText(msg);toast('Copied. Paste it in a text or email.')}catch(e){toast('Could not copy')}}},
+    deleteLabel:'Turn off link',onDelete:async()=>{await CLOUD.sb.from('shared_docs').delete().eq('token',s.token).then(()=>{},()=>{});S.shares=(S.shares||[]).filter(x=>x.id!==s.id);save();toast('Link turned off')}})}
+
+/* Importing from Jobber, CompanyCam or any spreadsheet. */
+function parseCSV(t){t=String(t).replace(/^﻿/,'');const rows=[];let row=[],f='',q=false;
+  for(let i=0;i<t.length;i++){const c=t[i];
+    if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++}else q=false}else f+=c}
+    else if(c==='"')q=true;else if(c===','){row.push(f);f=''}
+    else if(c==='\n'||c==='\r'){if(c==='\r'&&t[i+1]==='\n')i++;row.push(f);rows.push(row);row=[];f=''}else f+=c}
+  if(f||row.length){row.push(f);rows.push(row)}return rows.filter(r=>r.some(x=>String(x).trim()))}
+const IMPORT_FIELDS=[['email','Email',/e-?mail/],['name','Customer name',/^(display name|client( name)?|customer( name)?|full name|name|contact( name)?)$/],['first','First name',/first/],['last','Last name',/last ?name|surname/],
+  ['company','Company',/company/],['phone','Phone',/phone|mobile|cell/],['job','Job or project name',/^(job|project)( title| name)?$|^(job|project) title$/],['street','Street address',/street|address|addr/],['city','City',/city|town/],
+  ['state','State',/state|province|region/],['zip','ZIP',/zip|postal/],['status','Job status',/status/],['price','Job total ($)',/total|price|amount|value/],['start','Start date',/start|scheduled/],['notes','Notes',/note|description|instructions/]];
+function guessMap(head){const used=new Set(),hasJob=head.some(h=>/job|project/i.test(h)),map={};
+  for(const [k,,re] of IMPORT_FIELDS){let i=head.findIndex((h,x)=>!used.has(x)&&re.test(h.trim().toLowerCase()));if(i<0&&k==='job'&&hasJob)i=head.findIndex((h,x)=>!used.has(x)&&/^title$/i.test(h.trim()));if(i>=0){used.add(i);map[k]=i}else map[k]=-1}
+  return map}
+const impDate=s=>{s=String(s||'').trim();if(!s)return '';if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10);const d=new Date(s);return isNaN(d)?'':ds(d)};
+const impStatus=s=>/complete|closed|archiv|paid|done|finish/i.test(s)?'done':/quote|bid|draft|request|estimate|lead/i.test(s)?'bid':'active';
+function csvImport(text){const rows=parseCSV(text);if(rows.length<2)return toast('That file has no rows to import');
+  const head=rows[0].map(h=>String(h).trim()),data=rows.slice(1),map=guessMap(head);
+  const sel=(k)=>`<select name="m_${k}"><option value="-1">Not in this file</option>${head.map((h,i)=>opt(i,h+(data[0]?.[i]?` (e.g. ${String(data[0][i]).slice(0,24)})`:''),map[k])).join('')}</select>`;
+  openForm({title:'Import customers & jobs',submit:`Import ${data.length} row${data.length>1?'s':''}`,
+    body:`<p>We matched the columns in your file. Check them, then import. Customers already in Blue Board (same name, phone or email) are updated, not duplicated.</p>
+      <div class="fields">${['name','first','last','company','phone','email','street','city','state','zip','job','status','price','start','notes'].map(k=>IMPORT_FIELDS.find(x=>x[0]===k)).map(([k,l])=>field(l,sel(k))).join('')}</div>
+      <p class="note" style="margin-top:8px">Rows with a job or project name also create a job, unless a job with that name and address already exists.</p>`,
+    onSubmit:fd=>{const m=Object.fromEntries(IMPORT_FIELDS.map(([k])=>[k,+fd.get('m_'+k)]));const g=(r,k)=>m[k]>=0?String(r[m[k]]??'').trim():'';
+      let nc=0,uc=0,nj=0,sk=0;const digits=s=>String(s||'').replace(/\D/g,'').slice(-10);
+      for(const r of data){const name=g(r,'name')||[g(r,'first'),g(r,'last')].filter(Boolean).join(' ')||g(r,'company'),phone=g(r,'phone'),email=g(r,'email');
+        const address=[g(r,'street'),g(r,'city'),[g(r,'state'),g(r,'zip')].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+        if(name){let c=S.customers.find(x=>normName(x.name)===normName(name)||(digits(phone).length===10&&digits(x.phone)===digits(phone))||(email&&x.email&&x.email.toLowerCase()===email.toLowerCase()));
+          if(c){let ch=false;for(const [k,v] of [['phone',phone],['email',email],['address',address]])if(v&&!c[k]){c[k]=v;ch=true}if(ch)uc++}
+          else{S.customers.push({id:uid(),name,phone,email,address,notes:g(r,'company')&&g(r,'company')!==name?'Company: '+g(r,'company'):''});nc++}}
+        const title=g(r,'job');if(!title)continue;
+        if(S.jobs.some(j=>normName(j.name)===normName(title)&&(!address||!j.address||normAddr(j.address)===normAddr(address)))){sk++;continue}
+        const o={id:uid(),createdAt:Date.now(),changeOrders:[],name:title,client:name,phone,address,status:m.status>=0?impStatus(g(r,'status')):'active',price:num(g(r,'price')),start:impDate(g(r,'start')),end:'',notes:g(r,'notes'),est:{},imported:true};
+        linkJobCustomer(o);S.jobs.push(o);nj++}
+      custSync();save();toast([nc&&`${nc} customer${nc>1?'s':''} added`,uc&&`${uc} updated`,nj&&`${nj} job${nj>1?'s':''} added`,sk&&`${sk} already here`].filter(Boolean).join(' · ')||'Nothing new to import')}})}
+function importPhotosForm(){const open=S.jobs.filter(j=>j.status!=='done'),rest=S.jobs.filter(j=>j.status==='done');
+  openForm({title:'Import photos into a job',submit:'Import',
+    body:`${field('Job',`<select name="jobId"><option value="">+ New job…</option>${open.concat(rest).map(j=>opt(j.id,j.name+(j.status==='done'?' (done)':''),UI.lastImportJob||'')).join('')}</select>`)}
+      <div id="ip-new">${field('New job name',inp('newName','','text','placeholder="e.g. Smith roof (from CompanyCam)"'))}</div>
+      ${field('Photos and videos','<input type="file" name="files" accept="image/*,video/*" multiple>')}
+      <p class="note">From CompanyCam: open the project, select all photos, and download them to your phone or computer. Then pick them all here.</p><p class="note" id="ip-prog"></p>`,
+    onOpen:f=>{const t=()=>{$('#ip-new',f).hidden=!!f.elements.jobId.value};f.elements.jobId.addEventListener('change',t);t()},
+    onSubmit:async(fd,f)=>{const files=[...f.elements.files.files];if(!files.length){toast('Pick the photos to import');return false}
+      let jobId=fd.get('jobId');if(!jobId){const name=fd.get('newName').trim();if(!name){toast('Name the new job');return false}const o={id:uid(),createdAt:Date.now(),changeOrders:[],name,client:'',phone:'',address:'',status:'active',price:0,start:today(),end:'',notes:'',est:{}};S.jobs.push(o);jobId=o.id}
+      UI.lastImportJob=jobId;let n=0;for(const file of files){$('#ip-prog',f).textContent=`Importing ${n+1} of ${files.length}…`;if(await addPhoto(file,jobId))n++}
+      save();toast(`${n} item${n===1?'':'s'} imported`);location.hash='#/job/'+jobId}})}
+const importCard=()=>`<div class="card stack"><h2>Switching from Jobber or CompanyCam?</h2><p class="note">Bring your customers, jobs and photos with you.</p>
+  <ul class="steps"><li><b>Customers &amp; jobs:</b> in Jobber, open Clients or Jobs and export to CSV. A spreadsheet saved as CSV works too.</li><li><b>Photos:</b> in CompanyCam, open a project, select all photos and download them. Then import them into the matching job here.</li></ul>
+  <div class="btns"><label class="btn primary" style="flex-direction:row">Import customers &amp; jobs (CSV)<input type="file" accept=".csv,text/csv" id="csv-file" hidden></label><button class="btn" data-act="import-photos">Import photos into a job</button></div>
+  <p class="note">Stuck? Email support@getblueboard.com and we'll help you move your data over.</p></div>`;
 
 /* ---------- pages ---------- */
 const UI={jobsFilter:'open',jobsQ:'',week:weekStart(today()),pay:'this-week',dash:'all',month:today().slice(0,7)+'-01',day:today()};
@@ -1532,8 +1827,11 @@ function pageJob(id){const j=job(id);if(!j)return emptyBox('That job was not fou
         <div class="split" style="margin-top:10px"><span class="note">${exps.length} item${exps.length>1?'s':''} · ${exps.filter(x=>x.photoId).length} with receipts</span><b class="num">${money2(sum(exps,x=>x.amount))}</b></div>`
         :emptyBox('Log every purchase and expense for this job. Snap the receipt so it\'s on file.')}</div>
 
-    <div class="card"><div class="card-head"><h2>Photos</h2><div class="btns"><label class="btn sm" style="flex-direction:row;color:var(--ink)">Take photo<input type="file" accept="image/*" capture="environment" data-photo-input hidden></label><label class="btn sm" style="flex-direction:row;color:var(--ink)">Upload<input type="file" accept="image/*" multiple data-photo-input hidden></label></div></div>
-      ${photos.length?`<div class="photos">${photos.map(p=>`<button data-act="photo" data-id="${p.id}"><img data-photo="${p.id}" alt="${esc(p.caption||'Job photo')}" loading="lazy"><small>${esc(p.caption||fmtDate(p.date))}</small></button>`).join('')}</div>`:emptyBox('Before, during and after photos, damage, rough-ins and inspections all in one place.')}</div>
+    <div class="card"><div class="card-head"><h2>Photos &amp; video</h2><div class="btns"><label class="btn sm" style="flex-direction:row;color:var(--ink)">Take photo<input type="file" accept="image/*,video/*" capture="environment" data-photo-input hidden></label><label class="btn sm" style="flex-direction:row;color:var(--ink)">Upload<input type="file" accept="image/*,video/*" multiple data-photo-input hidden></label>${photos.length||(CLOUD.crewReports||[]).some(r=>r.job_id===j.id&&r.photos?.length)?'<button class="btn sm primary" data-act="share-new">Send to customer</button>':''}</div></div>
+      ${(()=>{const b=photos.filter(p=>p.tag==='before'&&p.type!=='video'),a=photos.filter(p=>p.tag==='after'&&p.type!=='video');return b.length&&a.length?`<div style="margin-bottom:12px">${baSlider(b[b.length-1].id,a[0].id)}</div>`:''})()}
+      ${photos.length?`<div class="photos">${photos.map(p=>`<button data-act="photo" data-id="${p.id}">${mediaTag(p.id,p.type==='video',p.caption||'Job photo')}${p.tag?`<span class="tag">${p.tag==='before'?'Before':'After'}</span>`:''}<small>${esc(p.caption||fmtDate(p.date))}</small></button>`).join('')}</div>
+        <p class="note" style="margin-top:8px">Tap a photo to mark it up or tag it Before or After. Tag one of each to get a before-and-after slider.</p>`:emptyBox('Before, during and after photos and videos, damage, rough-ins and inspections all in one place. They save on your phone first, so they work with no signal.')}
+      ${(S.shares||[]).some(s=>s.jobId===j.id)?`<h3 class="mini-h">Sent to customer</h3><ul class="list">${S.shares.filter(s=>s.jobId===j.id).map(s=>`<li class="click" data-act="share-open" data-id="${s.id}"><div class="grow"><b>${esc(s.title)}</b><small>${fmtDate(s.date)} · ${s.count} item${s.count>1?'s':''}</small></div><span class="note">Link</span></li>`).join('')}</ul>`:''}</div>
     ${reportsCard(j)}
   </div><div class="stack">
     <div class="card"><div class="card-head"><h2>Crew on this job</h2><div class="btns"><button class="btn sm" data-act="job-edit">${j.plan?.crew?.length?'Edit crew &amp; dates':'Schedule crew'}</button><button class="btn sm" data-act="shift-new-job">+ Log hours</button></div></div>
@@ -1713,6 +2011,7 @@ function pageSettings(){const st=S.settings;const iOS=/iphone|ipad|ipod/i.test(n
   <div class="card stack"><h2>Backup</h2><p>${isOwnerCloud()?'Your data is saved to your account and synced to every device you sign in on. You can still export a backup file for your records.':'Your jobs, expenses, photos and crew are saved <b>on this device only</b>. Export a backup file regularly and keep it somewhere safe (email it to yourself or save it to cloud storage). Restore it here on a new phone or computer.'}</p>
     <div class="btns"><button class="btn dark" data-act="export">Export backup</button><label class="btn" style="flex-direction:row;color:var(--ink)">Restore from backup<input type="file" accept="application/json,.json" id="import-file" hidden></label></div>
     <p class="note">${S.jobs.length} jobs · ${S.expenses.length} expenses · ${S.photos.length} photos · ${S.employees.length} employees · ${S.shifts.length} shifts</p></div>
+  ${importCard()}
   ${acctCard()}
   ${payCard()}
   </div><div class="stack">
@@ -1736,7 +2035,7 @@ function route(){const h=(location.hash||'#/schedule').slice(2),[page,id]=h.spli
   else P={dashboard:pageDashboard,jobs:pageJobs,job:()=>pageJob(id),customers:pageCustomers,customer:()=>pageCustomer(id),schedule:pageSchedule,crew:pageCrew,settings:pageSettings,profile:pageProfile}[page]||pageSchedule;
   document.body.classList.toggle('emp',isEmp());document.body.classList.toggle('gate',P===pageAuth||P===pageOnboard||P===pageReset||P===pageNewPw);
   $('#crew-label').textContent=isEmp()?'My crew':'Crew & Pay';renderMenu();
-  const keepScroll=route.last===h;const y=scrollY;v.innerHTML=P();route.last=h;
+  const keepScroll=route.last===h;const y=scrollY;const gate=P===pageAuth||P===pageOnboard||P===pageReset||P===pageNewPw;v.innerHTML=(gate?'':nearBanner(page,id))+P();route.last=h;
   const navKey=page==='job'?'jobs':page==='customer'?'customers':P===pageSchedule?'schedule':P===pageMyPay?'pay':P===pageEmpCrew?'crew':P===pageEmpAccount?'profile':page;
   $$('[data-nav],[data-menu]').forEach(a=>a.removeAttribute('aria-current'));$$(`[data-nav="${navKey}"],[data-menu="${navKey}"]`).forEach(a=>a.setAttribute('aria-current','page'));
   const pr=S.profile||{},me=isEmp()?emp(CLOUD.employeeId):null;$('#menu-who').innerHTML=me?`<span class="avatar" style="background:${me.color}">${esc(initials(me.name))}</span><span><b>${esc(me.name)}</b><small>${esc(me.role||'Crew')}</small></span>`:`<span class="avatar">${esc(initials(pr.name||pr.company))}</span><span><b>${esc(pr.name||'Set up your profile')}</b><small>${esc(pr.company||'Name, company, license')}</small></span>`;
@@ -1754,7 +2053,10 @@ const ACT={
   'job-new':()=>jobForm(),'job-edit':()=>jobForm(curJob()),
   'exp-new':()=>expenseForm(null,curJob()?.id),'exp-edit':a=>expenseForm(S.expenses.find(x=>x.id===a.dataset.id)),
   'report-new':()=>reportForm(null,{jobId:curJob()?.id}),'report-edit':a=>reportForm(S.reports.find(r=>r.id===a.dataset.id)),'reports-all':a=>{UI.allReports=a.dataset.id;route()},
-'rphoto':a=>openForm({title:'Photo',closeLabel:'Close',body:`<div class="viewer"><img data-photo="${esc(a.dataset.id)}" alt="Report photo"></div>`,onOpen:f=>hydratePhotos(f)}),
+'rphoto':a=>{const id=a.dataset.id,own=S.photos.find(p=>p.id===id);if(own&&!isEmp())return photoViewer(own);const v=isVidPath(id);
+  openForm({title:v?'Video':'Photo',closeLabel:'Close',body:`<div class="viewer">${v?`<video data-photo="${esc(id)}" controls playsinline></video>`:`<img data-photo="${esc(id)}" alt="Report photo">`}</div>`,onOpen:f=>hydratePhotos(f)})},
+'share-new':()=>shareForm(curJob()),'share-open':a=>shareResult((S.shares||[]).find(s=>s.id===a.dataset.id)),'import-photos':()=>importPhotosForm(),
+'near-photo':()=>{if(UI.nearJob)quickCapture(UI.nearJob)},'near-report':()=>reportForm(null,{jobId:UI.nearJob}),'near-hide':()=>{LS.set('nearHide',UI.nearJob+today());route()},
 'off-new':()=>offForm(),'off-edit':a=>offForm(S.timeOff.find(t=>t.id===a.dataset.id)),'off-ok':a=>offDecide(a.dataset.id,true),'off-no':a=>offDecide(a.dataset.id,false),'off-req':()=>offRequestForm(),
 'off-clear':()=>{const ids=new Set(offShifts().map(s=>s.id));S.shifts=S.shifts.filter(s=>!ids.has(s.id));save();route();toast(`${ids.size} shift${ids.size>1?'s':''} removed`)},
 'cust-new':()=>custForm(),'cust-edit':a=>custForm(cust(a.dataset.id)),'cust-job':a=>{const c=cust(a.dataset.id);jobForm(null,{client:c.name,phone:c.phone,address:c.address})},
@@ -1813,7 +2115,8 @@ document.addEventListener('change',async e=>{const t=e.target;
   if(t.id==='job-status'){const j=curJob();j.status=t.value;if(t.value==='done'&&!j.end)j.end=today();const r=syncPlan(j);save();toast('Marked '+STATUS[t.value]+(r.added?` · ${r.added} shifts scheduled`:'')+(r.removed?` · ${r.removed} upcoming shifts removed`:''));route()}
   else if(t.id==='logo-file'){const f=t.files[0];if(!f)return;try{S.profile.logo=await logoFrom(f);save();toast('Logo saved');route()}catch(err){toast('That image could not be read')}}
   else if(t.id==='job-notes'){curJob().notes=t.value;save();toast('Notes saved')}
-  else if(t.matches('[data-photo-input]')){const j=curJob();const files=[...t.files];if(!files.length)return;toast(`Saving ${files.length} photo${files.length>1?'s':''}…`);for(const f of files)await addPhoto(f,j.id);save();toast('Photos saved');route()}
+  else if(t.matches('[data-photo-input]')){const j=curJob();const files=[...t.files];if(!files.length)return;toast(`Saving ${files.length} item${files.length>1?'s':''}…`);let n=0;for(const f of files)if(await addPhoto(f,j.id))n++;save();if(n)toast(n===files.length?'Saved':`${n} of ${files.length} saved`);route()}
+  else if(t.id==='csv-file'){const f=t.files[0];t.value='';if(f)csvImport(await f.text())}
   else if(t.id==='import-file'){const f=t.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(d.app!=='job-ledger'||!d.state)throw 0;
       openForm({title:'Restore backup?',body:`<p>This replaces everything on this device with the backup from <b>${esc(d.exportedAt?new Date(d.exportedAt).toLocaleString():'the file')}</b>: ${d.state.jobs.length} jobs, ${d.state.expenses.length} expenses, ${Object.keys(d.photos||{}).length} photos.</p>`,submit:'Replace and restore',
         onSubmit:async()=>{if(!memOnly)await DB.clear('photos');memPhotos.clear();urlCache.clear();for(const[id,u] of Object.entries(d.photos||{})){const b=await (await fetch(u)).blob();await photoPut(id,b)}S=Object.assign(blank(),d.state);S.settings=Object.assign(blank().settings,d.state.settings);save();toast('Backup restored')}})}
@@ -1894,13 +2197,13 @@ async function cloudPush(){if(!isOwnerCloud())return;const sb=CLOUD.sb,cid=CLOUD
 function publicDoc(){const cut=addDays(today(),-120),p=S.profile||{};
   return{company:{name:p.company||'',logo:p.logo||'',accent:p.accent==='green'?'blue':(p.accent||'blue'),mode:p.mode||'light'},
     settings:{ot:S.settings.ot!==false,otThreshold:num(S.settings.otThreshold)||40,requireLocation:!!S.settings.requireLocation,showPay:S.settings.showPay!==false},
-    jobs:S.jobs.map(j=>({id:j.id,name:j.name,address:j.address||'',status:j.status,start:j.start||'',end:j.end||'',color:jobColor(j),tasks:j.status==='done'?[]:(j.tasks||[]).map(t=>({id:t.id,text:t.text,empId:t.empId||'',done:!!t.done,doneAt:t.doneAt||''}))})),
+    jobs:S.jobs.map(j=>({id:j.id,name:j.name,address:j.address||'',lat:j.lat??null,lng:j.lng??null,status:j.status,start:j.start||'',end:j.end||'',color:jobColor(j),tasks:j.status==='done'?[]:(j.tasks||[]).map(t=>({id:t.id,text:t.text,empId:t.empId||'',done:!!t.done,doneAt:t.doneAt||''}))})),
     employees:S.employees.map(e=>({id:e.id,name:e.name,role:e.role||'',color:e.color,active:e.active!==false})),
     timeOff:S.timeOff.filter(t=>t.to>=addDays(today(),-30)).map(t=>({empId:t.empId,from:t.from,to:t.to})),
     shifts:S.shifts.filter(s=>s.date>=cut).map(s=>({id:s.id,empId:s.empId,jobId:s.jobId,date:s.date,start:s.start,end:s.end,breakMin:+s.breakMin||0,status:s.status,note:s.note||''}))}}
 const photoPath=id=>`${CLOUD.company}/${id}`;
-async function uploadPhoto(id,blob){if(!isOwnerCloud()||!blob)return;try{await CLOUD.sb.storage.from('photos').upload(photoPath(id),blob,{upsert:true,contentType:blob.type||'image/jpeg'})}catch(e){}}
-async function uploadAllPhotos(){for(const p of S.photos){try{await uploadPhoto(p.id,await (memOnly?memPhotos.get(p.id):DB.get('photos',p.id)))}catch(e){}}}
+async function uploadPhoto(id,blob){if(!isOwnerCloud()||!blob)return false;try{const {error}=await CLOUD.sb.storage.from('photos').upload(photoPath(id),blob,{upsert:true,contentType:blob.type||'image/jpeg'});return !error}catch(e){return false}}
+function uploadAllPhotos(){UPQ.set(UPQ.get().concat(S.photos.map(p=>p.id),S.photos.filter(p=>p.orig).map(p=>p.orig)));flushUploads()}
 async function ownerPunches(){const since=new Date(Date.now()-45*864e5).toISOString();
   const {data,error}=await CLOUD.sb.from('punches').select('*').eq('company_id',CLOUD.company).gte('in_at',since).order('in_at',{ascending:false});
   if(error)return false;const sig=x=>x.map(p=>p.id+(p.out_at||'')).join();const changed=sig(data)!==sig(CLOUD.punches);CLOUD.punches=data;return applyPunches()||changed}
@@ -1909,6 +2212,8 @@ async function loadMembers(){const {data,error}=await CLOUD.sb.from('members').s
 const onApp=empId=>CLOUD.members.some(m=>m.role==='employee'&&m.employee_id===empId);
 // Every finished clock-in becomes a worked shift (replacing a matching scheduled one), so payroll and job cost fill in by themselves.
 function applyPunches(){let changed=false;
+  // Learn where a job is from the first accurate crew clock-in there, for arrival alerts and duplicate checks.
+  for(const p of CLOUD.punches){const j=job(p.job_id);if(j&&j.lat==null&&p.in_lat!=null&&p.in_acc!=null&&p.in_acc<=80){Object.assign(j,{lat:p.in_lat,lng:p.in_lng,locFrom:emp(p.employee_id)?.name||'crew'});changed=true}}
   for(const p of CLOUD.punches){if(!p.out_at||S.shifts.some(s=>s.punchId===p.id))continue;const e=emp(p.employee_id);if(!e)continue;
     const a=new Date(p.in_at),b=new Date(p.out_at),date=ds(a);
     const loc={in:p.in_lat!=null?[p.in_lat,p.in_lng]:null,out:p.out_lat!=null?[p.out_lat,p.out_lng]:null};
@@ -1930,20 +2235,21 @@ async function empLoad(){const sb=CLOUD.sb,cid=CLOUD.company;
   empApply(a.data?.data,b.data?.rate??null,c.data);CLOUD.sync='synced';
   LS.set('empCache',JSON.stringify({pub:a.data?.data,rate:b.data?.rate??null,punches:(c.data||[]).slice(0,120)}))}
 function getLoc(){if(!navigator.geolocation)return Promise.resolve(null);
-  return new Promise(res=>navigator.geolocation.getCurrentPosition(p=>res({lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy}),()=>res(null),{enableHighAccuracy:true,timeout:12000,maximumAge:60000}))}
+  return new Promise(res=>navigator.geolocation.getCurrentPosition(p=>res((LS.set('geo','1'),{lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy})),()=>res(null),{enableHighAccuracy:true,timeout:12000,maximumAge:60000}))}
 
 /* ----- polling (live clock-ins for the owner, fresh schedule for employees) ----- */
 function startPolling(){clearInterval(CLOUD.pollT);CLOUD.pollT=setInterval(poll,30000)}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)poll()});
-window.addEventListener('online',()=>{if(isOwnerCloud()&&LS.get('dirty')==='1')cloudPush();poll()});
+window.addEventListener('online',()=>{if(isOwnerCloud()&&LS.get('dirty')==='1')cloudPush();flushUploads();flushOutbox();poll()});
 async function poll(){if(document.hidden||!CLOUD.user)return;
-  try{if(isOwnerCloud()){let ch=false;
+  try{if(isOwnerCloud()){let ch=false;flushUploads();
       if(LS.get('dirty')!=='1'){const {data}=await CLOUD.sb.from('company_state').select('updated_at').eq('company_id',CLOUD.company).maybeSingle();if(data&&data.updated_at!==CLOUD.stateAt){await ownerPull(false);ch=true}}
       if(await ownerPunches())ch=true;if(await loadMembers())ch=true;if(await docsPull())ch=true;if(await ownerExtrasLoad())ch=true;if(ch)softRender()}
-    else if(isEmp()){await empLoad();await empExtrasLoad();softRender()}}catch(e){}}
+    else if(isEmp()){await flushOutbox(true);await empLoad();await empExtrasLoad();softRender()}}catch(e){}}
 function softRender(){if($('#dlg').open)return;const ae=document.activeElement;if(ae&&ae.matches('input,select,textarea')&&$('#view').contains(ae))return;route()}
 setInterval(()=>$$('[data-elapsed]').forEach(el=>el.textContent=dur(Math.floor((Date.now()-new Date(el.dataset.elapsed))/60000))),20000);
-function syncText(){if(isEmp())return CLOUD.user?.email||'';return{synced:'✓ Synced to your account',saving:'Saving…',offline:'Offline · changes will sync when you reconnect'}[CLOUD.sync]||''}
+function syncText(){if(isEmp())return (CLOUD.user?.email||'')+(OB.length?` · ${OB.length} waiting for signal`:'');const q=UPQ.get().length;
+  return ({synced:'✓ Synced to your account',saving:'Saving…',offline:'Offline · changes will sync when you reconnect'}[CLOUD.sync]||'')+(q?` · ${q} photo${q>1?'s':''} waiting to upload`:'')}
 function syncBadge(){const el=$('.menu-sync');if(el)el.textContent=syncText()}
 
 /* ----- pages: sign in, set up ----- */
@@ -1988,7 +2294,7 @@ function clockCard(){const open=CLOUD.punches.find(p=>!p.out_at),req=!!S.setting
   const me=CLOUD.employeeId,mine=S.shifts.find(s=>s.empId===me&&s.date===today()&&s.status!=='missed');
   const jobs=S.jobs.filter(j=>j.status!=='done'||j.id===mine?.jobId);
   return `<div class="card clock"><div class="clock-row"><div><h2>Ready to work?</h2><p class="note">${mine?`Scheduled today: <b>${esc(job(mine.jobId)?.name||'')}</b> ${fmtTime(mine.start)}–${fmtTime(mine.end)}. `:'Pick the job you\'re on. '}${req?'Location is required to clock in.':'Your location is recorded when you clock in and out.'}</p></div>
-    <div class="clock-act"><select id="clock-job" aria-label="Job">${jobs.length?jobs.map(j=>opt(j.id,j.name,mine?.jobId)).join(''):'<option value="">No jobs yet</option>'}</select><button class="btn primary big" data-act="clock-in"${jobs.length?'':' disabled'}>Clock in</button></div></div></div>`}
+    <div class="clock-act"><select id="clock-job" aria-label="Job">${jobs.length?jobs.map(j=>opt(j.id,j.name,UI.nearJob&&jobs.some(x=>x.id===UI.nearJob)?UI.nearJob:mine?.jobId)).join(''):'<option value="">No jobs yet</option>'}</select><button class="btn primary big" data-act="clock-in"${jobs.length?'':' disabled'}>Clock in</button></div></div></div>`}
 function pageEmpCrew(){const me=CLOUD.employeeId,wk=weekStart(today()),end=addDays(wk,6);
   const crew=S.employees.filter(e=>e.active!==false).sort((a,b)=>(b.id===me)-(a.id===me)||a.name.localeCompare(b.name));
   const wkJobs=id=>[...new Set(S.shifts.filter(s=>s.empId===id&&s.date>=wk&&s.date<=end&&s.status!=='missed').map(s=>s.jobId))];
@@ -2082,7 +2388,7 @@ Object.assign(ACT,{
         S=blank();if(!memOnly){await DB.put('kv','state',S).catch(()=>{});await DB.clear('photos').catch(()=>{})}
         ['role','stateAt','dirty','company','empCache','local','invite'].forEach(k=>LS.set(k,null));Object.assign(CLOUD,{mode:'signedout',user:null,company:null,employeeId:null,punches:[],members:[],pub:null,sync:''});
         location.hash='#/schedule';toast('Your account was deleted')}})},
-  'clock-in':async a=>{const jobId=$('#clock-job')?.value;if(!jobId)return toast('Pick a job first');a.disabled=true;a.textContent='Getting location…';
+  'clock-in':async a=>{const jobId=a.dataset.job||$('#clock-job')?.value;if(!jobId)return toast('Pick a job first');a.disabled=true;a.textContent='Getting location…';
     const loc=await getLoc();if(!loc&&S.settings.requireLocation){a.disabled=false;a.textContent='Clock in';return toast('Turn on location for this app, then try again')}
     a.textContent='Clocking in…';const {data,error}=await CLOUD.sb.rpc('clock_in',{p_company:CLOUD.company,p_job:jobId,p_lat:loc?.lat??null,p_lng:loc?.lng??null,p_acc:loc?.acc??null});
     if(error){a.disabled=false;a.textContent='Clock in';return toast(errMsg(error))}CLOUD.punches.unshift(data);toast('Clocked in at '+timeOf(data.in_at));route()},
@@ -2163,6 +2469,7 @@ function loadSample(){const T=today(),D=n=>addDays(T,n);
   clearTimeout(slow);
   try{await Promise.race([cloudStart(),new Promise(r=>setTimeout(r,9000))])}catch(e){CLOUD.mode=LS.get('local')==='1'?'local':'signedout'}
   route();if(isOwnerCloud())Promise.all([ownerPunches(),loadMembers()]).then(()=>softRender()).catch(()=>{});
+  flushUploads();if(isEmp())obLoad().then(()=>{obTasks();if(OB.length)softRender();flushOutbox()});setTimeout(geoCheck,1500);
   if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
   if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{})})();
 </script>
