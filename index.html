@@ -578,6 +578,13 @@ dialog{border-radius:28px}
 .nav a[aria-current="page"]{background:var(--grad);color:#fff;font-weight:600;box-shadow:0 10px 22px -10px var(--glow)}
 /* sign-in */
 body.gate{background:radial-gradient(700px 400px at 85% 10%,rgba(255,255,255,.22),transparent 60%),linear-gradient(150deg,var(--hi),var(--hi2,var(--hi-dk)));background-attachment:fixed}
+/* logo: solid seal stamp (light version on dark backgrounds) */
+.brand svg.seal,.auth-logo svg.seal{border-radius:0;box-shadow:none;filter:none;flex:none}
+.brand svg.seal{width:44px;height:44px}
+.auth-logo svg.seal{width:64px;height:64px}
+svg.seal .seal-light{display:none}
+:root[data-mode="dark"] svg.seal .seal-ink,body.gate .brand svg.seal .seal-ink{display:none}
+:root[data-mode="dark"] svg.seal .seal-light,body.gate .brand svg.seal .seal-light{display:inline}
 /* phone: dark floating tab bar */
 @media (max-width:820px){
   .top{background:color-mix(in srgb,var(--hi) 8%,var(--bg))}
@@ -598,7 +605,7 @@ body.gate{background:radial-gradient(700px 400px at 85% 10%,rgba(255,255,255,.22
     </div>
   </div>
   <a class="brand" href="#/schedule" aria-label="Blue Board home">
-    <svg width="32" height="32" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#16191d"/><rect x="15" y="12" width="34" height="42" rx="6" fill="none" style="stroke:var(--hi)" stroke-width="4"/><rect x="24" y="7" width="16" height="10" rx="4" style="fill:var(--hi)"/><path d="M22 42l7-8 6 5 9-11" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <svg class="seal" width="32" height="32" viewBox="0 0 64 64" aria-hidden="true"><image class="seal-ink" href="icons/logo-seal.png" width="64" height="64"/><image class="seal-light" href="icons/logo-seal-light.png" width="64" height="64"/></svg>
     <span>Blue <em>Board</em></span>
   </a>
   <a class="co-top" id="co-top" href="#/profile"></a>
