@@ -578,6 +578,14 @@ dialog{border-radius:28px}
 .nav a[aria-current="page"]{background:var(--grad);color:#fff;font-weight:600;box-shadow:0 10px 22px -10px var(--glow)}
 /* sign-in */
 body.gate{background:radial-gradient(700px 400px at 85% 10%,rgba(255,255,255,.22),transparent 60%),linear-gradient(150deg,var(--hi),var(--hi2,var(--hi-dk)));background-attachment:fixed}
+/* payroll */
+.pp-nav{display:flex;align-items:center;gap:8px}
+.pp-label{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:0}
+.pp-issue{display:block;color:var(--warn);font-size:12.5px;font-weight:600;margin-top:2px}
+.btn[disabled]{opacity:.45;cursor:not-allowed;filter:none;box-shadow:none}
+#payroll .insight + .insight,#payroll .insight + .empty{margin-top:10px}
+.pp-act-m{display:none;margin-top:6px}
+@media (max-width:600px){#payroll .pp-act{display:none}#payroll .pp-act-m{display:block}#payroll th,#payroll td{padding-left:6px;padding-right:6px}#payroll td:first-child{white-space:nowrap}}
 /* welcome page sits on the blue gradient: keep its heading and subtitle readable */
 body.gate .page-head h1{color:#fff}
 body.gate .page-head .sub{color:rgba(255,255,255,.9)}
@@ -723,6 +731,55 @@ function jobStats(j,L){
   return{rev,cost,total,hours,planned,plannedH,profit:rev-total,margin:rev?(rev-total)/rev:NaN,estTotal,estProfit:rev-estTotal,estMargin:rev?(rev-estTotal)/rev:NaN,used:estTotal?total/estTotal:NaN,
     projTotal,projProfit:rev-projTotal,projMargin:rev?(rev-projTotal)/rev:NaN}}
 
+/* ---------- pay periods, approval and payroll export ---------- */
+const PAY_FREQ={weekly:'Weekly',biweekly:'Every 2 weeks',semimonthly:'Twice a month (1st–15th and 16th–end)',monthly:'Monthly'};
+function periodOf(date){const st=S.settings,f=st.payFreq||'weekly',d=pd(date),y=d.getFullYear(),m=d.getMonth();
+  if(f==='semimonthly')return d.getDate()<=15?[ds(new Date(y,m,1)),ds(new Date(y,m,15))]:[ds(new Date(y,m,16)),ds(new Date(y,m+1,0))];
+  if(f==='monthly')return[ds(new Date(y,m,1)),ds(new Date(y,m+1,0))];
+  const w=weekStart(date);if(f!=='biweekly')return[w,addDays(w,6)];
+  const a=weekStart(st.payAnchor||w),k=Math.floor(Math.round((pd(w)-pd(a))/864e5)/14),s=addDays(a,k*14);return[s,addDays(s,13)]}
+const payBook=()=>S.payPeriods||(S.payPeriods={});
+const payRec=from=>(S.payPeriods||{})[from];
+const closedFor=date=>Object.values(S.payPeriods||{}).find(p=>p.closedAt&&date>=p.from&&date<=p.to);
+const r2=n=>Math.round(n*100)/100;
+// Hours, overtime and pay per person for one pay period, plus anything that has to be fixed before approving.
+function payrollData(from,to){const L=laborCalc(),per={},row=id=>per[id]=per[id]||{reg:0,ot:0,wage:0,cost:0,lines:{},shifts:[],pending:0,open:null};
+  for(const s of S.shifts){if(s.date<from||s.date>to)continue;const p=row(s.empId);p.shifts.push(s);
+    if(s.status==='scheduled'&&s.date<today())p.pending++;
+    if(s.status!=='worked')continue;const l=L.get(s.id);if(!l)continue;p.reg+=l.reg;p.ot+=l.ot;p.wage+=l.wage;p.cost+=l.cost;
+    const r=+s.rate||0,ln=p.lines[r]=p.lines[r]||{rate:r,reg:0,ot:0};ln.reg+=l.reg;ln.ot+=l.ot}
+  for(const pu of CLOUD.punches||[]){if(pu.out_at)continue;const d=ds(new Date(pu.in_at));if(d>=from&&d<=to&&emp(pu.employee_id))row(pu.employee_id).open=pu}
+  for(const p of Object.values(per))p.shifts.sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start));
+  return per}
+const payBlocked=p=>!!(p.open||p.pending);
+// Changing someone's hours after they were approved takes the approval back, so nobody is paid on hours that weren't signed off.
+function payTouch(empId,date){const rec=payRec(periodOf(date)[0]);if(rec&&!rec.closedAt&&rec.approved?.[empId]){delete rec.approved[empId];return true}return false}
+function payClose(from,to){const per=payrollData(from,to),rows=[];
+  for(const [id,p] of Object.entries(per)){const e=emp(id);for(const ln of Object.values(p.lines)){if(!ln.reg&&!ln.ot)continue;
+    rows.push({empId:id,name:e?.name||'Removed employee',payrollId:e?.payrollId||'',rate:ln.rate,reg:r2(ln.reg),ot:r2(ln.ot)})}}
+  rows.sort((a,b)=>a.name.localeCompare(b.name)||a.rate-b.rate);
+  const rec=payBook()[from]=Object.assign(payBook()[from]||{approved:{}},{from,to,closedAt:new Date().toISOString(),rows,
+    shiftIds:S.shifts.filter(s=>s.status==='worked'&&s.date>=from&&s.date<=to).map(s=>s.id)});save();return rec}
+const payRows=rec=>(rec.rows||[]).map(r=>{const regPay=r2(r.rate*r.reg),otPay=r2(r.rate*1.5*r.ot);return{...r,regPay,otPay,gross:r2(regPay+otPay)}});
+const PAY_COLS=['Employee','Payroll ID','Pay period start','Pay period end','Regular hours','Overtime hours','Hourly rate','Regular pay','Overtime pay','Gross pay'];
+const payTable=rec=>[PAY_COLS,...payRows(rec).map(r=>[r.name,r.payrollId,rec.from,rec.to,r.reg.toFixed(2),r.ot.toFixed(2),r.rate.toFixed(2),r.regPay.toFixed(2),r.otPay.toFixed(2),r.gross.toFixed(2)])];
+const payCSV=rec=>payTable(rec).map(l=>l.map(v=>{v=String(v??'');return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}).join(',')).join('\r\n')+'\r\n';
+async function saveFile(name,text,type){const blob=new Blob([text],{type});
+  try{const file=new File([blob],name,{type});if(window.Capacitor?.isNativePlatform?.()&&navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title:name});return true}}
+  catch(e){if(e?.name==='AbortError')return false}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);return true}
+function payReview(id){const e=emp(id),[from,to]=periodOf(UI.pp||today()),p=payrollData(from,to)[id];if(!e||!p)return;
+  const rec=payRec(from),closed=!!rec?.closedAt,ok=!!rec?.approved?.[id],first=esc(e.name.split(' ')[0]);
+  const stat={worked:['done','Worked'],scheduled:['','Scheduled'],missed:['','Missed']};
+  openForm({title:`${e.name}: ${fmtDate(from)} – ${fmtDate(to)}`,submit:'Approve hours',
+    body:`${p.open?`<div class="insight bad"><b>Still clocked in</b><span>Since ${fmtDate(ds(new Date(p.open.in_at)))} at ${timeOf(p.open.in_at)}. Ask ${first} to clock out before you approve.</span></div>`:''}
+      ${p.pending?`<div class="insight warn"><b>${p.pending} past shift${p.pending>1?'s':''} still Scheduled</b><span>Tap ${p.pending>1?'each one':'it'} and mark it Worked or Missed.</span></div>`:''}
+      ${p.shifts.length?`<ul class="list">${p.shifts.map(s=>{const j=job(s.jobId),st=stat[s.status]||['',s.status];return `<li class="click" data-shift="${s.id}"><div class="grow"><b>${fmtDate(s.date)} · ${fmtTime(s.start)}–${fmtTime(s.end)}</b><small>${esc(j?.name||'Job removed')}${+s.breakMin?` · ${num(s.breakMin)} min break`:''}${s.source==='clock'?' · clocked in on the app':''}</small></div><span class="num small">${hrs(shiftHours(s))}</span><span class="badge ${st[0]}">${st[1]}</span></li>`}).join('')}</ul>`:''}
+      <div class="split"><span class="note">Regular ${hrs(p.reg)} · Overtime ${hrs(p.ot)}</span><b class="num">${money2(p.wage)}</b></div>
+      ${closed?'<p class="note">This pay period is closed, so these hours are locked.</p>':ok?'<p class="note">Already approved. Changing any of these shifts takes the approval back.</p>':payBlocked(p)?'<p class="note">Fix the items above, then you can approve.</p>':'<p class="note">Tap a shift to change it.</p>'}`,
+    onOpen:f=>$$('[data-shift]',f).forEach(li=>li.onclick=()=>{$('#dlg').close();shiftForm(S.shifts.find(s=>s.id===li.dataset.shift))}),
+    onSubmit:(closed||ok||payBlocked(p))?null:()=>{const r=payBook()[from]=payBook()[from]||{from,to,approved:{}};(r.approved=r.approved||{})[id]=new Date().toISOString();save();toast(`${e.name.split(' ')[0]}'s hours approved`)}})}
+
 /* ---------- UI primitives ---------- */
 let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600)}
 function openForm({title,body,submit='Save',onSubmit,onDelete,deleteLabel='Delete',onOpen}){
@@ -837,18 +894,23 @@ function empForm(e){const isNew=!e;e=e||{burden:S.settings.burden,active:true,co
     body:`<div class="fields">${field('Name',inp('name',e.name,'text','required'),'full')}
       ${field('Role',inp('role',e.role,'text','placeholder="e.g. Lead carpenter"'))}${field('Phone',inp('phone',e.phone,'tel'))}
       ${field('Hourly pay',moneyInp('rate',e.rate,'required'))}${field('Labor burden %',moneyInp('burden',e.burden))}
+      ${field('Payroll ID (optional)',inp('payrollId',e.payrollId,'text','placeholder="Their ID in your payroll service" autocomplete="off"'),'full')}
       ${field('Color',`<select name="color">${EMP_COLORS.map((c,i)=>opt(c,['Blue','Cyan','Orange','Purple','Rose','Indigo','Gold','Gray'][i],e.color)).join('')}</select>`)}
       <label class="check" style="align-self:end;min-height:42px"><input type="checkbox" name="active" ${e.active!==false?'checked':''}> Active on the crew</label></div>
       <p class="note">Labor burden covers payroll taxes, workers' comp and other costs on top of wages (often 15–30%). It's added to job costs so profit is real. A new pay rate applies to shifts added from now on.</p>`,
     onDelete:isNew?null:()=>{if(S.shifts.some(s=>s.empId===e.id)){e.active=false;toast('Marked inactive (they have hours on record)')}else S.employees=S.employees.filter(x=>x.id!==e.id);save()},
     deleteLabel:'Remove',
     onSubmit:fd=>{const rate=num(fd.get('rate'));if(!rate){toast('Enter an hourly pay rate');return false}
-      const o=isNew?{id:uid()}:e;Object.assign(o,{name:fd.get('name').trim(),role:fd.get('role').trim(),phone:fd.get('phone').trim(),rate,burden:num(fd.get('burden')),color:fd.get('color'),active:!!fd.get('active')});
+      const o=isNew?{id:uid()}:e;Object.assign(o,{name:fd.get('name').trim(),role:fd.get('role').trim(),phone:fd.get('phone').trim(),payrollId:(fd.get('payrollId')||'').trim(),rate,burden:num(fd.get('burden')),color:fd.get('color'),active:!!fd.get('active')});
       if(isNew)S.employees.push(o);save();toast('Saved')}})}
 
 function shiftForm(s,pre={}){const isNew=!s;
   const past=d=>d<today();
   s=s||{empId:pre.empId||S.employees.find(e=>e.active!==false)?.id,jobId:pre.jobId||S.jobs.find(j=>j.status==='active')?.id||S.jobs[0]?.id,date:pre.date||today(),start:'07:00',end:'15:30',breakMin:30,status:pre.status||(past(pre.date||today())?'worked':'scheduled')};
+  const lock=!isNew&&closedFor(s.date);
+  if(lock){const e=emp(s.empId),j=job(s.jobId);openForm({title:'Shift',
+    body:`<p><b>${esc(e?.name||'Removed')}</b> · ${esc(j?.name||'Job removed')}<br>${fmtDate(s.date)}, ${fmtTime(s.start)}–${fmtTime(s.end)}${+s.breakMin?`, ${num(s.breakMin)} min break`:''} · ${hrs(shiftHours(s))}</p>
+      <div class="insight"><b>Locked</b><span>The ${fmtDate(lock.from)} – ${fmtDate(lock.to)} pay period is closed, so these hours can't change. To fix them, reopen that period under Crew &amp; Pay → Payroll.</span></div>`});return}
   if(!S.employees.length){toast('Add an employee first');location.hash='#/crew';return}
   if(!S.jobs.length){toast('Add a job first');location.hash='#/jobs';return}
   const jobs=S.jobs.filter(j=>j.status!=='done'||j.id===s.jobId);
@@ -865,13 +927,16 @@ function shiftForm(s,pre={}){const isNew=!s;
       ${isNew?`<label class="check"><input type="checkbox" name="repeat"> Also add for the rest of this work week (Mon–Fri)</label>`:''}`,
     onOpen:f=>{const upd=()=>{const h=shiftHours({start:f.start.value,end:f.end.value,breakMin:f.breakMin.value});const e=emp(f.empId.value);
         $('#sh-hours').textContent=`${hrs(h)} · about ${money2(h*(e?.rate||0))} in wages`};f.addEventListener('input',upd);upd()},
-    onDelete:isNew?null:async()=>{if(s.punchId&&isOwnerCloud()){await CLOUD.sb.from('punches').delete().eq('id',s.punchId);CLOUD.punches=CLOUD.punches.filter(p=>p.id!==s.punchId)}S.shifts=S.shifts.filter(x=>x.id!==s.id);save();toast('Shift deleted')},
+    onDelete:isNew?null:async()=>{if(s.punchId&&isOwnerCloud()){await CLOUD.sb.from('punches').delete().eq('id',s.punchId);CLOUD.punches=CLOUD.punches.filter(p=>p.id!==s.punchId)}const un=payTouch(s.empId,s.date);S.shifts=S.shifts.filter(x=>x.id!==s.id);save();toast(un?'Shift deleted. Approval removed, approve these hours again.':'Shift deleted')},
     onSubmit:fd=>{const e=emp(fd.get('empId'));const base={empId:fd.get('empId'),jobId:fd.get('jobId'),start:fd.get('start')||'07:00',end:fd.get('end')||'15:30',breakMin:num(fd.get('breakMin')),status:fd.get('status'),note:fd.get('note').trim()};
-      const date=fd.get('date')||today();
+      const date=fd.get('date')||today();const again=' Approval removed, approve these hours again.';
       if(isNew){const dates=[date];if(fd.get('repeat')){let d=addDays(date,1);while(pd(d).getDay()!==6&&pd(d).getDay()!==0){dates.push(d);d=addDays(d,1)}}
-        for(const d of dates)S.shifts.push({id:uid(),...base,date:d,rate:e.rate,burden:e.burden,status:fd.get('status')==='worked'&&d>today()?'scheduled':base.status});
-        save();toast(dates.length>1?`${dates.length} shifts added`:'Shift added');return}
-      if(s.empId!==base.empId){s.rate=e.rate;s.burden=e.burden}Object.assign(s,base,{date});save();toast('Saved')}})}
+        const shut=dates.find(d=>closedFor(d));if(shut){toast(`The pay period with ${fmtDate(shut)} is closed. Reopen it under Crew & Pay first.`);return false}
+        let un=false;for(const d of dates){S.shifts.push({id:uid(),...base,date:d,rate:e.rate,burden:e.burden,status:fd.get('status')==='worked'&&d>today()?'scheduled':base.status});un=payTouch(base.empId,d)||un}
+        save();toast((dates.length>1?`${dates.length} shifts added.`:'Shift added.')+(un?again:''));return}
+      if(closedFor(date)){toast(`The pay period with ${fmtDate(date)} is closed. Reopen it under Crew & Pay first.`);return false}
+      let un=payTouch(s.empId,s.date);
+      if(s.empId!==base.empId){s.rate=e.rate;s.burden=e.burden}Object.assign(s,base,{date});un=payTouch(s.empId,s.date)||un;save();toast(un?'Saved.'+again:'Saved')}})}
 
 function photoViewer(p){const j=job(p.jobId);
   openForm({title:p.kind==='receipt'?'Receipt':'Photo',submit:'Save caption',
@@ -1086,19 +1151,39 @@ function monthCal(){const m=UI.month,first=pd(m),now=today(),sel=UI.day;
 function payRange(){const now=today(),wk=weekStart(now),d=pd(now);
   const mStart=ds(new Date(d.getFullYear(),d.getMonth(),1)),lmStart=ds(new Date(d.getFullYear(),d.getMonth()-1,1)),lmEnd=ds(new Date(d.getFullYear(),d.getMonth(),0));
   return{'this-week':[wk,addDays(wk,6),'This week'],'last-week':[addDays(wk,-7),addDays(wk,-1),'Last week'],'this-month':[mStart,ds(new Date(d.getFullYear(),d.getMonth()+1,0)),'This month'],'last-month':[lmStart,lmEnd,'Last month']}}
-function pageCrew(){const L=laborCalc(),R=payRange(),[from,to]=R[UI.pay];
-  const sh=S.shifts.filter(s=>s.status==='worked'&&s.date>=from&&s.date<=to);
-  const per={},perJob={};for(const s of sh){const l=L.get(s.id);if(!l)continue;const p=per[s.empId]=per[s.empId]||{reg:0,ot:0,wage:0,cost:0};p.reg+=l.reg;p.ot+=l.ot;p.wage+=l.wage;p.cost+=l.cost;
+function payrollCard(from,to){const rec=payRec(from),closed=!!rec?.closedAt,per=payrollData(from,to),T=today();
+  const prev=periodOf(addDays(from,-1))[0],next=periodOf(addDays(to,1))[0];
+  const people=Object.entries(per).filter(([,p])=>p.reg||p.ot||payBlocked(p)).sort(([a],[b])=>(emp(a)?.name||'').localeCompare(emp(b)?.name||''));
+  const paid=people.filter(([,p])=>p.reg||p.ot),apprN=paid.filter(([id])=>rec?.approved?.[id]).length,allOK=paid.length&&apprN===paid.length&&!people.some(([,p])=>payBlocked(p));
+  const late=closed?S.shifts.filter(s=>s.status==='worked'&&s.date>=from&&s.date<=to&&!(rec.shiftIds||[]).includes(s.id)):[];
+  const nav=`<div class="pp-nav"><button class="btn sm" data-act="pp" data-v="${prev}" aria-label="Previous pay period">‹</button><span class="pp-label">${fmtDate(from)} – ${fmtDateY(to)}</span><button class="btn sm" data-act="pp" data-v="${next}" aria-label="Next pay period"${next>T?' disabled':''}>›</button></div>`;
+  const note=`<p class="note" style="margin-bottom:12px">${PAY_FREQ[S.settings.payFreq||'weekly']} pay · worked shifts only${S.settings.ot!==false?` · overtime at 1.5× over ${num(S.settings.otThreshold)||40}h/week`:''} · <a href="#/settings">Change pay schedule</a></p>`;
+  let body;
+  if(closed){const rows=payRows(rec);
+    body=`<div class="insight good"><b>Closed</b><span>On ${fmtDateY(ds(new Date(rec.closedAt)))}. These hours are locked. Download the payroll file and upload it to your payroll service.</span></div>
+    ${late.length?`<div class="insight warn"><b>${late.length} shift${late.length>1?'s':''} added later</b><span>${late.length>1?'They were':'It was'} added after this period closed, so ${late.length>1?'they are':'it is'} not in the payroll file. Pay ${late.length>1?'them':'it'} in the next payroll, or reopen this period.</span></div>`:''}
+    ${rows.length?`<div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Employee</th><th class="n">Rate</th><th class="n">Regular</th><th class="n">Overtime</th><th class="n">Gross pay</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td>${esc(r.name)}${r.payrollId?`<small class="muted"> · ${esc(r.payrollId)}</small>`:''}</td><td class="n">${money2(r.rate)}</td><td class="n">${hrs(r.reg)}</td><td class="n">${r.ot?hrs(r.ot):'–'}</td><td class="n"><b>${money2(r.gross)}</b></td></tr>`).join('')}</tbody>
+    <tfoot><tr><td colspan="2">Total</td><td class="n">${hrs(sum(rows,r=>r.reg))}</td><td class="n">${hrs(sum(rows,r=>r.ot))}</td><td class="n">${money2(sum(rows,r=>r.gross))}</td></tr></tfoot></table></div>`:emptyBox('No worked hours were in this pay period.')}
+    <div class="btns" style="margin-top:14px"><button class="btn primary" data-act="pp-csv">Download payroll file</button><button class="btn" data-act="pp-copy">Copy for a spreadsheet</button><button class="btn ghost" data-act="pp-reopen">Reopen</button></div>
+    <p class="note" style="margin-top:10px">The file is a CSV with one row per person and pay rate: ${PAY_COLS.join(', ')}. ${rows.some(r=>!r.payrollId)?'Add each person\'s Payroll ID (edit them below) so your payroll service matches them automatically.':''}</p>`}
+  else{body=`${to>=T?`<div class="insight"><b>In progress</b><span>This pay period ends ${fmtDate(to)}. You can approve hours as you go. If a shift changes after you approve it, approve it again.</span></div>`:''}
+    ${people.length?`<div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Employee</th><th class="n">Regular</th><th class="n">Overtime</th><th class="n">Gross pay</th><th class="n pp-act">Status</th></tr></thead><tbody>
+    ${people.map(([id,p])=>{const e=emp(id),ok=rec?.approved?.[id],issue=p.open?`Still clocked in since ${fmtDate(ds(new Date(p.open.in_at)))}`:p.pending?`${p.pending} past shift${p.pending>1?'s':''} still Scheduled`:'';
+      const act=payBlocked(p)?`<button class="btn sm" data-act="pp-review" data-id="${id}">Fix</button>`:ok?`<button class="badge done" style="border:0;cursor:pointer" data-act="pp-unapprove" data-id="${id}" title="Tap to undo">✓ Approved</button>`:`<button class="btn sm" data-act="pp-review" data-id="${id}">Review</button>`;
+      return `<tr><td><span class="dot" style="background:${e?.color||'#999'}"></span> ${esc(e?.name||'Removed')}${issue?`<small class="pp-issue">${issue}</small>`:''}<div class="pp-act-m">${act}</div></td><td class="n">${hrs(p.reg)}</td><td class="n ${p.ot?'neg':''}">${p.ot?hrs(p.ot):'–'}</td><td class="n"><b>${money2(p.wage)}</b></td><td class="n pp-act">${act}</td></tr>`}).join('')}</tbody>
+    <tfoot><tr><td>Total</td><td class="n">${hrs(sum(paid,([,p])=>p.reg))}</td><td class="n">${hrs(sum(paid,([,p])=>p.ot))}</td><td class="n">${money2(sum(paid,([,p])=>p.wage))}</td><td class="pp-act"></td></tr></tfoot></table></div>
+    <div class="split" style="margin-top:14px"><span class="note">${apprN} of ${paid.length} approved</span><div class="btns">${apprN<paid.length?'<button class="btn" data-act="pp-approve-all">Approve everyone ready</button>':''}<button class="btn primary" data-act="pp-close"${allOK?'':' disabled'}>Close pay period</button></div></div>
+    ${allOK?'':'<p class="note" style="margin-top:8px">Approve everyone\'s hours to close the period. Closing locks the hours and makes the payroll file.</p>'}`:emptyBox('No worked hours in this pay period.')}`}
+  return `<div class="card" id="payroll"><div class="card-head"><h2>Payroll</h2>${nav}</div>${note}${body}</div>`}
+function pageCrew(){const L=laborCalc(),[from,to]=periodOf(UI.pp||today());UI.pp=from;
+  const perJob={};for(const s of S.shifts){if(s.status!=='worked'||s.date<from||s.date>to)continue;const l=L.get(s.id);if(!l)continue;
     const q=perJob[s.jobId]=perJob[s.jobId]||{h:0,wage:0,cost:0};q.h+=l.h;q.wage+=l.wage;q.cost+=l.cost}
   const wk=weekStart(today());
   return `<div class="page-head"><div><h1>Crew &amp; Pay</h1><p class="sub">Your team, their rates, and what you paid out, by person and by job.</p></div><button class="btn primary" data-act="emp-new">+ Add employee</button></div>
   <div class="grid2"><div class="stack">
-  <div class="card"><div class="card-head"><h2>Payroll</h2><div class="seg" role="group" aria-label="Pay period">${Object.entries(R).map(([k,[, ,l]])=>`<button data-act="pay" data-v="${k}" aria-pressed="${UI.pay===k}">${l}</button>`).join('')}</div></div>
-    <p class="note" style="margin-bottom:8px">${fmtDateY(from)} – ${fmtDateY(to)} · worked shifts only${S.settings.ot!==false?` · overtime at 1.5× over ${num(S.settings.otThreshold)||40}h/week`:''}</p>
-    ${Object.keys(per).length?`<div class="table-wrap"><table><thead><tr><th>Employee</th><th class="n">Regular</th><th class="n">Overtime</th><th class="n">Gross pay</th><th class="n">With burden</th></tr></thead><tbody>
-    ${Object.entries(per).map(([id,p])=>{const e=emp(id);return `<tr><td><span class="dot" style="background:${e?.color||'#999'}"></span> ${esc(e?.name||'Removed')}</td><td class="n">${hrs(p.reg)}</td><td class="n ${p.ot?'neg':''}">${p.ot?hrs(p.ot):'–'}</td><td class="n"><b>${money2(p.wage)}</b></td><td class="n">${money(p.cost)}</td></tr>`}).join('')}</tbody>
-    <tfoot><tr><td>Total</td><td class="n">${hrs(sum(Object.values(per),p=>p.reg))}</td><td class="n">${hrs(sum(Object.values(per),p=>p.ot))}</td><td class="n">${money2(sum(Object.values(per),p=>p.wage))}</td><td class="n">${money(sum(Object.values(per),p=>p.cost))}</td></tr></tfoot></table></div>`:emptyBox('No worked hours in this period.')}</div>
-  <div class="card"><div class="card-head"><h2>Pay by job</h2><span class="note">${R[UI.pay][2].toLowerCase()}</span></div>
+  ${payrollCard(from,to)}
+  <div class="card"><div class="card-head"><h2>Pay by job</h2><span class="note">${fmtDate(from)} – ${fmtDate(to)}</span></div>
     ${Object.keys(perJob).length?`<div class="table-wrap"><table><thead><tr><th>Job</th><th class="n">Hours</th><th class="n">Wages</th><th class="n">Labor cost</th></tr></thead><tbody>
     ${Object.entries(perJob).map(([id,p])=>{const j=job(id);return `<tr class="click" data-href="#/job/${id}"><td><span class="dot" style="background:${jobColor(j)}"></span> ${esc(j?.name||'Job removed')}</td><td class="n">${hrs(p.h)}</td><td class="n">${money(p.wage)}</td><td class="n">${money(p.cost)}</td></tr>`}).join('')}</tbody></table></div>`:emptyBox('No worked hours in this period.')}</div>
   </div><div class="stack">
@@ -1146,7 +1231,10 @@ function pageSettings(){const st=S.settings;const iOS=/iphone|ipad|ipod/i.test(n
   <form class="card stack" id="settings-form"><h2>Labor &amp; overtime</h2><div class="fields">
     ${field('Default labor burden %',moneyInp('burden',st.burden))}
     ${field('Overtime after (hours / week)',moneyInp('otThreshold',st.otThreshold))}
-    <label class="check full"><input type="checkbox" name="ot" ${st.ot!==false?'checked':''}> Pay overtime at 1.5× (counts in job labor cost)</label></div>
+    <label class="check full"><input type="checkbox" name="ot" ${st.ot!==false?'checked':''}> Pay overtime at 1.5× (counts in job labor cost)</label>
+    ${field('Pay schedule',`<select name="payFreq">${Object.entries(PAY_FREQ).map(([k,l])=>opt(k,l,st.payFreq||'weekly')).join('')}</select>`,'full')}
+    ${field('First day of a pay period (every 2 weeks only)',inp('payAnchor',st.payAnchor||weekStart(today()),'date'),'full')}</div>
+    <p class="note">Every-2-weeks periods start on the Monday of the week you pick. Overtime is always counted by work week (Monday to Sunday), whatever the pay schedule.</p>
     <div><button class="btn primary" type="submit">Save settings</button></div></form>
   ${isOwnerCloud()?`<form class="card stack" id="empapp-form"><h2>Employee app</h2><p class="note">What your crew sees when they sign in. They never see job prices, expenses, profits or anyone else's pay.</p>
     <label class="check"><input type="checkbox" name="showPay" ${st.showPay!==false?'checked':''}> Show employees their pay rate and earnings</label>
@@ -1199,6 +1287,17 @@ const ACT={
   'photo':a=>photoViewer(S.photos.find(p=>p.id===a.dataset.id)),
   'jobs-filter':a=>{UI.jobsFilter=a.dataset.v;route()},
   'dash':a=>{UI.dash=a.dataset.v;route()},'pay':a=>{UI.pay=a.dataset.v;route()},
+  'pp':a=>{if(a.disabled)return;UI.pp=a.dataset.v;route()},
+  'pp-review':a=>payReview(a.dataset.id),
+  'pp-unapprove':a=>{const r=payRec(UI.pp);if(r&&!r.closedAt&&r.approved?.[a.dataset.id]){delete r.approved[a.dataset.id];save();route();toast('Approval removed')}},
+  'pp-approve-all':()=>{const [f,t]=periodOf(UI.pp||today()),per=payrollData(f,t),r=payBook()[f]=payBook()[f]||{from:f,to:t,approved:{}};r.approved=r.approved||{};let n=0,skip=0;
+    for(const [id,p] of Object.entries(per)){if(!p.reg&&!p.ot)continue;if(payBlocked(p)){skip++;continue}if(!r.approved[id]){r.approved[id]=new Date().toISOString();n++}}
+    save();route();toast(n?`Approved ${n} ${n>1?'people':'person'}${skip?`, ${skip} still need fixing`:''}`:skip?'Fix the flagged people first':'Everyone is already approved')},
+  'pp-close':a=>{if(a.disabled||!armTwoStep(a,'Tap again to close and lock'))return;const [f,t]=periodOf(UI.pp||today());payClose(f,t);route();toast('Pay period closed')},
+  'pp-reopen':a=>{if(!armTwoStep(a,'Tap again to reopen'))return;const r=payRec(UI.pp);if(r){delete r.closedAt;delete r.rows;delete r.shiftIds;save()}route();toast('Reopened. You can change these hours again.')},
+  'pp-csv':async()=>{const r=payRec(UI.pp);if(!r?.closedAt)return;const ok=await saveFile(`payroll-${r.from}-to-${r.to}.csv`,payCSV(r),'text/csv');if(ok){r.exportedAt=new Date().toISOString();save();toast('Payroll file ready')}},
+  'pp-copy':async()=>{const r=payRec(UI.pp);if(!r?.closedAt)return;const tsv=payTable(r).map(l=>l.join('\t')).join('\n');
+    try{await navigator.clipboard.writeText(tsv);toast('Copied. Paste it into a spreadsheet or your payroll service.')}catch(e){toast('This device would not let Blue Board copy. Use Download payroll file instead.')}},
   'accent':a=>{S.profile.accent=a.dataset.v;save();route()},
   'mode':a=>{S.profile.mode=a.dataset.v;if(isEmp())LS.set('empMode',a.dataset.v);else save();route()},
   'logo-remove':()=>{delete S.profile.logo;save();route()},
@@ -1232,7 +1331,7 @@ document.addEventListener('change',async e=>{const t=e.target;
         onSubmit:async()=>{if(!memOnly)await DB.clear('photos');memPhotos.clear();urlCache.clear();for(const[id,u] of Object.entries(d.photos||{})){const b=await (await fetch(u)).blob();await photoPut(id,b)}S=Object.assign(blank(),d.state);S.settings=Object.assign(blank().settings,d.state.settings);save();toast('Backup restored')}})}
     catch(err){toast('That file isn\'t a Blue Board backup')}t.value=''}});
 document.addEventListener('submit',e=>{if(e.target.id==='profile-form'){e.preventDefault();const fd=new FormData(e.target);S.profile=Object.assign(S.profile||{},Object.fromEntries(['name','title','company','phone','email','license','website','address'].map(k=>[k,String(fd.get(k)||'').trim()])));save();toast('Profile saved');route();return}
-  if(e.target.id==='settings-form'){e.preventDefault();const fd=new FormData(e.target);Object.assign(S.settings,{burden:num(fd.get('burden')),otThreshold:num(fd.get('otThreshold'))||40,ot:!!fd.get('ot')});save();toast('Settings saved');route()}});
+  if(e.target.id==='settings-form'){e.preventDefault();const fd=new FormData(e.target);Object.assign(S.settings,{burden:num(fd.get('burden')),otThreshold:num(fd.get('otThreshold'))||40,ot:!!fd.get('ot'),payFreq:fd.get('payFreq')||'weekly',payAnchor:fd.get('payAnchor')?weekStart(fd.get('payAnchor')):(S.settings.payAnchor||weekStart(today()))});UI.pp=null;save();toast('Settings saved');route()}});
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;if(location.hash.startsWith('#/settings'))route()});
 
 const ICON={user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',dl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>',out:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/></svg>'};
@@ -1311,7 +1410,7 @@ function applyPunches(){let changed=false;
     const loc={in:p.in_lat!=null?[p.in_lat,p.in_lng]:null,out:p.out_lat!=null?[p.out_lat,p.out_lng]:null};
     const sched=S.shifts.find(s=>!s.punchId&&s.status==='scheduled'&&s.empId===e.id&&s.jobId===p.job_id&&s.date===date);
     const f={start:pad(a.getHours())+':'+pad(a.getMinutes()),end:pad(b.getHours())+':'+pad(b.getMinutes()),breakMin:0,status:'worked',punchId:p.id,source:'clock',loc,note:p.note||sched?.note||''};
-    if(sched)Object.assign(sched,f);else S.shifts.push({id:uid(),empId:e.id,jobId:p.job_id,date,rate:e.rate,burden:e.burden,...f});changed=true}
+    if(sched)Object.assign(sched,f);else S.shifts.push({id:uid(),empId:e.id,jobId:p.job_id,date,rate:e.rate,burden:e.burden,...f});payTouch(e.id,date);changed=true}
   if(changed)save();return changed}
 
 /* ----- employee ----- */
