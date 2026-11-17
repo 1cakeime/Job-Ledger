@@ -782,11 +782,11 @@ function payReview(id){const e=emp(id),[from,to]=periodOf(UI.pp||today()),p=payr
 
 /* ---------- UI primitives ---------- */
 let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600)}
-function openForm({title,body,submit='Save',onSubmit,onDelete,deleteLabel='Delete',onOpen}){
+function openForm({title,body,submit='Save',onSubmit,onDelete,deleteLabel='Delete',onOpen,closeLabel='Cancel'}){
   const d=$('#dlg');
   d.innerHTML=`<form class="dlg-form" novalidate><header><h2>${esc(title)}</h2><button type="button" class="x" data-close aria-label="Close">×</button></header>
   <div class="dlg-body">${body}</div><footer>${onDelete?`<button type="button" class="btn danger" data-del>${esc(deleteLabel)}</button>`:''}<span class="sp"></span>
-  <button type="button" class="btn ghost" data-close>Cancel</button>${onSubmit?`<button class="btn primary" type="submit">${esc(submit)}</button>`:''}</footer></form>`;
+  <button type="button" class="btn ghost" data-close>${esc(closeLabel)}</button>${onSubmit?`<button class="btn primary" type="submit">${esc(submit)}</button>`:''}</footer></form>`;
   const f=d.querySelector('form');
   f.addEventListener('submit',async ev=>{ev.preventDefault();for(const el of $$('[required]',f)){if(!String(el.value).trim()){el.focus();toast('Please fill in '+(el.closest('label')?.firstChild?.textContent||'the required field').trim().toLowerCase());return}}
     const btn=$('[type=submit]',f);btn.disabled=true;try{const r=await onSubmit(new FormData(f),f);if(r!==false){d.close();route()}}finally{btn.disabled=false}});
@@ -827,7 +827,7 @@ function jobForm(j){const isNew=!j;j=j||{status:'active',est:{},start:today()};c
         est:Object.fromEntries(EST.map(([k])=>[k,num(fd.get('est_'+k))]))});
       o.plan=plan;if(isNew)S.jobs.push(o);const r=syncPlan(o,{double:!!fd.get('dbl')});save();
       const msg=[isNew?'Job created':'Saved'];if(r.added)msg.push(`${r.added} shift${r.added>1?'s':''} scheduled`);if(r.removed)msg.push(`${r.removed} removed`);if(r.skipped)msg.push(`${r.skipped} skipped (already booked)`);
-      if(plan.crew.length&&o.status==='bid')msg.push('crew will be scheduled when the job is Active');toast(msg.join(' · '));if(isNew)location.hash='#/job/'+o.id}})}
+      if(plan.crew.length&&o.status==='bid')msg.push('crew will be scheduled when the job is Active');toast(msg.join(' · '));if(isNew)location.hash='#/job/'+o.id;offerCrewTexts(r.list)}})}
 const WD=[['1','Mon'],['2','Tue'],['3','Wed'],['4','Thu'],['5','Fri'],['6','Sat'],['0','Sun']];
 function planFields(j){const p=j.plan||{},crew=p.crew||[],days=(p.days||[1,2,3,4,5]).map(String),emps=S.employees.filter(e=>e.active!==false||crew.includes(e.id));
   return `<fieldset><legend>Crew &amp; schedule</legend><div class="stack" style="gap:12px">
@@ -853,13 +853,13 @@ function conflictFor(empId,date,p,jobId){return S.shifts.find(s=>s.empId===empId
 function planConflicts(jobId,p,status){if(status!=='active'||!p.crew.length)return[];const out=[];
   for(const d of planDates(p))for(const id of p.crew){if(S.shifts.some(s=>s.jobId===jobId&&s.empId===id&&s.date===d))continue;const c=conflictFor(id,d,p,jobId);if(c)out.push({empId:id,date:d,other:c.jobId})}return out}
 // Keep a job's upcoming scheduled days in line with its crew plan. Never touches past days, worked or missed shifts, or shifts added by hand.
-function syncPlan(j,opt={}){const t=today(),p=j.plan,res={added:0,removed:0,skipped:0},want=new Map();
+function syncPlan(j,opt={}){const t=today(),p=j.plan,res={added:0,removed:0,skipped:0,list:[]},want=new Map();
   if(p&&p.crew&&p.crew.length&&j.status==='active')for(const d of planDates(p))for(const id of p.crew){const e=emp(id);if(e&&e.active!==false)want.set(id+'|'+d,{empId:id,date:d})}
   S.shifts=S.shifts.filter(s=>{if(s.jobId!==j.id||!s.plan||s.status!=='scheduled'||s.date<t)return true;const k=s.empId+'|'+s.date;
     if(want.has(k)){Object.assign(s,{start:p.start,end:p.end,breakMin:p.breakMin});want.delete(k);return true}res.removed++;return false});
   for(const w of want.values()){if(S.shifts.some(s=>s.jobId===j.id&&s.empId===w.empId&&s.date===w.date))continue;
     if(!opt.double&&conflictFor(w.empId,w.date,p,j.id)){res.skipped++;continue}
-    const e=emp(w.empId);S.shifts.push({id:uid(),empId:w.empId,jobId:j.id,date:w.date,start:p.start,end:p.end,breakMin:p.breakMin,status:'scheduled',rate:e.rate,burden:e.burden,note:'',plan:true});res.added++}
+    const e=emp(w.empId),ns={id:uid(),empId:w.empId,jobId:j.id,date:w.date,start:p.start,end:p.end,breakMin:p.breakMin,status:'scheduled',rate:e.rate,burden:e.burden,note:'',plan:true};S.shifts.push(ns);res.list.push(ns);res.added++}
   return res}
 
 function expenseForm(x,jobId){const isNew=!x;x=x||{date:today(),cat:'materials',jobId};
@@ -904,6 +904,22 @@ function empForm(e){const isNew=!e;e=e||{burden:S.settings.burden,active:true,co
       const o=isNew?{id:uid()}:e;Object.assign(o,{name:fd.get('name').trim(),role:fd.get('role').trim(),phone:fd.get('phone').trim(),payrollId:(fd.get('payrollId')||'').trim(),rate,burden:num(fd.get('burden')),color:fd.get('color'),active:!!fd.get('active')});
       if(isNew)S.employees.push(o);save();toast('Saved')}})}
 
+// After crew are scheduled, offer to text each person the details from the owner's own phone (Messages opens with the text filled in).
+function smsLink(phone,body){const n=String(phone||'').replace(/[^\d+]/g,'');return n.replace(/\D/g,'').length>=7?`sms:${n}?&body=${encodeURIComponent(body)}`:''}
+function crewText(e,list){const j=job(list[0].jobId)||{},ds=[...new Set(list.map(x=>x.date))].sort(),wk=d=>pd(d).toLocaleDateString('en-US',{weekday:'short'});
+  const times=[...new Set(list.map(x=>`${fmtTime(x.start)}–${fmtTime(x.end)}`))],notes=[...new Set(list.map(x=>x.note).filter(Boolean))];
+  const when=ds.length===1?`${wk(ds[0])} ${fmtDate(ds[0])}`:`${ds.length} days, ${wk(ds[0])} ${fmtDate(ds[0])} – ${wk(ds[ds.length-1])} ${fmtDate(ds[ds.length-1])}`;
+  return [`Hi ${(e.name||'').split(' ')[0]}, you're scheduled on ${j.name||'a job'}.`,`When: ${when}, ${times.join(' / ')}`,j.address&&`Where: ${j.address}`,notes.length&&`Note: ${notes.join('; ')}`,`– ${S.profile?.company||S.profile?.name||'Blue Board'}`].filter(Boolean).join('\n')}
+function offerCrewTexts(shifts){if(isEmp())return;const t=today(),by=new Map();
+  for(const x of shifts||[]){if(x.status!=='scheduled'||x.date<t)continue;const k=x.empId+'|'+x.jobId;if(!by.has(k))by.set(k,[]);by.get(k).push(x)}
+  if(!by.size)return;const rows=[...by.values()].map(list=>{const e=emp(list[0].empId)||{};return{e,msg:crewText(e,list)}});
+  setTimeout(()=>openForm({title:rows.length>1?'Text your crew?':`Text ${rows[0].e.name||'your crew'}?`,
+    body:`<p class="note">Opens Messages on your phone with the details filled in. Tap Send to text them from your number.</p>
+      <ul class="list">${rows.map((r,i)=>{const href=smsLink(r.e.phone,r.msg);return `<li style="display:block"><b>${esc(r.e.name||'Crew member')}</b><small style="display:block;white-space:pre-line;margin:4px 0 10px">${esc(r.msg)}</small>
+        <div class="btns">${href?`<a class="btn sm primary" href="${esc(href)}" data-texted>Text</a>`:`<small class="note">No phone number</small>`}<button type="button" class="btn sm ghost" data-copy="${i}">Copy</button></div></li>`}).join('')}</ul>
+      ${rows.some(r=>!smsLink(r.e.phone,''))?'<p class="note">Add phone numbers on <b>Crew &amp; Pay</b> to text people straight from here.</p>':''}`,
+    closeLabel:'Done',onOpen:f=>{$$('[data-copy]',f).forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(rows[+b.dataset.copy].msg);toast('Copied. Paste it in a text.')}catch(err){toast('Could not copy')}});
+      $$('[data-texted]',f).forEach(a=>a.addEventListener('click',()=>{a.textContent='Opened';a.classList.remove('primary')}))}}),250)}
 function shiftForm(s,pre={}){const isNew=!s;
   const past=d=>d<today();
   s=s||{empId:pre.empId||S.employees.find(e=>e.active!==false)?.id,jobId:pre.jobId||S.jobs.find(j=>j.status==='active')?.id||S.jobs[0]?.id,date:pre.date||today(),start:'07:00',end:'15:30',breakMin:30,status:pre.status||(past(pre.date||today())?'worked':'scheduled')};
@@ -932,11 +948,12 @@ function shiftForm(s,pre={}){const isNew=!s;
       const date=fd.get('date')||today();const again=' Approval removed, approve these hours again.';
       if(isNew){const dates=[date];if(fd.get('repeat')){let d=addDays(date,1);while(pd(d).getDay()!==6&&pd(d).getDay()!==0){dates.push(d);d=addDays(d,1)}}
         const shut=dates.find(d=>closedFor(d));if(shut){toast(`The pay period with ${fmtDate(shut)} is closed. Reopen it under Crew & Pay first.`);return false}
-        let un=false;for(const d of dates){S.shifts.push({id:uid(),...base,date:d,rate:e.rate,burden:e.burden,status:fd.get('status')==='worked'&&d>today()?'scheduled':base.status});un=payTouch(base.empId,d)||un}
-        save();toast((dates.length>1?`${dates.length} shifts added.`:'Shift added.')+(un?again:''));return}
+        let un=false;const added=[];for(const d of dates){const ns={id:uid(),...base,date:d,rate:e.rate,burden:e.burden,status:fd.get('status')==='worked'&&d>today()?'scheduled':base.status};S.shifts.push(ns);added.push(ns);un=payTouch(base.empId,d)||un}
+        save();toast((dates.length>1?`${dates.length} shifts added.`:'Shift added.')+(un?again:''));offerCrewTexts(added);return}
       if(closedFor(date)){toast(`The pay period with ${fmtDate(date)} is closed. Reopen it under Crew & Pay first.`);return false}
       let un=payTouch(s.empId,s.date);
-      if(s.empId!==base.empId){s.rate=e.rate;s.burden=e.burden}Object.assign(s,base,{date});un=payTouch(s.empId,s.date)||un;save();toast(un?'Saved.'+again:'Saved')}})}
+      const moved=['empId','jobId','start','end'].some(k=>s[k]!==base[k])||s.date!==date;
+      if(s.empId!==base.empId){s.rate=e.rate;s.burden=e.burden}Object.assign(s,base,{date});un=payTouch(s.empId,s.date)||un;save();toast(un?'Saved.'+again:'Saved');if(moved)offerCrewTexts([s])}})}
 
 function photoViewer(p){const j=job(p.jobId);
   openForm({title:p.kind==='receipt'?'Receipt':'Photo',submit:'Save caption',
