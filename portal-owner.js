@@ -118,9 +118,9 @@ function portalEnsure(j) {
       .map((x) => x.toString(16).padStart(2, "0"))
       .join("");
   }
-  if (!j.portal.code) {
+  if (!j.portal.code || j.portal.code.length !== 10) {
     // Same alphabet as crew invite codes: no 0/O or 1/I to mix up when typing.
-    const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(8));
+    const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(10));
     j.portal.code = [...r].map((x) => A[x % A.length]).join("");
   }
   return j.portal;
@@ -562,7 +562,7 @@ async function portalSend(j) {
   }
   portalShowInvite(box, j);
 }
-const portalCodeShow = (code) => code.slice(0, 4) + "-" + code.slice(4);
+const portalCodeShow = (code) => code.slice(0, 5) + "-" + code.slice(5);
 function portalShowInvite(box, j) {
   const c = j.customerId ? cust(j.customerId) : null,
     phone = c?.phone || j.phone,
@@ -818,7 +818,7 @@ pageAuth = function () {
   if (LS.get("invite")) return html; // crew invite in progress: keep that screen focused
   const box = `<div class="card auth-card stack auth-cust"><div><h2>I'm a customer</h2><p class="note">Enter the code your contractor sent you to see your project.</p></div>
     <form id="cust-code-form" class="stack" novalidate>
-      ${field("Customer code", inp("code", "", "text", 'placeholder="ABCD-EFGH" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" inputmode="text"'))}
+      ${field("Customer code", inp("code", "", "text", 'placeholder="ABCDE-FGHJK" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" inputmode="text"'))}
       <p class="note neg" id="cust-code-err" hidden></p>
       <button class="btn primary big" type="submit">Open my project</button></form></div>`;
   return html.replace(/<\/div>\s*$/, box + "</div>");
@@ -829,7 +829,7 @@ document.addEventListener("submit", async (e) => {
   const f = e.target, err = $("#cust-code-err", f), btn = $("[type=submit]", f);
   const code = f.code.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
   const fail = (m) => { err.hidden = false; err.textContent = m; btn.disabled = false; btn.textContent = "Open my project"; };
-  if (code.length !== 8) return fail("Customer codes are 8 letters and numbers, like ABCD-EFGH.");
+  if (code.length !== 10) return fail("Customer codes are 10 letters and numbers, like ABCDE-FGHJK.");
   btn.disabled = true; btn.textContent = "Opening…";
   try {
     const token = await portalLookupCode(code);
@@ -840,7 +840,7 @@ document.addEventListener("submit", async (e) => {
 });
 document.addEventListener("input", (e) => {
   if (e.target.form?.id !== "cust-code-form" || e.target.name !== "code") return;
-  const raw = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
-  e.target.value = raw.length > 4 ? raw.slice(0, 4) + "-" + raw.slice(4) : raw;
+  const raw = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10);
+  e.target.value = raw.length > 5 ? raw.slice(0, 5) + "-" + raw.slice(5) : raw;
 });
 document.head.insertAdjacentHTML("beforeend", "<style>.auth{gap:16px;align-content:center}.auth-cust{padding:22px 26px}.auth-cust h2{font-size:18px;margin:0 0 2px}.auth-cust input[name=code]{font:800 20px Manrope,sans-serif;letter-spacing:.12em;text-transform:uppercase}</style>");

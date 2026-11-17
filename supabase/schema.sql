@@ -488,36 +488,40 @@ drop policy if exists portal_owner_delete on storage.objects;
 create policy portal_owner_delete on storage.objects for delete to authenticated
   using (bucket_id = 'portal' and public.is_owner(((storage.foldername(name))[1])::uuid));
 
--- Customer codes: the short code (like ABCD-EFGH) a customer types into the app to open their page.
--- Same alphabet and length as crew invite codes. Unlike the page link, a code can be typed in by hand.
+-- Customer codes: the short code (like ABCDE-FGHJK) a customer types into the app to open their page.
+-- 10 characters from the crew-code alphabet (32^10, about 10^15 codes), so guessing one isn't practical.
 alter table public.customer_portals add column if not exists code text;
 create unique index if not exists customer_portals_code on public.customer_portals(code) where code is not null;
--- Wrong guesses are counted so nobody can try codes until one works: 10 misses per address in
--- 10 minutes, and 500 misses across everyone in 10 minutes, then the box says to wait.
--- At that ceiling an attacker gets about 72,000 guesses a day against 32^8 (about 1.1 trillion) codes.
-create table if not exists public.portal_code_fails (
+
+-- Every lookup is recorded BEFORE the code is checked, so a call that can't write (a read-only
+-- request) fails instead of skipping the count. Limit: 10 tries per network address in 10 minutes.
+-- No limit across everyone, so one person can't lock every customer out of the code box.
+-- The address is Cloudflare's cf-connecting-ip, else the last X-Forwarded-For entry (the one the
+-- proxy adds); the first entry is whatever the caller typed. Not verified against Supabase's live
+-- headers yet; the 10-character code is what keeps guessing impractical either way.
+create table if not exists public.portal_code_tries (
   at timestamptz not null default now(),
   ip text not null default ''
 );
-create index if not exists portal_code_fails_at on public.portal_code_fails(at);
-alter table public.portal_code_fails enable row level security;
+drop table if exists public.portal_code_fails;
+create index if not exists portal_code_tries_ip_at on public.portal_code_tries(ip, at);
+alter table public.portal_code_tries enable row level security;
 -- No policies: only portal_token_for_code (security definer) reads or writes it.
 
 create or replace function public.portal_token_for_code(p_code text) returns text
 language plpgsql volatile security definer set search_path = public as $$
-declare v_ip text; v_code text; v_token text;
+declare h json; v_ip text; v_code text; v_token text;
 begin
-  v_ip := left(trim(split_part(coalesce(current_setting('request.headers', true)::json->>'x-forwarded-for', ''), ',', 1)), 64);
-  if (select count(*) from portal_code_fails where at > now() - interval '10 minutes' and ip = v_ip) >= 10
-     or (select count(*) from portal_code_fails where at > now() - interval '10 minutes') >= 500 then
+  h := coalesce(current_setting('request.headers', true), '{}')::json;
+  v_ip := left(coalesce(nullif(trim(h->>'cf-connecting-ip'), ''),
+                        trim(regexp_replace(coalesce(h->>'x-forwarded-for', ''), '^.*,', ''))), 64);
+  insert into portal_code_tries(ip) values (v_ip);
+  if (select count(*) from portal_code_tries where ip = v_ip and at > now() - interval '10 minutes') > 10 then
     raise exception 'Too many tries. Wait a few minutes and try again.';
   end if;
+  delete from portal_code_tries where at < now() - interval '1 day';
   v_code := upper(regexp_replace(coalesce(p_code, ''), '[^A-Za-z0-9]', '', 'g'));
-  select token into v_token from customer_portals where code = v_code and length(code) = 8;
-  if v_token is null then
-    insert into portal_code_fails(ip) values (v_ip);
-    delete from portal_code_fails where at < now() - interval '1 day';
-  end if;
+  select token into v_token from customer_portals where code = v_code and length(code) = 10;
   return v_token;
 end $$;
 revoke all on function public.portal_token_for_code(text) from public;
