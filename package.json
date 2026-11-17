@@ -1,0 +1,18 @@
+{
+  "name": "blue-board",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Blue Board iPhone app (Capacitor wrapper around index.html)",
+  "scripts": {
+    "build": "node scripts/build-www.mjs",
+    "ios": "npm run build && npx cap sync ios && npx cap open ios",
+    "sync": "npm run build && npx cap sync ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/ios": "^8.6.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.6.2"
+  }
+}
