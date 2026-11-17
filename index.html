@@ -578,6 +578,10 @@ dialog{border-radius:28px}
 .nav a[aria-current="page"]{background:var(--grad);color:#fff;font-weight:600;box-shadow:0 10px 22px -10px var(--glow)}
 /* sign-in */
 body.gate{background:radial-gradient(700px 400px at 85% 10%,rgba(255,255,255,.22),transparent 60%),linear-gradient(150deg,var(--hi),var(--hi2,var(--hi-dk)));background-attachment:fixed}
+/* welcome page sits on the blue gradient: keep its heading and subtitle readable */
+body.gate .page-head h1{color:#fff}
+body.gate .page-head .sub{color:rgba(255,255,255,.9)}
+body.gate .page-head .btn.ghost{color:#fff}
 /* logo: solid seal stamp (light version on dark backgrounds) */
 .brand svg.seal,.auth-logo svg.seal{border-radius:0;box-shadow:none;filter:none;flex:none}
 .brand svg.seal{width:44px;height:44px}
@@ -1354,13 +1358,15 @@ function pageAuth(){const code=LS.get('invite'),tab=UI.authTab||(code?'up':'in')
     ${code?'':`<div class="hr"></div><button class="btn ghost" data-act="go-local">Use on this device without an account</button>
     <p class="note">Without an account your data stays on this device and your crew can't use the app.</p>`}</div></div>`}
 function pageOnboard(){const co=S.profile?.company||'';const hasLocal=S.jobs.length||S.employees.length;
-  return `<div class="page-head"><div><h1>Welcome${CLOUD.user?.email?', '+esc(CLOUD.user.email.split('@')[0]):''}</h1><p class="sub">Are you running the company, or joining a crew?</p></div><button class="btn ghost" data-act="signout">Sign out</button></div>
+  return `<div class="page-head"><div><h1>Welcome${CLOUD.user?.email?', '+esc(CLOUD.user.email.split('@')[0]):''}</h1><p class="sub">Pick one below. Joining a crew? You need the invite code your boss sent you.</p></div><button class="btn ghost" data-act="signout">Sign out</button></div>
   <div class="onb">
-    <form class="card stack" id="create-co"><h2>I run the company</h2><p class="note">Set up your company's board. You'll see everything: jobs, money, schedule, crew and pay.</p>
+    <form class="card stack" id="create-co"><h2>I run the company</h2><p class="note">For the owner or whoever runs the office. Set up your company's board and see everything: jobs, money, schedule, crew and pay.</p>
+      <p class="note">Your crew doesn't pick this. You'll send each of them an invite code from <b>Crew &amp; Pay</b>.</p>
       ${field('Company name',inp('company',co,'text','required autocomplete="organization"'))}
       ${hasLocal?`<p class="note">The ${S.jobs.length} jobs and ${S.employees.length} crew members on this device will move into your company account.</p>`:''}
       <div><button class="btn primary" type="submit">Set up my company</button></div></form>
-    <form class="card stack" id="join-co"><h2>I work for a company</h2><p class="note">Enter the invite code your boss sent you.</p>
+    <form class="card stack" id="join-co"><h2>I work for a company</h2><p class="note">For crew members. Enter the invite code your boss sent you to see your schedule, clock in and out, and check your pay.</p>
+      <div class="insight"><b>No code yet?</b><span>Ask your boss to send you an invite from Blue Board. Don't pick “I run the company”, because that starts a new, empty company.</span></div>
       ${field('Invite code',inp('code','','text','required placeholder="ABCD-EFGH" autocapitalize="characters" autocomplete="off"'))}
       <div><button class="btn primary" type="submit">Join the crew</button></div></form></div>`}
 
