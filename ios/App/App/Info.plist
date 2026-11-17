@@ -30,6 +30,8 @@
 	<string>Blue Board uses the camera to take job site and receipt photos.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Blue Board records where you are when you clock in and out, so your boss can confirm you were at the job site.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Blue Board uses the microphone to record voice memos you add to a customer's project page.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Blue Board lets you pick job site photos, receipts and your company logo from your library.</string>
 	<key>UIApplicationSceneManifest</key>

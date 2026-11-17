@@ -1,0 +1,1167 @@
+<!doctype html>
+<!-- The customer page a contractor sends for one job: key dates on a calendar, and the picks the
+     customer needs to make. Opened as portal.html#<token>; no account. Contractor side: portal-owner.js. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="robots" content="noindex" />
+    <title>Your project</title>
+    <link rel="icon" href="icons/icon.svg" />
+    <style>
+      @font-face {
+        font-family: "Manrope";
+        font-weight: 400 800;
+        font-display: swap;
+        src: url(vendor/manrope.woff2) format("woff2");
+      }
+      @font-face {
+        font-family: "DM Sans";
+        font-weight: 400 700;
+        font-display: swap;
+        src: url(vendor/dmsans.woff2) format("woff2");
+      }
+      :root {
+        --bg: #f4f6ff;
+        --surface: #fff;
+        --surface2: #eef1fb;
+        --surface3: #e3e8f7;
+        --ink: #10142b;
+        --muted: #5b6280;
+        --line: rgba(16, 20, 43, 0.07);
+        --line2: rgba(16, 20, 43, 0.12);
+        --hi: #2d5bff;
+        --hi2: #00a8f0;
+        --hi-soft: rgba(45, 91, 255, 0.1);
+        --grad: linear-gradient(135deg, #2d5bff, #00a8f0);
+        --good: #0f7b4b;
+        --good-bg: #e3f4ec;
+        --bad: #c42b2b;
+        --bad-bg: #fdeceb;
+        --warn: #a15c00;
+        --warn-bg: #fff1d6;
+        --shadow:
+          0 1px 2px rgba(16, 20, 43, 0.04),
+          0 10px 28px -10px rgba(16, 20, 43, 0.16);
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0b0e1f;
+          --surface: #151a33;
+          --surface2: #1d2342;
+          --surface3: #262d52;
+          --ink: #eef1ff;
+          --muted: #a3aacb;
+          --line: rgba(255, 255, 255, 0.08);
+          --line2: rgba(255, 255, 255, 0.14);
+          --hi: #7c9bff;
+          --hi-soft: rgba(124, 155, 255, 0.14);
+          --good: #5fd39a;
+          --good-bg: rgba(95, 211, 154, 0.12);
+          --bad: #ff8a80;
+          --bad-bg: rgba(255, 138, 128, 0.12);
+          --warn: #f5b84f;
+          --warn-bg: rgba(245, 184, 79, 0.12);
+          --shadow: none;
+          color-scheme: dark;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          15px/1.5 "DM Sans",
+          system-ui,
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: max(20px, env(safe-area-inset-top)) 16px 64px;
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: Manrope, sans-serif;
+        font-weight: 800;
+        margin: 0;
+        letter-spacing: -0.01em;
+      }
+      h1 {
+        font-size: 26px;
+        line-height: 1.15;
+      }
+      h2 {
+        font-size: 18px;
+      }
+      h3 {
+        font-size: 16px;
+      }
+      .note {
+        color: var(--muted);
+        font-size: 13.5px;
+        margin: 0;
+      }
+      .err {
+        color: var(--bad);
+      }
+      a {
+        color: var(--hi);
+      }
+      .head {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        margin: 4px 0 18px;
+      }
+      .logo {
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        object-fit: contain;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        flex: none;
+      }
+      .co {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        padding: 20px;
+        margin-top: 14px;
+        box-shadow: var(--shadow);
+      }
+      .sec {
+        margin-top: 26px;
+      }
+      .sec > h2 {
+        margin: 0 4px 2px;
+      }
+      .sec > .note {
+        margin: 0 4px;
+      }
+      .btn {
+        appearance: none;
+        border: 0;
+        border-radius: 999px;
+        padding: 12px 20px;
+        font:
+          700 15px "DM Sans",
+          sans-serif;
+        cursor: pointer;
+        background: var(--surface2);
+        color: var(--ink);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 46px;
+        transition:
+          transform 0.12s ease-out,
+          background-color 0.15s;
+      }
+      .btn:active {
+        transform: scale(0.97);
+      }
+      .btn.primary {
+        background: var(--grad);
+        color: #fff;
+      }
+      .btn.sm {
+        min-height: 34px;
+        padding: 6px 14px;
+        font-size: 13.5px;
+      }
+      .btn.ghost {
+        background: transparent;
+      }
+      .btn:disabled {
+        opacity: 0.55;
+        cursor: default;
+      }
+      .badge {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 750;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: var(--surface2);
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .badge.warn {
+        background: var(--warn-bg);
+        color: var(--warn);
+      }
+      .badge.bad {
+        background: var(--bad-bg);
+        color: var(--bad);
+      }
+      .badge.good {
+        background: var(--good-bg);
+        color: var(--good);
+      }
+      .pick-top {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        justify-content: space-between;
+      }
+      .price {
+        font:
+          800 16px Manrope,
+          sans-serif;
+        white-space: nowrap;
+      }
+      .desc {
+        margin: 10px 0 0;
+        white-space: pre-wrap;
+      }
+      .media {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .media a {
+        display: block;
+        aspect-ratio: 1;
+        border-radius: 16px;
+        overflow: hidden;
+        background: var(--surface2);
+      }
+      .media img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .files {
+        list-style: none;
+        margin: 10px 0 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .files a {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: var(--surface2);
+        color: var(--ink);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 14px;
+      }
+      .files a span {
+        color: var(--muted);
+        font-weight: 500;
+        margin-left: auto;
+        font-size: 12.5px;
+      }
+      .voice {
+        margin-top: 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px 8px 14px;
+        border-radius: 16px;
+        background: var(--hi-soft);
+      }
+      .voice b {
+        font-size: 13px;
+        white-space: nowrap;
+      }
+      .voice audio {
+        flex: 1;
+        min-width: 0;
+        height: 36px;
+      }
+      /* options: a deck of cards the customer swipes through, one option per card */
+      .deck {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        overscroll-behavior-x: contain;
+        margin: 14px -20px 0;
+        padding: 2px 20px 6px;
+        scroll-padding: 0 20px;
+        scrollbar-width: none;
+      }
+      .deck::-webkit-scrollbar {
+        display: none;
+      }
+      .deck:focus-visible {
+        outline: 2px solid var(--hi);
+        outline-offset: -2px;
+      }
+      .flash {
+        flex: 0 0 86%;
+        scroll-snap-align: center;
+        background: var(--surface);
+        border: 2px solid var(--line2);
+        border-radius: 22px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: border-color 0.12s ease-out;
+      }
+      .deck.one .flash {
+        flex-basis: 100%;
+      }
+      .flash.on {
+        border-color: var(--hi);
+        box-shadow: 0 0 0 3px var(--hi-soft);
+      }
+      .flash-media {
+        position: relative;
+        aspect-ratio: 4/3;
+        background: var(--surface2);
+        display: block;
+      }
+      .flash-media img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .flash-ph {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        text-align: center;
+        font: 800 22px/1.2 Manrope, sans-serif;
+        color: var(--muted);
+      }
+      .flash-count,
+      .flash-pick {
+        position: absolute;
+        top: 10px;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 999px;
+      }
+      .flash-count {
+        left: 10px;
+        background: rgba(16, 20, 43, 0.72);
+        color: #fff;
+      }
+      .flash-pick {
+        right: 10px;
+        background: var(--hi);
+        color: #fff;
+        display: none;
+      }
+      .flash.on .flash-pick {
+        display: block;
+      }
+      .flash-body {
+        padding: 14px 16px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        flex: 1;
+      }
+      .flash-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: baseline;
+      }
+      .flash-top h4 {
+        margin: 0;
+        font: 800 17px/1.25 Manrope, sans-serif;
+      }
+      .flash-thumbs {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .flash-thumbs a {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        overflow: hidden;
+        background: var(--surface2);
+        flex: none;
+      }
+      .flash-thumbs img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .flash .files {
+        margin: 0;
+      }
+      .flash-choose {
+        margin-top: auto;
+        width: 100%;
+      }
+      .flash-choose .yes,
+      .flash.on .flash-choose .no {
+        display: none;
+      }
+      .flash.on .flash-choose .yes {
+        display: inline;
+      }
+      .flash.on .flash-choose {
+        background: var(--grad);
+        color: #fff;
+      }
+      .deck-nav {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 10px;
+      }
+      .deck-nav .btn {
+        width: 38px;
+        min-height: 38px;
+        padding: 0;
+        font-size: 18px;
+      }
+      .dots-row {
+        display: flex;
+        gap: 6px;
+      }
+      .dots-row i {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--line2);
+        transition: background-color 0.12s ease-out, width 0.12s ease-out;
+      }
+      .dots-row i.cur {
+        width: 18px;
+        border-radius: 999px;
+        background: var(--ink);
+      }
+      .picked-thumb {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        object-fit: cover;
+        flex: none;
+      }
+      .picked.has-thumb {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      textarea,
+      input {
+        width: 100%;
+        font: inherit;
+        font-size: 16px;
+        color: var(--ink);
+        background: var(--surface2);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 11px 14px;
+        margin-top: 10px;
+      }
+      textarea {
+        min-height: 70px;
+        resize: vertical;
+      }
+      .send {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-top: 12px;
+      }
+      .picked {
+        margin-top: 12px;
+        padding: 12px 14px;
+        border-radius: 16px;
+        background: var(--good-bg);
+        color: var(--good);
+        font-weight: 700;
+      }
+      .picked span {
+        display: block;
+        font-weight: 500;
+        color: var(--ink);
+        opacity: 0.8;
+        font-size: 13.5px;
+      }
+      /* calendar */
+      .cal-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .cal-top h3 {
+        font-size: 18px;
+      }
+      .cal-nav {
+        display: flex;
+        gap: 6px;
+      }
+      .cal {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 4px;
+      }
+      .wd {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--muted);
+        text-align: center;
+        padding-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .day {
+        appearance: none;
+        border: 0;
+        background: transparent;
+        font: inherit;
+        color: var(--ink);
+        border-radius: 12px;
+        aspect-ratio: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        padding: 0;
+      }
+      .day.out {
+        color: var(--muted);
+        opacity: 0.45;
+      }
+      .day.today {
+        background: var(--surface2);
+      }
+      .day[aria-pressed="true"] {
+        background: var(--ink);
+        color: var(--surface);
+      }
+      .dots {
+        display: flex;
+        gap: 3px;
+        height: 6px;
+      }
+      .dots i {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--hi);
+      }
+      .dots i.pick {
+        background: var(--warn);
+      }
+      .dots i.done {
+        background: var(--good);
+      }
+      .dots i.late {
+        background: var(--bad);
+      }
+      .legend {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+        font-size: 12.5px;
+        color: var(--muted);
+      }
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .legend i {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--hi);
+      }
+      /* timeline */
+      .tl {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .tl li {
+        display: flex;
+        gap: 14px;
+        padding: 12px 4px;
+        border-bottom: 1px solid var(--line);
+      }
+      .tl li:last-child {
+        border-bottom: 0;
+      }
+      .tl .when {
+        width: 54px;
+        flex: none;
+        text-align: center;
+        font-family: Manrope, sans-serif;
+        line-height: 1.1;
+      }
+      .tl .when b {
+        display: block;
+        font-size: 20px;
+        font-weight: 800;
+      }
+      .tl .when small {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .tl .what {
+        flex: 1;
+        min-width: 0;
+      }
+      .tl .what b {
+        display: block;
+      }
+      .tl details summary {
+        cursor: pointer;
+        color: var(--hi);
+        font-size: 13.5px;
+        font-weight: 600;
+        margin-top: 2px;
+      }
+      .tl li.hl {
+        background: var(--hi-soft);
+        border-radius: 14px;
+      }
+      .contact {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+      }
+      footer {
+        margin-top: 28px;
+        text-align: center;
+        font-size: 12.5px;
+        color: var(--muted);
+      }
+      footer a {
+        color: inherit;
+      }
+      .empty {
+        text-align: center;
+        padding: 28px 10px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div id="app"><p class="note">Loading…</p></div>
+      <footer>
+        <p id="app-switch" hidden style="margin:0 0 10px"><a href="index.html#/signin" data-leave>Use a different code, or sign in as a contractor</a></p>
+        Sent with <a href="https://getblueboard.com/">Blue Board</a>
+      </footer>
+    </main>
+    <script src="vendor/supabase.js"></script>
+    <script>
+      // Same public Supabase project settings as index.html (the publishable key is meant to be public).
+      const SB_URL = "https://defbgjhyvleijkwdbwni.supabase.co",
+        SB_KEY = "sb_publishable_gwoNF0V3hqOgM_p5aP_xmQ_QkNlw6bq";
+      const $ = (s, r = document) => r.querySelector(s),
+        $$ = (s, r = document) => [...r.querySelectorAll(s)];
+      const esc = (v) =>
+        String(v ?? "").replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[c],
+        );
+      const pad = (n) => String(n).padStart(2, "0");
+      const ds = (d) =>
+        `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      const pd = (s) => {
+        const [y, m, d] = String(s).split("-").map(Number);
+        return new Date(y, (m || 1) - 1, d || 1);
+      };
+      const today = () => ds(new Date());
+      const addDays = (s, n) => {
+        const d = pd(s);
+        d.setDate(d.getDate() + n);
+        return ds(d);
+      };
+      const fmt = (s, o = { month: "short", day: "numeric" }) =>
+        s ? pd(s).toLocaleDateString("en-US", o) : "";
+      const money = (n) =>
+        "$" +
+        Number(n).toLocaleString("en-US", {
+          minimumFractionDigits: Number(n) % 1 ? 2 : 0,
+          maximumFractionDigits: 2,
+        });
+      const PATH_OK =
+        /^[0-9a-f-]{36}\/[0-9a-f]{32,}\/[a-z0-9]+\.[a-z0-9]{1,8}$/i;
+      const fileUrl = (p) =>
+        PATH_OK.test(p || "")
+          ? SB_URL + "/storage/v1/object/public/portal/" + p
+          : "";
+      const app = $("#app"),
+        token = (location.hash || "").slice(1).replace(/[^a-f0-9]/gi, "");
+      const sbc = window.supabase.createClient(SB_URL, SB_KEY, {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
+        },
+      });
+      const LS = {
+        get(k) {
+          try {
+            return localStorage.getItem("bbp." + k);
+          } catch (e) {
+            return null;
+          }
+        },
+        set(k, v) {
+          try {
+            localStorage.setItem("bbp." + k, v);
+          } catch (e) {}
+        },
+      };
+      let P = null,
+        month = null,
+        sel = null,
+        chosen = {},
+        editing = new Set(),
+        notes = {};
+
+      async function load() {
+        if (!token) {
+          app.innerHTML =
+            '<p class="err">This link is missing part of its address. Ask your contractor to send it again.</p>';
+          return;
+        }
+        const { data, error } = await sbc.rpc("get_portal", { p_token: token });
+        if (error || !data) {
+          app.innerHTML =
+            `<p class="err">This page wasn't found. It may have been taken down. Ask your contractor for a new ${inApp ? "code" : "link"}.</p>`;
+          return;
+        }
+        P = data;
+        render();
+      }
+
+      const choiceFor = (id) => (P.choices || []).find((c) => c.item_id === id);
+      function state(it) {
+        if (it.kind === "milestone") return it.done ? "done" : "ms";
+        if (choiceFor(it.id)) return "picked";
+        return it.date && it.date < today() ? "late" : "pick";
+      }
+      const daysLeft = (s) => Math.round((pd(s) - pd(today())) / 864e5);
+      function dueText(it) {
+        if (!it.date) return "";
+        const n = daysLeft(it.date);
+        return n < 0
+          ? `Was due ${fmt(it.date)}`
+          : n === 0
+            ? "Due today"
+            : n === 1
+              ? "Due tomorrow"
+              : n < 8
+                ? `Due ${fmt(it.date, { weekday: "long" })}, ${fmt(it.date)}`
+                : `Due ${fmt(it.date)}`;
+      }
+
+      function mediaHTML(it) {
+        const imgs = (it.files || []).filter(
+            (f) => /^image\//.test(f.type) && fileUrl(f.path),
+          ),
+          docs = (it.files || []).filter(
+            (f) => !/^image\//.test(f.type) && fileUrl(f.path),
+          );
+        return (
+          (imgs.length
+            ? `<div class="media">${imgs.map((f) => `<a href="${esc(fileUrl(f.path))}" target="_blank" rel="noopener"><img src="${esc(fileUrl(f.path))}" alt="${esc(f.name)}" loading="lazy"></a>`).join("")}</div>`
+            : "") +
+          (docs.length
+            ? `<ul class="files">${docs.map((f) => `<li><a href="${esc(fileUrl(f.path))}" target="_blank" rel="noopener">${esc(f.name)}<span>Open</span></a></li>`).join("")}</ul>`
+            : "") +
+          (it.voice && fileUrl(it.voice.path)
+            ? `<div class="voice"><b>Voice memo</b><audio controls preload="none" src="${esc(fileUrl(it.voice.path))}"></audio></div>`
+            : "")
+        );
+      }
+
+      // Each option's photos and files. The cover is the option photo, or its first picture.
+      function optMedia(o) {
+        const all = (o.files || []).filter((f) => fileUrl(f.path)),
+          imgs = all.filter((f) => /^image\//.test(f.type)).map((f) => fileUrl(f.path)),
+          docs = all.filter((f) => !/^image\//.test(f.type)),
+          cover = fileUrl(o.img) || imgs[0] || "";
+        return { cover, more: imgs.filter((u) => u !== cover), docs };
+      }
+      function pickedThumb(it, c) {
+        const o = (it.options || []).find((x) => x.id === c.option_id),
+          u = o ? optMedia(o).cover : "";
+        return u ? `<img class="picked-thumb" src="${esc(u)}" alt="">` : "";
+      }
+      function deckHTML(it, opts, cur) {
+        const n = opts.length;
+        const card = (o, i) => {
+          const m = optMedia(o);
+          return `<article class="flash${cur === o.id ? " on" : ""}" data-card="${esc(o.id)}" aria-label="Option ${i + 1} of ${n}: ${esc(o.label)}">
+            <a class="flash-media"${m.cover ? ` href="${esc(m.cover)}" target="_blank" rel="noopener"` : ""}>${m.cover ? `<img src="${esc(m.cover)}" alt="${esc(o.label)}" loading="lazy">` : `<span class="flash-ph">${esc(o.label)}</span>`}
+              ${n > 1 ? `<span class="flash-count">${i + 1} / ${n}</span>` : ""}<span class="flash-pick">Your pick</span></a>
+            <div class="flash-body"><div class="flash-top"><h4>${esc(o.label)}</h4>${o.price != null ? `<span class="price">${money(o.price)}</span>` : ""}</div>
+              ${m.more.length ? `<div class="flash-thumbs">${m.more.map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" alt="" loading="lazy"></a>`).join("")}</div>` : ""}
+              ${m.docs.length ? `<ul class="files">${m.docs.map((f) => `<li><a href="${esc(fileUrl(f.path))}" target="_blank" rel="noopener">${esc(f.name)}<span>Open</span></a></li>`).join("")}</ul>` : ""}
+              <button type="button" class="btn flash-choose" data-item="${esc(it.id)}" data-opt="${esc(o.id)}" aria-pressed="${cur === o.id}"><span class="no">Choose this one</span><span class="yes">Selected</span></button></div></article>`;
+        };
+        return `<div class="deck${n === 1 ? " one" : ""}" data-deck="${esc(it.id)}" tabindex="0" aria-label="Options. Swipe to see each one.">${opts.map(card).join("")}</div>
+          ${n > 1 ? `<div class="deck-nav"><button type="button" class="btn sm" data-step="-1" data-for="${esc(it.id)}" aria-label="Previous option">‹</button><span class="dots-row" data-dots="${esc(it.id)}">${opts.map((o, i) => `<i${i === 0 ? ' class="cur"' : ""}></i>`).join("")}</span><button type="button" class="btn sm" data-step="1" data-for="${esc(it.id)}" aria-label="Next option">›</button></div>` : ""}`;
+      }
+      // Which card each deck is showing, so a re-render doesn't jump back to the first one.
+      const deckPos = {};
+      const deckIndex = (deck) => {
+        const w = deck.firstElementChild?.getBoundingClientRect().width || 1;
+        return Math.max(0, Math.min(deck.children.length - 1, Math.round(deck.scrollLeft / (w + 12))));
+      };
+      function deckSync(deck) {
+        const i = deckIndex(deck), id = deck.dataset.deck;
+        deckPos[id] = i;
+        $$(`[data-dots="${CSS.escape(id)}"] i`).forEach((d, k) => d.classList.toggle("cur", k === i));
+      }
+      function deckGo(deck, i, smooth) {
+        const w = deck.firstElementChild?.getBoundingClientRect().width || 0;
+        const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        deck.scrollTo({ left: i * (w + 12), behavior: smooth && !reduce ? "smooth" : "auto" });
+      }
+      function decksRestore() {
+        $$(".deck").forEach((deck) => {
+          const id = deck.dataset.deck,
+            it = (P.data.items || []).find((x) => x.id === id),
+            cur = chosen[id] ?? choiceFor(id)?.option_id,
+            start = deckPos[id] ?? Math.max(0, (it?.options || []).findIndex((o) => o.id === cur));
+          deckGo(deck, start, false);
+          deckSync(deck);
+        });
+      }
+
+      function pickCard(it) {
+        const c = choiceFor(it.id),
+          open = (!c && !it.locked) || editing.has(it.id),
+          st = state(it),
+          opts = it.options || [];
+        const cur = chosen[it.id] ?? (c?.option_id || "");
+        return `<div class="card" id="i-${esc(it.id)}"><div class="pick-top"><div><h3>${esc(it.title)}</h3>
+      ${open && it.date ? `<p class="note" style="margin-top:2px">${st === "late" ? `<span class="badge bad">${esc(dueText(it))}</span>` : esc(dueText(it))}</p>` : ""}</div>
+      ${it.price != null ? `<span class="price">${money(it.price)}</span>` : ""}</div>
+    ${it.desc ? `<p class="desc">${esc(it.desc)}</p>` : ""}${mediaHTML(it)}
+    ${
+      !open && !c
+        ? `<p class="note" style="margin-top:12px">This choice is locked. Contact ${esc(P.data.company?.company || "your contractor")} about it.</p>`
+        : !open
+          ? `<div class="picked${pickedThumb(it, c) ? " has-thumb" : ""}">${pickedThumb(it, c)}<div>${c.label ? "You picked " + esc(c.label) : "Your answer is in"}<span>${c.note ? `"${esc(c.note)}" · ` : ""}${fmt(ds(new Date(c.at)))}${c.name ? " · " + esc(c.name) : ""}</span></div></div>
+      ${it.locked ? '<p class="note" style="margin-top:8px">This choice is locked in.</p>' : `<div class="send"><button class="btn sm" data-change="${esc(it.id)}">Change my pick</button></div>`}`
+          : `${
+              opts.length
+                ? deckHTML(it, opts, cur)
+                : ""
+            }
+      <textarea data-note="${esc(it.id)}" placeholder="${opts.length ? "Anything to add? (optional)" : "Type your answer"}" maxlength="1000">${esc(notes[it.id] ?? (c && editing.has(it.id) ? c.note : ""))}</textarea>
+      <div class="send"><button class="btn primary" data-send="${esc(it.id)}">Send my pick</button>${c ? `<button class="btn ghost sm" data-cancel="${esc(it.id)}">Keep ${esc(c.label || "my answer")}</button>` : ""}</div>
+      <p class="note err" data-msg="${esc(it.id)}" hidden></p>`
+    }
+  </div>`;
+      }
+
+      function calendar(items) {
+        const m = pd(month),
+          first = new Date(m.getFullYear(), m.getMonth(), 1),
+          last = new Date(m.getFullYear(), m.getMonth() + 1, 0);
+        const start = addDays(ds(first), -((first.getDay() + 6) % 7)),
+          end = addDays(ds(last), 6 - ((last.getDay() + 6) % 7)),
+          now = today();
+        const by = {};
+        for (const it of items)
+          if (it.date) (by[it.date] = by[it.date] || []).push(it);
+        let cells = "";
+        for (let d = start; d <= end; d = addDays(d, 1)) {
+          const list = by[d] || [];
+          cells += `<button class="day${d.slice(0, 7) === ds(first).slice(0, 7) ? "" : " out"}${d === now ? " today" : ""}" data-day="${d}" aria-pressed="${d === sel}" aria-label="${fmt(d, { weekday: "long", month: "long", day: "numeric" })}${list.length ? ", " + list.length + " item" + (list.length > 1 ? "s" : "") : ""}">${pd(d).getDate()}
+      <span class="dots">${list
+        .slice(0, 3)
+        .map((it) => {
+          const s = state(it);
+          return `<i class="${s === "pick" ? "pick" : s === "late" ? "late" : s === "done" || s === "picked" ? "done" : ""}"></i>`;
+        })
+        .join("")}</span></button>`;
+        }
+        return `<div class="card"><div class="cal-top"><h3>${first.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</h3>
+    <div class="cal-nav"><button class="btn sm" data-month="-1" aria-label="Previous month">‹</button><button class="btn sm" data-month="1" aria-label="Next month">›</button></div></div>
+    <div class="cal">${["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((w) => `<div class="wd">${w}</div>`).join("")}${cells}</div>
+    <div class="legend"><span><i></i>Work</span><span><i style="background:var(--warn)"></i>Your pick due</span><span><i style="background:var(--good)"></i>Done</span></div></div>`;
+      }
+
+      function timeline(items) {
+        const dated = items.filter((i) => i.date),
+          undated = items.filter((i) => !i.date);
+        const li = (it) => {
+          const s = state(it),
+            c = choiceFor(it.id);
+          const badge = {
+            done: '<span class="badge good">Done</span>',
+            picked: '<span class="badge good">Picked</span>',
+            pick: '<span class="badge warn">Your pick</span>',
+            late: '<span class="badge bad">Your pick</span>',
+            ms: "",
+          }[s];
+          const more =
+            it.kind === "milestone" &&
+            (it.desc || (it.files || []).length || it.voice);
+          return `<li id="t-${esc(it.id)}"${it.date && it.date === sel ? ' class="hl"' : ""}><div class="when">${it.date ? `<small>${fmt(it.date, { month: "short" })}</small><b>${pd(it.date).getDate()}</b>` : "<small>TBD</small>"}</div>
+      <div class="what"><b>${esc(it.title)}</b>${badge ? `<div style="margin-top:4px">${badge}</div>` : ""}
+        ${s === "picked" ? `<p class="note" style="margin-top:4px">${esc(c.label || c.note)}</p>` : ""}
+        ${s === "pick" || s === "late" ? `<p class="note" style="margin-top:4px"><a href="#i-${esc(it.id)}" data-jump="${esc(it.id)}">Make this pick</a></p>` : ""}
+        ${more ? `<details><summary>Details</summary>${it.desc ? `<p class="desc">${esc(it.desc)}</p>` : ""}${mediaHTML(it)}</details>` : ""}</div></li>`;
+        };
+        return `<div class="card"><ul class="tl">${dated.map(li).join("")}${undated.map(li).join("")}</ul></div>`;
+      }
+
+      function render() {
+        const d = P.data || {},
+          co = d.company || {},
+          items = d.items || [];
+        const picks = items.filter((i) => i.kind === "pick"),
+          open = picks
+            .filter((i) => (!choiceFor(i.id) && !i.locked) || editing.has(i.id))
+            .sort((a, b) => (a.date || "9999").localeCompare(b.date || "9999"));
+        if (!month) {
+          const next = items
+            .filter((i) => i.date && i.date >= today())
+            .map((i) => i.date)
+            .sort()[0];
+          month = (next || today()).slice(0, 7) + "-01";
+        }
+        document.title =
+          (d.jobName || "Your project") +
+          (co.company ? " · " + co.company : "");
+        const logo = /^data:image\/|^https:\/\//.test(co.logo || "")
+          ? co.logo
+          : "";
+        app.innerHTML = `<div class="head">${logo ? `<img class="logo" src="${esc(logo)}" alt="">` : ""}<div>${co.company ? `<div class="co">${esc(co.company)}</div>` : ""}<h1>${esc(d.jobName || "Your project")}</h1>${d.address ? `<p class="note">${esc(d.address)}</p>` : ""}</div></div>
+    ${!items.length ? '<div class="card empty"><p class="note">Nothing here yet. Your contractor will add dates and choices soon.</p></div>' : ""}
+    ${
+      picks.length
+        ? `<section class="sec"><h2>${open.length ? `${d.client ? esc(d.client) + ", w" : "W"}e need ${open.length === 1 ? "one choice" : open.length + " choices"} from you` : "All your choices are in"}</h2>
+      <p class="note">${open.length ? "Tap the one you want, then send it. " + esc(co.company || "Your contractor") + " gets it right away." : "Thanks! You can change a pick below until it's locked in."}</p>
+      ${open.map(pickCard).join("")}
+      ${picks
+        .filter((i) => !open.includes(i))
+        .map(pickCard)
+        .join("")}</section>`
+        : ""
+    }
+    ${items.some((i) => i.date) ? `<section class="sec"><h2>Schedule</h2>${calendar(items)}</section>` : ""}
+    ${items.length ? `<section class="sec"><h2>Everything on this project</h2>${timeline(items)}</section>` : ""}
+    ${co.phone || co.email ? `<section class="sec"><h2>Questions?</h2><div class="contact">${co.phone ? `<a class="btn" href="tel:${esc(co.phone)}">Call ${esc(co.name ? co.name.split(" ")[0] : co.company || "us")}</a><a class="btn" href="sms:${esc(co.phone)}">Text</a>` : ""}${co.email ? `<a class="btn" href="mailto:${esc(co.email)}">Email</a>` : ""}</div></section>` : ""}`;
+        decksRestore();
+      }
+
+      async function send(id) {
+        const it = (P.data.items || []).find((i) => i.id === id),
+          msg = $(`[data-msg="${id}"]`),
+          btn = $(`[data-send="${id}"]`);
+        const opt = chosen[id] ?? (choiceFor(id)?.option_id || ""),
+          note = $(`[data-note="${id}"]`).value.trim();
+        if ((it.options || []).length && !opt && !note) {
+          msg.hidden = false;
+          msg.textContent = "Tap one of the options first.";
+          return;
+        }
+        if (!(it.options || []).length && !note) {
+          msg.hidden = false;
+          msg.textContent = "Type your answer first.";
+          return;
+        }
+        let name = LS.get("name") || "";
+        if (!name) {
+          name = (
+            prompt("Your name, so your contractor knows who picked:") || ""
+          ).trim();
+          if (name) LS.set("name", name);
+        }
+        btn.disabled = true;
+        btn.textContent = "Sending…";
+        const { data, error } = await sbc.rpc("portal_decide", {
+          p_token: token,
+          p_item: id,
+          p_option: opt,
+          p_note: note,
+          p_name: name,
+        });
+        if (error) {
+          msg.hidden = false;
+          msg.textContent = /locked|removed|Pick an option/.test(
+            error.message || "",
+          )
+            ? error.message
+            : "That didn't go through. Check your connection and try again.";
+          btn.disabled = false;
+          btn.textContent = "Send my pick";
+          return;
+        }
+        // Tell the contractor's phone. The page works the same if this fails.
+        sbc.functions
+          .invoke("notify", { body: { portal_token: token, item_id: id } })
+          .catch(() => {});
+        P = data;
+        editing.delete(id);
+        delete chosen[id];
+        delete notes[id];
+        render();
+        const el = $("#i-" + CSS.escape(id));
+        if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
+      }
+
+      document.addEventListener("click", (e) => {
+        const t = e.target.closest("button,a[data-jump]");
+        if (!t) return;
+        if (t.dataset.opt) {
+          chosen[t.dataset.item] = t.dataset.opt;
+          $$(`.flash-choose[data-item="${CSS.escape(t.dataset.item)}"]`).forEach((b) => {
+            b.setAttribute("aria-pressed", String(b === t));
+            b.closest(".flash").classList.toggle("on", b === t);
+          });
+          const msg = $(`[data-msg="${CSS.escape(t.dataset.item)}"]`);
+          if (msg) msg.hidden = true;
+          return;
+        }
+        if (t.dataset.step) {
+          const deck = $(`[data-deck="${CSS.escape(t.dataset.for)}"]`);
+          if (deck) deckGo(deck, deckIndex(deck) + +t.dataset.step, true);
+          return;
+        }
+        if (t.dataset.send) return send(t.dataset.send);
+        if (t.dataset.change) {
+          editing.add(t.dataset.change);
+          render();
+          $("#i-" + CSS.escape(t.dataset.change))?.scrollIntoView({
+            block: "start",
+            behavior: "smooth",
+          });
+          return;
+        }
+        if (t.dataset.cancel) {
+          editing.delete(t.dataset.cancel);
+          delete chosen[t.dataset.cancel];
+          delete notes[t.dataset.cancel];
+          render();
+          return;
+        }
+        if (t.dataset.month) {
+          const m = pd(month);
+          m.setMonth(m.getMonth() + +t.dataset.month);
+          month = ds(m);
+          render();
+          return;
+        }
+        if (t.dataset.day) {
+          sel = sel === t.dataset.day ? null : t.dataset.day;
+          render();
+          const hit = (P.data.items || []).find((i) => i.date === sel);
+          if (hit)
+            $("#t-" + CSS.escape(hit.id))?.scrollIntoView({
+              block: "center",
+              behavior: "smooth",
+            });
+          return;
+        }
+        if (t.dataset.jump) {
+          e.preventDefault();
+          $("#i-" + CSS.escape(t.dataset.jump))?.scrollIntoView({
+            block: "start",
+            behavior: "smooth",
+          });
+        }
+      });
+      document.addEventListener(
+        "scroll",
+        (e) => {
+          if (e.target.classList?.contains("deck")) deckSync(e.target);
+        },
+        true,
+      );
+      // Opened with a customer code: this device stays on this page until they choose otherwise.
+      const CUSTOMER_KEY = "bb.customer";
+      const inApp = (() => {
+        try {
+          return /[?&]app=1/.test(location.search) || localStorage.getItem(CUSTOMER_KEY) === token;
+        } catch (e) {
+          return false;
+        }
+      })();
+      if (inApp) $("#app-switch").hidden = false;
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest("[data-leave]")) return;
+        try {
+          localStorage.removeItem(CUSTOMER_KEY);
+        } catch (x) {}
+      });
+      document.addEventListener("input", (e) => {
+        const id = e.target.dataset?.note;
+        if (id) notes[id] = e.target.value;
+      });
+      // Pick up changes the contractor makes while the page is open.
+      document.addEventListener("visibilitychange", () => {
+        if (
+          !document.hidden &&
+          P &&
+          !editing.size &&
+          !Object.keys(chosen).length &&
+          !Object.values(notes).some((v) => v.trim())
+        )
+          load();
+      });
+      load();
+    </script>
+  </body>
+</html>
