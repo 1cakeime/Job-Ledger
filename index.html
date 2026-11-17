@@ -1342,7 +1342,7 @@ function renderMenu(){const it=[],mi=(h,k,ic,l)=>`<a class="item" href="${h}" da
   $('#menu-items').innerHTML=it.join('')}
 /* ---------- cloud: accounts, owner sync, employee app, clock in/out (Supabase) ---------- */
 const SB_URL='https://defbgjhyvleijkwdbwni.supabase.co',SB_KEY='sb_publishable_gwoNF0V3hqOgM_p5aP_xmQ_QkNlw6bq';
-const PAGES_URL='https://1cakeime.github.io/Job-Ledger/';
+const SITE_URL='https://getblueboard.com/';
 // mode: 'local' (no account, this device only) | 'signedout' | 'onboard' | 'owner' | 'employee'
 const CLOUD={sb:null,mode:'local',user:null,company:null,employeeId:null,myRate:null,punches:[],members:[],sync:'',stateAt:null,pushT:null,pollT:null,pub:null};
 const isEmp=()=>CLOUD.mode==='employee',isOwnerCloud=()=>CLOUD.mode==='owner';
@@ -1529,7 +1529,7 @@ function inviteDialog(e){const linked=onApp(e.id);
   if(linked)return openForm({title:`${e.name} is on the app`,body:`<p>${esc(e.name)} can see the schedule and crew, clock in and out, and see their own hours${S.settings.showPay!==false?' and pay':''}. They can't see job prices, expenses, profits or anyone else's pay.</p>`,
     onDelete:async()=>{const {error}=await CLOUD.sb.from('members').delete().eq('company_id',CLOUD.company).eq('employee_id',e.id);if(error){toast(errMsg(error));return}await loadMembers();toast('App access removed')},deleteLabel:'Remove app access'});
   const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',r=crypto.getRandomValues(new Uint8Array(8)),code=[...r].map(x=>A[x%A.length]).join(''),show=code.slice(0,4)+'-'+code.slice(4);
-  const base=location.protocol.startsWith('http')?location.origin+location.pathname:PAGES_URL,link=base+'#/join/'+code;
+  const dev=location.protocol.startsWith('http')&&/^(localhost|127\.|192\.168\.|10\.)/.test(location.hostname),base=dev?location.origin+location.pathname:SITE_URL,link=base+'#/join/'+code;
   const msg=`${S.profile.company||'Your boss'} added you to Blue Board. Open ${link} on your phone and create an account to see the schedule and clock in. Invite code: ${show}`;
   openForm({title:`Invite ${e.name}`,body:`<p>Send this to <b>${esc(e.name)}</b>. They open the link on their phone, create an account, and they're on your crew.</p>
     <div class="invite-code">${show}</div>${field('Link',`<input readonly value="${esc(link)}" onfocus="this.select()">`)}
