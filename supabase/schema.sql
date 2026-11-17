@@ -198,3 +198,17 @@ drop policy if exists photos_owner_all on storage.objects;
 create policy photos_owner_all on storage.objects for all to authenticated
   using (bucket_id = 'photos' and public.is_owner(((storage.foldername(name))[1])::uuid))
   with check (bucket_id = 'photos' and public.is_owner(((storage.foldername(name))[1])::uuid));
+
+-- ============ Delete account (required by the App Store) ============
+-- Deletes the signed-in login. Everything tied to it is removed by "on delete cascade":
+-- an owner's company (jobs, crew, invites, punches, members) or an employee's membership and punches.
+-- The app calls this with p_confirm = false first (a check that changes nothing), removes the
+-- owner's photo files from storage, then calls it with p_confirm = true.
+create or replace function public.delete_my_account(p_confirm boolean) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'Sign in first'; end if;
+  if p_confirm then delete from auth.users where id = auth.uid(); end if;
+end $$;
+revoke all on function public.delete_my_account(boolean) from public, anon;
+grant execute on function public.delete_my_account(boolean) to authenticated;

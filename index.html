@@ -1510,7 +1510,7 @@ function pageMyPay(){const R=payRange(),[from,to]=R[UI.pay],rows=myPayRows(from,
 function pageEmpAccount(){const me=emp(CLOUD.employeeId),p=S.profile;
   return `<div class="page-head"><div class="profile-head"><span class="avatar lg" style="background:${me?.color||'var(--hi)'}">${esc(initials(me?.name))}</span><div><h1>${esc(me?.name||'My account')}</h1><p class="sub">${esc([me?.role,p.company].filter(Boolean).join(' at '))}</p></div></div></div>
   <div class="grid2"><div class="card stack"><h2>Account</h2><ul class="list"><li><div class="grow"><b>Email</b><small>${esc(CLOUD.user?.email||'')}</small></div></li><li><div class="grow"><b>Company</b><small>${esc(p.company||'')}</small></div></li></ul>
-    <div><button class="btn danger" data-act="signout">Sign out</button></div></div>
+    <div class="btns"><button class="btn danger" data-act="signout">Sign out</button><button class="btn ghost danger" data-act="delete-account">Delete account</button></div><p class="note"><a href="${SITE_URL}privacy.html" target="_blank" rel="noopener">Privacy policy</a> · <a href="${SITE_URL}support.html" target="_blank" rel="noopener">Support</a></p></div>
   <div class="card stack"><h2>Appearance</h2><div class="seg" role="group" aria-label="Mode">${[['light','Light'],['dark','Dark']].map(([k,l])=>`<button data-act="mode" data-v="${k}" aria-pressed="${(p.mode||'light')===k}">${l}</button>`).join('')}</div>
     <p class="note">Your company's colors and logo are set by your boss.</p></div></div>`}
 
@@ -1523,8 +1523,8 @@ function onClockCard(){const open=CLOUD.punches.filter(p=>!p.out_at),recent=CLOU
     ${open.length?`<ul class="list">${open.map(p=>li(p,true)).join('')}</ul>`:'<p class="note">No one is clocked in right now.</p>'}
     ${recent.length?`<h3 style="margin-top:16px">Recent clock-outs</h3><ul class="list">${recent.map(p=>li(p)).join('')}</ul>`:''}
     <p class="note" style="margin-top:10px">Each clock-out is added to the schedule as a worked shift, so it counts in payroll and job cost.</p></div>`}
-function accountCard(){if(!CLOUD.user)return `<div class="card stack"><h2>Account</h2><p>Create a free account to keep your data in the cloud, use it on any device, and put your crew on the app to clock in and out.</p><div><a class="btn primary" href="#/signin">Sign in or create account</a></div></div>`;
-  return `<div class="card stack"><h2>Account</h2><ul class="list"><li><div class="grow"><b>${esc(CLOUD.user.email)}</b><small>${esc(syncText())}</small></div></li></ul><div><button class="btn danger" data-act="signout">Sign out</button></div></div>`}
+function accountCard(){if(!CLOUD.user)return `<div class="card stack"><h2>Account</h2><p>Create a free account to keep your data in the cloud, use it on any device, and put your crew on the app to clock in and out.</p><div><a class="btn primary" href="#/signin">Sign in or create account</a></div><p class="note"><a href="${SITE_URL}privacy.html" target="_blank" rel="noopener">Privacy policy</a> · <a href="${SITE_URL}support.html" target="_blank" rel="noopener">Support</a></p></div>`;
+  return `<div class="card stack"><h2>Account</h2><ul class="list"><li><div class="grow"><b>${esc(CLOUD.user.email)}</b><small>${esc(syncText())}</small></div></li></ul><div class="btns"><button class="btn danger" data-act="signout">Sign out</button><button class="btn ghost danger" data-act="delete-account">Delete account</button></div><p class="note"><a href="${SITE_URL}privacy.html" target="_blank" rel="noopener">Privacy policy</a> · <a href="${SITE_URL}support.html" target="_blank" rel="noopener">Support</a></p></div>`}
 function inviteDialog(e){const linked=onApp(e.id);
   if(linked)return openForm({title:`${e.name} is on the app`,body:`<p>${esc(e.name)} can see the schedule and crew, clock in and out, and see their own hours${S.settings.showPay!==false?' and pay':''}. They can't see job prices, expenses, profits or anyone else's pay.</p>`,
     onDelete:async()=>{const {error}=await CLOUD.sb.from('members').delete().eq('company_id',CLOUD.company).eq('employee_id',e.id);if(error){toast(errMsg(error));return}await loadMembers();toast('App access removed')},deleteLabel:'Remove app access'});
@@ -1555,6 +1555,16 @@ Object.assign(ACT,{
     else if(isEmp()){S=blank();if(!memOnly){const st=await DB.get('kv','state').catch(()=>null);if(st)S=normState(st)}}
     ['role','stateAt','dirty','company','empCache','local'].forEach(k=>LS.set(k,null));Object.assign(CLOUD,{mode:'signedout',user:null,company:null,employeeId:null,punches:[],members:[],pub:null,sync:''});
     location.hash='#/schedule';route();toast('Signed out')},
+  'delete-account':()=>{closeMenu();const owner=isOwnerCloud();
+    openForm({title:'Delete your account?',body:`<p>This permanently deletes your login (<b>${esc(CLOUD.user?.email||'')}</b>)${owner?' and your company: every job, expense, photo, schedule, crew member, invite and time punch. Your crew lose access too.':' and your clock-in history. Your boss keeps the hours already added to the schedule.'}</p><p><b>This can't be undone.</b>${owner?' Export a backup in Settings first if you want a copy.':''}</p>`,
+      deleteLabel:'Delete my account',onDelete:async()=>{const sb=CLOUD.sb;
+        {const {error}=await sb.rpc('delete_my_account',{p_confirm:false});if(error){toast(errMsg(error));throw error}}
+        if(owner&&CLOUD.company){try{for(;;){const {data}=await sb.storage.from('photos').list(CLOUD.company,{limit:100});if(!data?.length)break;const {error}=await sb.storage.from('photos').remove(data.map(o=>`${CLOUD.company}/${o.name}`));if(error)break}}catch(e){}}
+        const {error}=await sb.rpc('delete_my_account',{p_confirm:true});if(error){toast(errMsg(error));throw error}
+        clearInterval(CLOUD.pollT);try{await sb.auth.signOut({scope:'local'})}catch(e){}
+        S=blank();if(!memOnly){await DB.put('kv','state',S).catch(()=>{});await DB.clear('photos').catch(()=>{})}
+        ['role','stateAt','dirty','company','empCache','local','invite'].forEach(k=>LS.set(k,null));Object.assign(CLOUD,{mode:'signedout',user:null,company:null,employeeId:null,punches:[],members:[],pub:null,sync:''});
+        location.hash='#/schedule';toast('Your account was deleted')}})},
   'clock-in':async a=>{const jobId=$('#clock-job')?.value;if(!jobId)return toast('Pick a job first');a.disabled=true;a.textContent='Getting location…';
     const loc=await getLoc();if(!loc&&S.settings.requireLocation){a.disabled=false;a.textContent='Clock in';return toast('Turn on location for this app, then try again')}
     a.textContent='Clocking in…';const {data,error}=await CLOUD.sb.rpc('clock_in',{p_company:CLOUD.company,p_job:jobId,p_lat:loc?.lat??null,p_lng:loc?.lng??null,p_acc:loc?.acc??null});
