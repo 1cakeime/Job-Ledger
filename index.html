@@ -648,6 +648,42 @@ dialog,.dlg-form{max-height:calc(100dvh - 24px - env(safe-area-inset-top) - env(
 </style>
 </head>
 <body>
+<!-- Opening animation ("Two Taps"): a hammer taps the seal in twice, 1.2s, then the app shows. Self-contained; removes itself. -->
+<div id="splash" aria-hidden="true"><style>
+#splash{position:fixed;inset:0;z-index:2147483000;background:#f4f6ff;display:grid;place-items:center;transition:opacity .2s ease;overflow:hidden}
+#splash.out{opacity:0;pointer-events:none}
+#splash .sp-wrap{position:relative;width:min(198px,52vw);aspect-ratio:1}
+#splash canvas{position:relative;z-index:1;display:block;width:100%;height:100%}
+#splash .sp-ring{position:absolute;inset:10.5%;border-radius:50%;border:4px solid #1d3b8a;opacity:0}
+#splash .sp-hammer{position:absolute;width:110%;height:55%;left:28%;top:12.6%;transform-origin:92% 44%;opacity:0;z-index:3;overflow:visible;filter:drop-shadow(0 8px 10px rgba(10,12,30,.28))}
+#splash.play .sp-hammer{animation:spSwing 1.2s both}
+#splash.play canvas{animation:spBump 1.2s both}
+#splash.play .sp-wrap{animation:spThud .25s .35s ease-out both,spThud .25s .8s ease-out both}
+#splash.play .sp-ring{animation:spRing .4s .8s ease-out forwards}
+@keyframes spSwing{0%{opacity:0;transform:rotate(35deg)}8%{opacity:1}18%{transform:rotate(55deg);animation-timing-function:cubic-bezier(.6,0,1,.6)}
+  29%{transform:rotate(0deg);animation-timing-function:ease-out}37%{transform:rotate(12deg)}52%{transform:rotate(58deg);animation-timing-function:cubic-bezier(.6,0,1,.6)}
+  67%{transform:rotate(0deg);animation-timing-function:ease-out}75%{transform:rotate(8deg)}88%{opacity:1}100%{opacity:0;transform:rotate(40deg)}}
+@keyframes spBump{0%,28%{transform:none}29%{transform:scale(.95)}40%,66%{transform:none}67%{transform:scale(.95)}80%{transform:scale(1.03)}100%{transform:none}}
+@keyframes spThud{0%,100%{transform:translateY(0)}30%{transform:translateY(3px)}60%{transform:translateY(-1px)}}
+@keyframes spRing{0%{opacity:.55;transform:scale(1)}100%{opacity:0;transform:scale(1.45)}}
+</style><div class="sp-wrap"><div class="sp-ring"></div><canvas width="256" height="256"></canvas><svg class="sp-hammer" viewBox="0 0 200 100"><rect x="50" y="38" width="146" height="13" rx="6.5" fill="#B9834B"/><rect x="54" y="39" width="110" height="3.5" rx="1.75" fill="#D6A26A"/><rect x="166" y="37" width="30" height="15" rx="7.5" fill="#1F2433"/><path d="M30 16 C24 6 30 0 44 1 L44 7 C36 7 34 11 38 16 Z" fill="#6B7487"/><rect x="28" y="14" width="24" height="44" fill="#6B7487"/><rect x="28" y="14" width="24" height="5" fill="#9AA3B5"/><rect x="48" y="34" width="8" height="21" rx="1.5" fill="#596174"/><rect x="23" y="56" width="34" height="12" rx="2" fill="#4A5163"/></svg></div></div>
+<script>(function(){var sp=document.getElementById('splash');if(!sp)return;var gone=false;
+function done(){if(gone)return;gone=true;sp.classList.add('out');setTimeout(function(){sp.remove()},250)}
+try{if(matchMedia('(prefers-reduced-motion: reduce)').matches){sp.remove();return}}catch(e){}
+var safety=setTimeout(done,2500),cv=sp.querySelector('canvas'),ctx=cv.getContext('2d'),N=256,img=new Image();
+img.onerror=done;img.onload=function(){try{
+  var c=document.createElement('canvas');c.width=c.height=N;var x=c.getContext('2d');x.drawImage(img,0,0,N,N);var src=x.getImageData(0,0,N,N).data;
+  /* grainy noise field: the ink "soaks in" where the field is lowest first */
+  var f=new Float32Array(N*N),s=7,rnd=function(){s|=0;s=s+0x6D2B79F5|0;var t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+  function layer(cell,w){var g=Math.ceil(N/cell)+2,r=new Float32Array(g*g),i;for(i=0;i<g*g;i++)r[i]=rnd();
+    for(var y=0;y<N;y++)for(var X=0;X<N;X++){var gx=X/cell,gy=y/cell,ix=gx|0,iy=gy|0,fx=gx-ix,fy=gy-iy;fx=fx*fx*(3-2*fx);fy=fy*fy*(3-2*fy);
+      var a=r[iy*g+ix],b=r[iy*g+ix+1],cc=r[(iy+1)*g+ix],d=r[(iy+1)*g+ix+1],t1=a+(b-a)*fx,t2=cc+(d-cc)*fx;f[y*N+X]+=w*(t1+(t2-t1)*fy)}}
+  layer(44,.58);layer(13,.28);var i,mn=1e9,mx=-1e9;for(i=0;i<N*N;i++){f[i]+=.14*rnd();if(f[i]<mn)mn=f[i];if(f[i]>mx)mx=f[i]}for(i=0;i<N*N;i++)f[i]=(f[i]-mn)/(mx-mn);
+  var out=ctx.createImageData(N,N),o=out.data;
+  function ink(t){var th=-.12+t*1.3;for(var i=0;i<N*N;i++){var v=(th-f[i])/.07;v=v<0?0:v>1?1:v;var k=i*4;o[k]=src[k];o[k+1]=src[k+1];o[k+2]=src[k+2];o[k+3]=src[k+3]*v}ctx.putImageData(out,0,0)}
+  var t0=performance.now(),level=-1;sp.classList.add('play');
+  (function step(now){var ms=now-t0,L=ms<350?0:ms<800?.58:1;if(L!==level){level=L;ink(L)}if(ms>=1000){clearTimeout(safety);done();return}requestAnimationFrame(step)})(t0);
+}catch(e){done()}};img.src='icons/logo-seal.png'})();</script>
 <header class="top">
   <div class="menu-wrap">
     <button class="icon-btn" id="menu-btn" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
