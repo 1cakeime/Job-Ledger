@@ -1273,11 +1273,12 @@ function route(){const h=(location.hash||'#/schedule').slice(2),[page,id]=h.spli
   if(page==='join'&&id){LS.set('invite',id.toUpperCase().replace(/[^A-Z0-9]/g,''));if(!CLOUD.user){CLOUD.mode='signedout';UI.authTab='up'}else if(CLOUD.mode==='onboard'){acceptPending().then(ok=>ok&&loadMembership()).then(()=>route())}location.hash='#/schedule';return}
   let P;
   if(page==='reset')P=pageReset;
+  else if(page==='newpw'&&UI.recovery&&CLOUD.user)P=pageNewPw;
   else if(CLOUD.mode==='signedout'||(page==='signin'&&!CLOUD.user))P=pageAuth;
   else if(CLOUD.mode==='onboard')P=pageOnboard;
   else if(isEmp())P={schedule:pageSchedule,crew:pageEmpCrew,pay:pageMyPay,profile:pageEmpAccount}[page]||pageSchedule;
   else P={dashboard:pageDashboard,jobs:pageJobs,job:()=>pageJob(id),schedule:pageSchedule,crew:pageCrew,settings:pageSettings,profile:pageProfile}[page]||pageSchedule;
-  document.body.classList.toggle('emp',isEmp());document.body.classList.toggle('gate',P===pageAuth||P===pageOnboard||P===pageReset);
+  document.body.classList.toggle('emp',isEmp());document.body.classList.toggle('gate',P===pageAuth||P===pageOnboard||P===pageReset||P===pageNewPw);
   $('#crew-label').textContent=isEmp()?'My crew':'Crew & Pay';renderMenu();
   const keepScroll=route.last===h;const y=scrollY;v.innerHTML=P();route.last=h;
   const navKey=page==='job'?'jobs':P===pageSchedule?'schedule':P===pageMyPay?'pay':P===pageEmpCrew?'crew':P===pageEmpAccount?'profile':page;
@@ -1373,9 +1374,18 @@ function sbClient(){if(CLOUD.sb)return CLOUD.sb;if(!window.supabase||!window.sup
 const normState=st=>{const o=Object.assign(blank(),st,{settings:Object.assign(blank().settings,st.settings||{}),profile:st.profile||{}});if(o.profile.accent==='green')o.profile.accent='blue';o.employees.forEach(e=>{if(e.color==='#2e8b57')e.color='#0e7490';if(e.color==='#1f8a8a')e.color='#4f46e5'});return o};
 
 async function cloudStart(){const sb=sbClient();if(!sb){CLOUD.mode='local';return}
+  await emailLinkStart(sb);
   let session=null;try{({data:{session}}=await sb.auth.getSession())}catch(e){}
   if(!session){CLOUD.mode=LS.get('local')==='1'?'local':'signedout';return}
   CLOUD.user=session.user;await loadMembership()}
+
+// Links in Supabase emails come back as #access_token=…&type=signup|recovery, or #error=…
+async function emailLinkStart(sb){const H=new URLSearchParams((location.hash||'').replace(/^#\/?/,''));const clean=h=>history.replaceState(null,'',location.pathname+location.search+h);
+  if(H.get('error')||H.get('error_code')){UI.authNote=H.get('error_code')==='otp_expired'?'That email link has expired or was already used. Ask for a new one below.':'That email link didn\'t work. Try again below.';UI.authTab='in';clean('#/signin');return}
+  if(!H.get('access_token')||!H.get('refresh_token'))return;const type=H.get('type');
+  try{const {error}=await sb.auth.setSession({access_token:H.get('access_token'),refresh_token:H.get('refresh_token')});if(error)throw error}
+  catch(e){UI.authNote='That email link didn\'t work. Try again below.';clean('#/signin');return}
+  if(type==='recovery'){UI.recovery=true;clean('#/newpw')}else{clean('#/schedule');setTimeout(()=>toast(type==='signup'?'Email confirmed. You\'re signed in.':'Signed in'),600)}}
 
 async function acceptPending(){const code=LS.get('invite');if(!code||!CLOUD.user)return false;LS.set('invite',null);
   const {error}=await CLOUD.sb.rpc('accept_invite',{p_code:code.replace(/[^A-Z0-9]/gi,'')});
@@ -1464,13 +1474,19 @@ function pageAuth(){const code=LS.get('invite'),tab=UI.authTab||(code?'up':'in')
   return `<div class="auth"><div class="card auth-card stack">
     <div class="auth-logo">${$('.brand svg').outerHTML.replace('width="32" height="32"','width="44" height="44"')}<div><h1>Blue Board</h1><p class="note">${code?'You\'ve been invited to join a crew.':'Sign in to your company\'s board.'}</p></div></div>
     ${code?`<div class="insight good"><b>Invite</b><span>Code <b>${esc(code.slice(0,4)+'-'+code.slice(4))}</b>. ${tab==='up'?'Create your account':'Sign in'} to join the crew.</span></div>`:''}
-    <div class="seg" role="group" aria-label="Account">${[['in','Sign in'],['up','Create account']].map(([k,l])=>`<button data-act="auth-tab" data-v="${k}" aria-pressed="${tab===k}">${l}</button>`).join('')}</div>
+    ${tab==='forgot'?'<h2>Reset your password</h2>':`<div class="seg" role="group" aria-label="Account">${[['in','Sign in'],['up','Create account']].map(([k,l])=>`<button data-act="auth-tab" data-v="${k}" aria-pressed="${tab===k}">${l}</button>`).join('')}</div>`}
+    ${UI.authNote?`<div class="insight warn"><b>Link</b><span>${esc(UI.authNote)}</span></div>`:''}
+    ${tab==='forgot'?`<form id="forgot-form" class="stack" novalidate><p>Enter your account email and we'll send you a link to set a new password.</p>
+      ${field('Email',inp('email',UI.authEmail||'','email','autocomplete="email" required'))}
+      <p class="note" id="forgot-msg" hidden></p>
+      <button class="btn primary big" type="submit">Send reset link</button><button type="button" class="btn ghost" data-act="auth-tab" data-v="in">Back to sign in</button></form>`:`
     <form id="auth-form" class="stack" novalidate data-tab="${tab}">
       ${field('Email',inp('email','','email','autocomplete="email" required'))}
       ${field('Password',inp('password','','password',`autocomplete="${tab==='up'?'new-password':'current-password'}" required minlength="6"`))}
       ${tab==='up'?'<p class="note">At least 6 characters.</p>':''}
       <p class="note neg" id="auth-err" hidden></p>
-      <button class="btn primary big" type="submit">${tab==='up'?'Create account':'Sign in'}</button></form>
+      <button class="btn primary big" type="submit">${tab==='up'?'Create account':'Sign in'}</button>
+      ${tab==='in'?'<button type="button" class="btn ghost sm" data-act="auth-tab" data-v="forgot">Forgot password?</button>':''}</form>`}
     ${code?'':`<div class="hr"></div><button class="btn ghost" data-act="go-local">Use on this device without an account</button>
     <p class="note">Without an account your data stays on this device and your crew can't use the app.</p>`}</div></div>`}
 function pageOnboard(){const co=S.profile?.company||'';const hasLocal=S.jobs.length||S.employees.length;
@@ -1556,6 +1572,13 @@ function inviteDialog(e){const linked=onApp(e.id);
       $('#inv-status').textContent=error?'Could not create the code: '+errMsg(error):'Code ready.';
       $('#copy-invite').onclick=async()=>{try{await navigator.clipboard.writeText(msg);toast('Invite copied. Paste it in a text.')}catch(err){$('#inv-status').textContent=msg}}}})}
 
+function pageNewPw(){return `<div class="auth"><div class="card auth-card stack">
+    <div class="auth-logo">${$('.brand svg').outerHTML.replace('width="32" height="32"','width="44" height="44"')}<div><h1>New password</h1><p class="note">${esc(CLOUD.user?.email||'')}</p></div></div>
+    <form id="newpw-form" class="stack" novalidate>
+      ${field('New password',inp('password','','password','autocomplete="new-password" required minlength="6"'))}
+      ${field('Type it again',inp('password2','','password','autocomplete="new-password" required minlength="6"'))}
+      <p class="note">At least 6 characters.</p><p class="note neg" id="newpw-err" hidden></p>
+      <button class="btn primary big" type="submit">Save new password</button></form></div></div>`}
 function pageReset(){return `<div class="auth"><div class="card auth-card stack">
     <div class="auth-logo">${$('.brand svg').outerHTML.replace('width="32" height="32"','width="44" height="44"')}<div><h1>Start over</h1><p class="note">Reset Blue Board on this device.</p></div></div>
     <p>This signs you out and clears everything the app saved in this browser: jobs, crew, photos, schedule and settings that live only on this device.</p>
@@ -1564,7 +1587,7 @@ function pageReset(){return `<div class="auth"><div class="card auth-card stack"
     <a class="btn ghost" href="#/schedule">Cancel</a></div></div>`}
 /* ----- actions & forms ----- */
 Object.assign(ACT,{
-  'auth-tab':a=>{UI.authTab=a.dataset.v;route()},
+  'auth-tab':a=>{const em=$('#auth-form [name=email],#forgot-form [name=email]')?.value;if(em)UI.authEmail=em;UI.authTab=a.dataset.v;UI.authNote='';route()},
   'go-local':()=>{LS.set('local','1');CLOUD.mode='local';location.hash='#/schedule';route()},
   'signout':async a=>{closeMenu();if(isOwnerCloud()&&LS.get('dirty')==='1'&&!armTwoStep(a,'Changes not synced yet. Tap again'))return;
     clearInterval(CLOUD.pollT);try{await CLOUD.sb.auth.signOut()}catch(e){}
@@ -1602,10 +1625,20 @@ document.addEventListener('submit',async e=>{const f=e.target;
   if(f.id==='auth-form'){e.preventDefault();const sb=sbClient(),err=$('#auth-err'),btn=$('[type=submit]',f);if(!sb){err.hidden=false;err.textContent='Can\'t reach the sign-in service. Check your connection.';return}
     const email=f.email.value.trim(),password=f.password.value;if(!email||password.length<6){err.hidden=false;err.textContent='Enter your email and a password of at least 6 characters.';return}
     btn.disabled=true;err.hidden=true;try{const up=f.dataset.tab==='up';
-      const {data,error}=up?await sb.auth.signUp({email,password}):await sb.auth.signInWithPassword({email,password});if(error)throw error;
+      const {data,error}=up?await sb.auth.signUp({email,password,options:{emailRedirectTo:SITE_URL}}):await sb.auth.signInWithPassword({email,password});if(error)throw error;
       if(!data.session){err.hidden=false;err.textContent='Check your email for a confirmation link, then come back and sign in.';return}
       CLOUD.user=data.session.user;LS.set('local',null);await loadMembership();location.hash='#/schedule';route();toast(up?'Account created':'Signed in')}
     catch(x){err.hidden=false;err.textContent=/invalid login/i.test(errMsg(x))?'Wrong email or password.':errMsg(x)}finally{btn.disabled=false}}
+  else if(f.id==='forgot-form'){e.preventDefault();const sb=sbClient(),msg=$('#forgot-msg'),btn=$('[type=submit]',f),email=f.email.value.trim();
+    if(!sb){msg.hidden=false;msg.textContent='Can\'t reach the sign-in service. Check your connection.';return}
+    if(!/^\S+@\S+\.\S+$/.test(email)){msg.hidden=false;msg.textContent='Enter the email you signed up with.';return}
+    btn.disabled=true;UI.authEmail=email;const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:SITE_URL});btn.disabled=false;msg.hidden=false;
+    msg.textContent=error?(/rate|seconds/i.test(errMsg(error))?'Please wait a minute before asking for another link.':errMsg(error)):'If there\'s an account for that email, a reset link is on its way. Open it, choose a new password, then sign in with it here. Check spam if you don\'t see it.'}
+  else if(f.id==='newpw-form'){e.preventDefault();const err=$('#newpw-err'),btn=$('[type=submit]',f),pw=f.password.value;
+    if(pw.length<6){err.hidden=false;err.textContent='Use at least 6 characters.';return}if(pw!==f.password2.value){err.hidden=false;err.textContent='The two passwords don\'t match.';return}
+    btn.disabled=true;const {error}=await CLOUD.sb.auth.updateUser({password:pw});btn.disabled=false;
+    if(error){err.hidden=false;err.textContent=/different from the old/i.test(errMsg(error))?'Pick a password you haven\'t used before.':errMsg(error);return}
+    UI.recovery=false;location.hash='#/schedule';route();toast('Password updated')}
   else if(f.id==='create-co'){e.preventDefault();const name=f.company.value.trim();if(!name)return toast('Enter your company name');const btn=$('[type=submit]',f);btn.disabled=true;
     const {data,error}=await CLOUD.sb.rpc('create_company',{p_name:name});if(error){btn.disabled=false;return toast(errMsg(error))}
     Object.assign(CLOUD,{mode:'owner',company:data});LS.set('role',JSON.stringify({mode:'owner',company:data}));
