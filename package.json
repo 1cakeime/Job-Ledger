@@ -4,7 +4,7 @@
   "private": true,
   "description": "Blue Board iPhone app (Capacitor wrapper around index.html)",
   "scripts": {
-    "build": "node scripts/build-www.mjs",
+    "build": "node scripts/build-doc.mjs && node scripts/build-www.mjs",
     "ios": "npm run build && npx cap sync ios && npx cap open ios",
     "sync": "npm run build && npx cap sync ios"
   },

@@ -212,3 +212,101 @@ begin
 end $$;
 revoke all on function public.delete_my_account(boolean) from public, anon;
 grant execute on function public.delete_my_account(boolean) to authenticated;
+
+-- ============ Estimates & invoices: customer links ============
+-- The owner shares a snapshot of an estimate or invoice. Customers open it with a long random token
+-- (no account) through the two functions below; nobody can list or browse this table.
+create table if not exists public.shared_docs (
+  token text primary key check (length(token) >= 32),
+  company_id uuid not null references public.companies(id) on delete cascade,
+  doc_id text not null,
+  kind text not null check (kind in ('estimate','invoice')),
+  data jsonb not null,
+  status text not null default 'sent' check (status in ('sent','approved','declined')),
+  approved_name text,
+  approved_at timestamptz,
+  viewed_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+alter table public.shared_docs enable row level security;
+drop policy if exists shared_docs_owner on public.shared_docs;
+create policy shared_docs_owner on public.shared_docs for all using (public.is_owner(company_id)) with check (public.is_owner(company_id));
+
+create or replace function public.get_shared_doc(p_token text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare r shared_docs;
+begin
+  update shared_docs set viewed_at = coalesce(viewed_at, now()) where token = p_token returning * into r;
+  if r.token is null then return null; end if;
+  return jsonb_build_object('data', r.data, 'status', r.status, 'approved_name', r.approved_name, 'approved_at', r.approved_at);
+end $$;
+
+create or replace function public.respond_shared_doc(p_token text, p_name text, p_approve boolean) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare r shared_docs;
+begin
+  update shared_docs set status = case when p_approve then 'approved' else 'declined' end,
+         approved_name = nullif(left(trim(coalesce(p_name, '')), 120), ''), approved_at = now()
+   where token = p_token and kind = 'estimate' and status = 'sent' returning * into r;
+  if r.token is null then
+    select * into r from shared_docs where token = p_token;
+    if r.token is null then raise exception 'Not found'; end if;
+  end if;
+  return jsonb_build_object('data', r.data, 'status', r.status, 'approved_name', r.approved_name, 'approved_at', r.approved_at);
+end $$;
+revoke all on function public.get_shared_doc(text) from public;
+revoke all on function public.respond_shared_doc(text, text, boolean) from public;
+grant execute on function public.get_shared_doc(text) to anon, authenticated;
+grant execute on function public.respond_shared_doc(text, text, boolean) to anon, authenticated;
+
+-- ============ Daily job reports from the crew ============
+create table if not exists public.daily_reports (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references public.companies(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  employee_id text not null,
+  job_id text not null,
+  date date not null default current_date,
+  notes text not null default '' check (length(notes) <= 5000),
+  photos text[] not null default '{}' check (cardinality(photos) <= 20),
+  created_at timestamptz not null default now()
+);
+create index if not exists daily_reports_company_date on public.daily_reports(company_id, date desc);
+alter table public.daily_reports enable row level security;
+drop policy if exists reports_read on public.daily_reports;
+create policy reports_read on public.daily_reports for select using (user_id = auth.uid() or public.is_owner(company_id));
+drop policy if exists reports_insert on public.daily_reports;
+create policy reports_insert on public.daily_reports for insert with check (user_id = auth.uid() and employee_id = public.my_employee_id(company_id));
+drop policy if exists reports_delete on public.daily_reports;
+create policy reports_delete on public.daily_reports for delete using (user_id = auth.uid() or public.is_owner(company_id));
+
+-- Crew may upload report photos into <company>/reports/. Only the owner can read them (photos_owner_all).
+drop policy if exists photos_crew_reports on storage.objects;
+create policy photos_crew_reports on storage.objects for insert to authenticated
+  with check (bucket_id = 'photos' and (storage.foldername(name))[2] = 'reports'
+              and public.my_employee_id(((storage.foldername(name))[1])::uuid) is not null);
+
+-- ============ Time-off requests from the crew ============
+create table if not exists public.time_off (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references public.companies(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  employee_id text not null,
+  start_date date not null,
+  end_date date not null,
+  reason text check (length(reason) <= 200),
+  status text not null default 'pending' check (status in ('pending','approved','denied')),
+  decided_at timestamptz,
+  created_at timestamptz not null default now(),
+  check (end_date >= start_date)
+);
+alter table public.time_off enable row level security;
+drop policy if exists timeoff_read on public.time_off;
+create policy timeoff_read on public.time_off for select using (user_id = auth.uid() or public.is_owner(company_id));
+drop policy if exists timeoff_insert on public.time_off;
+create policy timeoff_insert on public.time_off for insert with check (user_id = auth.uid() and status = 'pending' and employee_id = public.my_employee_id(company_id));
+drop policy if exists timeoff_decide on public.time_off;
+create policy timeoff_decide on public.time_off for update using (public.is_owner(company_id)) with check (public.is_owner(company_id));
+drop policy if exists timeoff_delete on public.time_off;
+create policy timeoff_delete on public.time_off for delete using ((user_id = auth.uid() and status = 'pending') or public.is_owner(company_id));

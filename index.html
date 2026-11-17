@@ -618,6 +618,30 @@ svg.seal .seal-light{display:none}
   .nav a:hover:not([aria-current="page"]){color:#fff;background:rgba(255,255,255,.06)}
   .nav a[aria-current="page"]{background:var(--grad);color:#fff;font-weight:600;box-shadow:0 8px 18px -8px var(--glow)}
 }
+
+/* estimates & invoices */
+.badge.bad{background:var(--bad-bg);color:var(--bad)}
+.line-head,.line-row{display:grid;grid-template-columns:minmax(0,1fr) 56px 92px 84px 28px;gap:6px;align-items:center}
+.line-head{font-size:12px;color:var(--muted);margin-bottom:6px}.line-head span:nth-child(n+2){text-align:right}
+.line-row{margin-bottom:6px}.line-row input{min-width:0}.line-row input[name=qty],.line-row input[name=rate]{text-align:right}
+.line-row .line-amt{text-align:right;font-size:13px}.line-row .x{width:28px;height:28px;border-radius:50%;border:0;background:var(--surface2);color:var(--muted);cursor:pointer}
+@media (max-width:520px){.line-head{display:none}.line-row{grid-template-columns:1fr 1fr 28px;padding-bottom:8px;border-bottom:1px solid var(--line)}.line-row input[name=desc]{grid-column:1/-1}.line-row .line-amt{grid-column:1/3}.line-row .x{grid-row:1;grid-column:3}.line-row input[name=desc]{grid-column:1/3}}
+.doc-actions{display:flex;align-items:center;gap:8px;margin-bottom:10px}.doc-btns{margin-bottom:12px}#doc-send:not(:empty){margin-bottom:12px;display:grid;gap:10px}
+.doc-wrap{border:1px solid var(--line2);border-radius:18px;overflow:hidden;margin-top:12px}
+.doc{background:#fff;color:#141824;padding:24px 22px;font-size:14px;line-height:1.5}
+.doc small{display:block;color:#5b6280;font-size:12.5px}.doc b{display:block}
+.doc-top{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:16px;border-bottom:2px solid #141824}
+.doc-co{display:flex;gap:12px;align-items:flex-start}.doc-co img{width:56px;height:56px;object-fit:contain;border-radius:10px}.doc-co b{font-size:16px}
+.doc-meta h2{margin:0 0 4px;font:800 24px/1.1 Manrope,sans-serif;letter-spacing:.02em;text-transform:uppercase;text-align:right}
+.doc-meta dl{display:grid;grid-template-columns:auto auto;gap:2px 12px;margin:0;font-size:13px}.doc-meta dt{color:#5b6280}.doc-meta dd{margin:0;text-align:right}
+.doc-to{display:flex;gap:28px;flex-wrap:wrap;padding:16px 0}.doc-to small:first-child{text-transform:uppercase;letter-spacing:.06em;font-size:11px}
+.doc-lines{width:100%;border-collapse:collapse;font-size:13.5px}.doc-lines th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#5b6280;border-bottom:1px solid #d8dce8;padding:6px 4px}
+.doc-lines td{padding:8px 4px;border-bottom:1px solid #eceef5;vertical-align:top}.doc-lines .n{text-align:right;white-space:nowrap}
+.doc-sum{display:grid;grid-template-columns:1fr auto;gap:4px 18px;margin:14px 0 0 auto;max-width:300px}.doc-sum dt{color:#5b6280}.doc-sum dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+.doc-sum .tot{font-weight:800;color:#141824;font-size:16px;border-top:1px solid #d8dce8;padding-top:6px}
+.doc-notes{white-space:pre-line;color:#3b4157;margin:18px 0 0;padding-top:12px;border-top:1px solid #eceef5;font-size:13px}.doc-ok{margin:12px 0 0;color:#127a3d;font-weight:700}
+input[type=date],input[type=time]{min-width:0;max-width:100%;width:100%;display:block;-webkit-appearance:none;appearance:none}
+.wk-off{font-size:12px;font-weight:700;color:var(--warn);background:var(--warn-bg);border-radius:10px;padding:4px 10px;width:max-content;max-width:100%}
 </style>
 </head>
 <body>
@@ -688,7 +712,7 @@ const DB={db:null,
   put(store,k,v){return this.tx(store,'readwrite',s=>s.put(v,k))},
   del(store,k){return this.tx(store,'readwrite',s=>s.delete(k))},
   clear(store){return this.tx(store,'readwrite',s=>s.clear())}};
-const blank=()=>({v:1,profile:{},settings:{company:'',burden:15,ot:true,otThreshold:40},jobs:[],expenses:[],employees:[],shifts:[],photos:[]});
+const blank=()=>({v:1,profile:{},settings:{company:'',burden:15,ot:true,otThreshold:40},jobs:[],expenses:[],employees:[],shifts:[],photos:[],docs:[],reports:[],timeOff:[]});
 let S=blank(), saveT=null, memOnly=false;
 function save(){if(isEmp())return;if(isOwnerCloud())cloudQueue();clearTimeout(saveT);saveT=setTimeout(()=>{if(!memOnly)DB.put('kv','state',S).catch(()=>toast('Could not save on this device'))},250)}
 const memPhotos=new Map();
@@ -826,7 +850,7 @@ function jobForm(j){const isNew=!j;j=j||{status:'active',est:{},start:today()};c
       Object.assign(o,{name:fd.get('name').trim(),client:fd.get('client').trim(),phone:fd.get('phone').trim(),address:fd.get('address').trim(),status:fd.get('status'),price:num(fd.get('price')),start:fd.get('start'),end:fd.get('end'),notes:fd.get('notes'),
         est:Object.fromEntries(EST.map(([k])=>[k,num(fd.get('est_'+k))]))});
       o.plan=plan;if(isNew)S.jobs.push(o);const r=syncPlan(o,{double:!!fd.get('dbl')});save();
-      const msg=[isNew?'Job created':'Saved'];if(r.added)msg.push(`${r.added} shift${r.added>1?'s':''} scheduled`);if(r.removed)msg.push(`${r.removed} removed`);if(r.skipped)msg.push(`${r.skipped} skipped (already booked)`);
+      const msg=[isNew?'Job created':'Saved'];if(r.added)msg.push(`${r.added} shift${r.added>1?'s':''} scheduled`);if(r.removed)msg.push(`${r.removed} removed`);if(r.skipped)msg.push(`${r.skipped} skipped (already booked)`);if(r.off)msg.push(`${r.off} skipped (time off)`);
       if(plan.crew.length&&o.status==='bid')msg.push('crew will be scheduled when the job is Active');toast(msg.join(' · '));if(isNew)location.hash='#/job/'+o.id;offerCrewTexts(r.list)}})}
 const WD=[['1','Mon'],['2','Tue'],['3','Wed'],['4','Thu'],['5','Fri'],['6','Sat'],['0','Sun']];
 function planFields(j){const p=j.plan||{},crew=p.crew||[],days=(p.days||[1,2,3,4,5]).map(String),emps=S.employees.filter(e=>e.active!==false||crew.includes(e.id));
@@ -858,6 +882,7 @@ function syncPlan(j,opt={}){const t=today(),p=j.plan,res={added:0,removed:0,skip
   S.shifts=S.shifts.filter(s=>{if(s.jobId!==j.id||!s.plan||s.status!=='scheduled'||s.date<t)return true;const k=s.empId+'|'+s.date;
     if(want.has(k)){Object.assign(s,{start:p.start,end:p.end,breakMin:p.breakMin});want.delete(k);return true}res.removed++;return false});
   for(const w of want.values()){if(S.shifts.some(s=>s.jobId===j.id&&s.empId===w.empId&&s.date===w.date))continue;
+    if(offOn(w.empId,w.date)){res.off=(res.off||0)+1;continue}
     if(!opt.double&&conflictFor(w.empId,w.date,p,j.id)){res.skipped++;continue}
     const e=emp(w.empId),ns={id:uid(),empId:w.empId,jobId:j.id,date:w.date,start:p.start,end:p.end,breakMin:p.breakMin,status:'scheduled',rate:e.rate,burden:e.burden,note:'',plan:true};S.shifts.push(ns);res.list.push(ns);res.added++}
   return res}
@@ -888,6 +913,231 @@ function coForm(j,c){const isNew=!c;c=c||{date:today()};
     onDelete:isNew?null:()=>{j.changeOrders=j.changeOrders.filter(x=>x.id!==c.id);save()},
     onSubmit:fd=>{const o=isNew?{id:uid()}:c;Object.assign(o,{desc:fd.get('desc').trim(),amount:num(fd.get('amount')),date:fd.get('date')});
       if(isNew)(j.changeOrders=j.changeOrders||[]).push(o);save();toast('Change order saved')}})}
+
+/* ---------- estimates & invoices ---------- */
+const DOC_KIND={estimate:'Estimate',invoice:'Invoice'};
+const DOC_ST={draft:['','Draft'],sent:['active','Sent'],viewed:['active','Viewed'],approved:['done','Approved'],declined:['bad','Declined'],partial:['active','Part paid'],paid:['done','Paid']};
+const docBadge=d=>{const [c,l]=DOC_ST[docStatus(d)]||['',d.status];return `<span class="badge ${c}">${l}</span>`};
+function docTotals(d){const sub=sum(d.items||[],i=>num(i.qty)*num(i.rate)),tax=Math.round(sub*num(d.taxRate))/100,total=sub+tax,paid=sum(d.payments||[],p=>p.amount);
+  return{sub,tax,total,paid,balance:total-paid}}
+function docStatus(d){if(d.kind==='invoice'){const t=docTotals(d);if(t.paid>0&&t.balance<=0.005)return 'paid';if(t.paid>0)return 'partial'}return d.status||'draft'}
+const docTitle=d=>`${DOC_KIND[d.kind]} ${d.num}`;
+function nextDocNum(kind){const k=kind==='invoice'?'nextInv':'nextEst',n=num(S.settings[k])||1001;return (kind==='invoice'?'INV-':'EST-')+n}
+function takeDocNum(d){const k=d.kind==='invoice'?'nextInv':'nextEst',n=num(S.settings[k])||1001;if(d.num===nextDocNum(d.kind))S.settings[k]=n+1;
+  else{const m=/(\d+)$/.exec(d.num);if(m&&+m[1]>=n)S.settings[k]=+m[1]+1}}
+function docLinesFor(j,kind){const items=[{desc:j.name+(kind==='estimate'?'':' (contract)'),qty:1,rate:+j.price||0}];
+  if(kind==='invoice'){for(const c of j.changeOrders||[])items.push({desc:'Change order: '+c.desc,qty:1,rate:+c.amount||0});
+    const before=sum(S.docs.filter(d=>d.kind==='invoice'&&d.jobId===j.id),d=>docTotals(d).sub);if(before)items.push({desc:'Less previously invoiced',qty:1,rate:-before})}
+  return items}
+function newDoc(kind,j,from){const d={id:uid(),kind,num:nextDocNum(kind),jobId:j?.id||'',date:today(),status:'draft',taxRate:from?.taxRate??(num(S.settings.taxRate)||0),
+    billTo:{name:j?.client||'',address:j?.address||'',phone:j?.phone||'',email:''},items:from?from.items.map(i=>({...i})):docLinesFor(j||{name:'Work'},kind),payments:[],
+    notes:from?.notes||(kind==='estimate'?(S.settings.estTerms||'This estimate is valid for 30 days.'):(S.settings.invTerms||'Thank you for your business.'))};
+  if(kind==='invoice')d.due=addDays(d.date,num(S.settings.dueDays)||14);else d.valid=addDays(d.date,30);if(from)d.fromId=from.id;return d}
+
+// Read-only document, used in the app preview, the shared link page and for printing.
+function docHTML(d,co){const t=docTotals(d),c=co||S.profile||{},b=d.billTo||{},j=job(d.jobId),inv=d.kind==='invoice';
+  return `<article class="doc"><header class="doc-top"><div class="doc-co">${c.logo?`<img src="${esc(c.logo)}" alt="">`:''}<div><b>${esc(c.company||c.name||'')}</b>
+      <small>${[c.address,c.phone,c.email,c.website,c.license&&'License # '+c.license].filter(Boolean).map(esc).join('<br>')}</small></div></div>
+    <div class="doc-meta"><h2>${DOC_KIND[d.kind]}</h2><dl><dt>No.</dt><dd>${esc(d.num)}</dd><dt>Date</dt><dd>${fmtDateY(d.date)}</dd>
+      ${inv&&d.due?`<dt>Due</dt><dd>${fmtDateY(d.due)}</dd>`:''}${!inv&&d.valid?`<dt>Valid until</dt><dd>${fmtDateY(d.valid)}</dd>`:''}</dl></div></header>
+  <section class="doc-to"><div><small>${inv?'Bill to':'Prepared for'}</small><b>${esc(b.name||'')}</b><small>${[b.address,b.phone,b.email].filter(Boolean).map(esc).join('<br>')}</small></div>
+    ${(d.jobName||j?.name)?`<div><small>Project</small><b>${esc(d.jobName||j.name)}</b><small>${esc(d.jobAddress||j?.address||'')}</small></div>`:''}</section>
+  <table class="doc-lines"><thead><tr><th>Description</th><th class="n">Qty</th><th class="n">Rate</th><th class="n">Amount</th></tr></thead>
+    <tbody>${(d.items||[]).map(i=>`<tr><td>${esc(i.desc)}</td><td class="n">${+num(i.qty).toFixed(2)}</td><td class="n">${money2(num(i.rate))}</td><td class="n">${money2(num(i.qty)*num(i.rate))}</td></tr>`).join('')}</tbody></table>
+  <dl class="doc-sum"><dt>Subtotal</dt><dd>${money2(t.sub)}</dd>${num(d.taxRate)?`<dt>Tax (${+num(d.taxRate).toFixed(3)}%)</dt><dd>${money2(t.tax)}</dd>`:''}
+    <dt class="tot">Total</dt><dd class="tot">${money2(t.total)}</dd>${inv&&t.paid?`<dt>Paid</dt><dd>-${money2(t.paid)}</dd><dt class="tot">Balance due</dt><dd class="tot">${money2(Math.max(0,t.balance))}</dd>`:''}</dl>
+  ${d.notes?`<p class="doc-notes">${esc(d.notes)}</p>`:''}
+  ${d.approvedBy?`<p class="doc-ok">Approved by ${esc(d.approvedBy)}${d.approvedAt?' on '+fmtDateY(d.approvedAt.slice(0,10)):''}</p>`:''}</article>`}
+
+function docForm(d,isNew){const inv=d.kind==='invoice';
+  const row=(i={})=>`<div class="line-row"><input name="desc" placeholder="Description" value="${esc(i.desc??'')}"><input name="qty" inputmode="decimal" placeholder="Qty" value="${esc(i.qty??1)}"><input name="rate" inputmode="decimal" placeholder="Rate" value="${i.rate===''||i.rate==null?'':esc(i.rate)}"><b class="num line-amt"></b><button type="button" class="x" data-del-line aria-label="Remove line">×</button></div>`;
+  openForm({title:(isNew?'New ':'Edit ')+DOC_KIND[d.kind].toLowerCase(),submit:'Save',
+    body:`<div class="fields">${field('Number',inp('num',d.num))}${field('Date',inp('date',d.date,'date'))}
+      ${inv?field('Due date',inp('due',d.due,'date')):field('Valid until',inp('valid',d.valid,'date'))}${field('Sales tax %',inp('taxRate',d.taxRate||'','text','inputmode="decimal" placeholder="0"'))}
+      ${field(inv?'Bill to':'Customer',inp('bname',d.billTo?.name,'text','placeholder="Customer name"'))}${field('Customer email',inp('bemail',d.billTo?.email,'email'))}
+      ${field('Customer phone',inp('bphone',d.billTo?.phone,'tel'))}${field('Address',inp('baddr',d.billTo?.address))}</div>
+      <fieldset><legend>Line items</legend><div class="line-head"><span>Description</span><span>Qty</span><span>Rate</span><span>Amount</span><span></span></div><div id="lines">${(d.items.length?d.items:[{}]).map(row).join('')}</div>
+        <button type="button" class="btn sm" id="add-line">+ Add line</button><div class="split" style="margin-top:12px"><span class="note" id="doc-sub"></span><b class="num" id="doc-total"></b></div></fieldset>
+      ${field('Notes / terms',`<textarea name="notes" rows="3">${esc(d.notes||'')}</textarea>`,'full')}`,
+    onOpen:f=>{const L=$('#lines',f);const upd=()=>{const rows=$$('.line-row',L);let s=0;rows.forEach(r=>{const a=num(r.querySelector('[name=qty]').value)*num(r.querySelector('[name=rate]').value);s+=a;r.querySelector('.line-amt').textContent=money2(a)});
+        const tx=Math.round(s*num(f.taxRate.value))/100;$('#doc-sub',f).textContent=`Subtotal ${money2(s)}${tx?` · tax ${money2(tx)}`:''}`;$('#doc-total',f).textContent='Total '+money2(s+tx)};
+      $('#add-line',f).onclick=()=>{L.insertAdjacentHTML('beforeend',row());upd();L.lastElementChild.querySelector('input').focus()};
+      L.addEventListener('click',e=>{const b=e.target.closest('[data-del-line]');if(b){if($$('.line-row',L).length>1)b.closest('.line-row').remove();else b.closest('.line-row').querySelectorAll('input').forEach(i=>i.value='');upd()}});
+      f.addEventListener('input',upd);upd()},
+    onDelete:isNew?null:async()=>{await unshareDoc(d);S.docs=S.docs.filter(x=>x.id!==d.id);save();toast(DOC_KIND[d.kind]+' deleted')},
+    onSubmit:fd=>{const ds=fd.getAll('desc'),qs=fd.getAll('qty'),rs=fd.getAll('rate');
+      const items=ds.map((x,i)=>({desc:x.trim(),qty:num(qs[i])||(qs[i].trim()===''?1:0),rate:num(rs[i])})).filter(i=>i.desc||i.rate);
+      if(!items.length){toast('Add at least one line');return false}
+      Object.assign(d,{num:fd.get('num').trim()||d.num,date:fd.get('date')||today(),taxRate:num(fd.get('taxRate')),items,notes:fd.get('notes').trim(),
+        billTo:{name:fd.get('bname').trim(),email:fd.get('bemail').trim(),phone:fd.get('bphone').trim(),address:fd.get('baddr').trim()}});
+      if(inv)d.due=fd.get('due');else d.valid=fd.get('valid');if(num(fd.get('taxRate')))S.settings.taxRate=num(fd.get('taxRate'));
+      if(isNew){takeDocNum(d);S.docs.push(d)}save();if(d.token)shareDoc(d).catch(()=>{});toast(docTitle(d)+' saved');setTimeout(()=>docView(d),250)}})}
+
+function docView(d){const inv=d.kind==='invoice',t=docTotals(d),st=docStatus(d),cloud=isOwnerCloud();
+  openForm({title:docTitle(d),closeLabel:'Close',
+    body:`<div class="doc-actions">${docBadge(d)} <span class="note">${money2(t.total)}${inv&&t.paid?` · ${money2(Math.max(0,t.balance))} due`:''}</span></div>
+      <div class="btns doc-btns">
+        <button type="button" class="btn primary sm" data-doc="send">${d.token?'Send again':'Send to customer'}</button>
+        <button type="button" class="btn sm" data-doc="edit">Edit</button>
+        ${inv&&st!=='paid'?'<button type="button" class="btn sm" data-doc="pay">Record payment</button>':''}
+        ${!inv&&st!=='approved'?'<button type="button" class="btn sm" data-doc="approve">Mark approved</button>':''}
+        ${!inv&&st!=='declined'&&st!=='approved'?'<button type="button" class="btn sm ghost" data-doc="decline">Mark declined</button>':''}
+        ${!inv?'<button type="button" class="btn sm" data-doc="toinv">Turn into invoice</button>':''}
+        ${cloud&&d.token?'<button type="button" class="btn sm ghost" data-doc="open">Open customer page</button>':''}
+        <button type="button" class="btn sm ghost" data-doc="copy">Copy as text</button></div>
+      <div id="doc-send"></div>
+      ${inv&&(d.payments||[]).length?`<ul class="list">${d.payments.map(p=>`<li><div class="grow"><b>${money2(p.amount)}</b><small>${fmtDateY(p.date)}${p.method?' · '+esc(p.method):''}</small></div><button type="button" class="btn sm ghost danger" data-doc="unpay" data-id="${p.id}">Remove</button></li>`).join('')}</ul>`:''}
+      <div class="doc-wrap">${docHTML(d)}</div>`,
+    onOpen:f=>{f.addEventListener('click',async e=>{const b=e.target.closest('[data-doc]');if(!b)return;const a=b.dataset.doc;
+      if(a==='edit')return docForm(d,false);
+      if(a==='pay')return payForm(d);
+      if(a==='unpay'){d.payments=d.payments.filter(p=>p.id!==b.dataset.id);save();if(d.token)shareDoc(d).catch(()=>{});return docView(d)}
+      if(a==='approve'||a==='decline'){d.status=a==='approve'?'approved':'declined';if(a==='approve'){d.approvedAt=new Date().toISOString();d.approvedBy=d.approvedBy||''}save();if(d.token)shareDoc(d).catch(()=>{});toast(docTitle(d)+(a==='approve'?' approved':' declined'));return docView(d)}
+      if(a==='toinv'){const j=job(d.jobId),n=newDoc('invoice',j,d);return docForm(n,true)}
+      if(a==='copy'){try{await navigator.clipboard.writeText(docText(d));toast('Copied')}catch(err){toast('Could not copy')}return}
+      if(a==='open'){window.open(shareUrl(d),'_blank','noopener');return}
+      if(a==='send')return docSend(d,f)})}})}
+
+const shareUrl=d=>SITE_URL+'doc.html#'+d.token;
+function docText(d){const t=docTotals(d),co=S.profile||{};
+  return [`${co.company||''} — ${docTitle(d)}`,`Date: ${fmtDateY(d.date)}${d.kind==='invoice'&&d.due?` · Due ${fmtDateY(d.due)}`:''}`,'',...(d.items||[]).map(i=>`${i.desc}: ${num(i.qty)} × ${money2(num(i.rate))} = ${money2(num(i.qty)*num(i.rate))}`),'',
+    `Subtotal ${money2(t.sub)}`,num(d.taxRate)?`Tax ${money2(t.tax)}`:'',`Total ${money2(t.total)}`,d.kind==='invoice'&&t.paid?`Balance due ${money2(Math.max(0,t.balance))}`:'',d.notes?'\n'+d.notes:''].filter(x=>x!=='').join('\n')}
+async function docSend(d,f){const box=$('#doc-send',f);
+  if(!isOwnerCloud()){box.innerHTML=`<div class="insight"><b>Send</b><span>Create a free account (Settings) to send customers a link they can open${d.kind==='estimate'?' and approve':''}. For now, use <b>Copy as text</b> and paste it into a text or email.</span></div>`;return}
+  box.innerHTML='<p class="note">Making the link…</p>';
+  try{await shareDoc(d)}catch(e){box.innerHTML=`<p class="note neg">Couldn't make the link: ${esc(errMsg(e))}</p>`;return}
+  if(d.status==='draft'){d.status='sent';d.sentAt=new Date().toISOString();save();shareDoc(d).catch(()=>{})}
+  const url=shareUrl(d),co=S.profile?.company||'',first=(d.billTo?.name||'').split(' ')[0],t=docTotals(d);
+  const msg=`Hi${first?' '+first:''}, here's your ${d.kind} from ${co||'us'} for ${money2(d.kind==='invoice'?Math.max(0,t.balance):t.total)}: ${url}${d.kind==='estimate'?' You can approve it right from that page.':''}`;
+  const sms=smsLink(d.billTo?.phone,msg),mail=d.billTo?.email?`mailto:${encodeURIComponent(d.billTo.email)}?subject=${encodeURIComponent(`${docTitle(d)} from ${co}`)}&body=${encodeURIComponent(msg)}`:'';
+  box.innerHTML=`<div class="insight good"><b>Link ready</b><span style="word-break:break-all">${esc(url)}</span></div>
+    <div class="btns">${sms?`<a class="btn sm primary" href="${esc(sms)}">Text ${esc(first||'customer')}</a>`:''}${mail?`<a class="btn sm${sms?'':' primary'}" href="${esc(mail)}">Email</a>`:''}<button type="button" class="btn sm" id="copy-doc-link">Copy message</button></div>
+    ${!sms&&!mail?'<p class="note">Add the customer\'s phone or email (Edit) to text or email it from here.</p>':''}`;
+  $('#copy-doc-link',f).onclick=async()=>{try{await navigator.clipboard.writeText(msg);toast('Copied. Paste it in a text or email.')}catch(err){toast('Could not copy')}}}
+function payForm(d){const t=docTotals(d);
+  openForm({title:'Record payment · '+d.num,submit:'Save payment',
+    body:`<div class="fields">${field('Amount',moneyInp('amount',Math.max(0,t.balance).toFixed(2),'required'))}${field('Date',inp('date',today(),'date'))}
+      ${field('Method',`<select name="method">${['Check','Cash','Card','Bank transfer','Zelle / Venmo','Other'].map(v=>opt(v,v,'Check')).join('')}</select>`,'full')}</div>`,
+    onSubmit:fd=>{const a=num(fd.get('amount'));if(!a){toast('Enter the amount paid');return false}
+      (d.payments=d.payments||[]).push({id:uid(),amount:a,date:fd.get('date')||today(),method:fd.get('method')});save();if(d.token)shareDoc(d).catch(()=>{});
+      toast(docStatus(d)==='paid'?d.num+' is paid in full':'Payment recorded');setTimeout(()=>docView(d),250)}})}
+
+// Shared links: a snapshot of the document in shared_docs, readable only by its random token.
+function docSnapshot(d){const j=job(d.jobId),p=S.profile||{};
+  return{...d,token:undefined,payments:(d.payments||[]).map(x=>({amount:x.amount,date:x.date})),jobName:j?.name||'',jobAddress:j?.address||'',
+    company:{company:p.company||'',name:p.name||'',logo:p.logo||'',address:p.address||'',phone:p.phone||'',email:p.email||'',website:p.website||'',license:p.license||''},accent:p.accent||'blue',st:docStatus(d)}}
+async function shareDoc(d){if(!isOwnerCloud())throw new Error('Sign in first');
+  if(!d.token){const r=crypto.getRandomValues(new Uint8Array(18));d.token=[...r].map(x=>x.toString(16).padStart(2,'0')).join('');save()}
+  const row={token:d.token,company_id:CLOUD.company,doc_id:d.id,kind:d.kind,data:docSnapshot(d),updated_at:new Date().toISOString()};if(d.status==='approved'||d.status==='declined')row.status=d.status;
+  const {error}=await CLOUD.sb.from('shared_docs').upsert(row);if(error)throw error}
+async function unshareDoc(d){if(d.token&&isOwnerCloud())await CLOUD.sb.from('shared_docs').delete().eq('token',d.token).then(()=>{},()=>{})}
+// Pick up customer approvals and views made on the shared page.
+async function docsPull(){if(!isOwnerCloud()||!S.docs.some(d=>d.token))return false;
+  const {data,error}=await CLOUD.sb.from('shared_docs').select('token,status,approved_name,approved_at,viewed_at').eq('company_id',CLOUD.company);if(error||!data)return false;let ch=false;
+  for(const r of data){const d=S.docs.find(x=>x.token===r.token);if(!d)continue;
+    if(r.status==='approved'&&d.status!=='approved'&&d.kind==='estimate'){Object.assign(d,{status:'approved',approvedBy:r.approved_name||'',approvedAt:r.approved_at});ch=true;toast(`${r.approved_name||'Your customer'} approved ${d.num}`)}
+    else if(r.status==='declined'&&d.status!=='declined'&&d.status!=='approved'){d.status='declined';ch=true;toast(`${d.num} was declined`)}
+    else if(r.viewed_at&&d.status==='sent'){d.status='viewed';ch=true}}
+  if(ch)save();return ch}
+
+function docsCard(j){const ds=S.docs.filter(d=>d.jobId===j.id).sort((a,b)=>(b.date+b.num).localeCompare(a.date+a.num));
+  const billed=sum(ds.filter(d=>d.kind==='invoice'),d=>docTotals(d).total),paid=sum(ds.filter(d=>d.kind==='invoice'),d=>docTotals(d).paid);
+  return `<div class="card"><div class="card-head"><h2>Estimates &amp; invoices</h2><div class="btns"><button class="btn sm" data-act="doc-new" data-kind="estimate">+ Estimate</button><button class="btn sm primary" data-act="doc-new" data-kind="invoice">+ Invoice</button></div></div>
+    ${ds.length?`<ul class="list">${ds.map(d=>{const t=docTotals(d);return `<li class="click" data-act="doc-open" data-id="${d.id}"><div class="grow"><b>${docTitle(d)}</b><small>${fmtDate(d.date)}${d.kind==='invoice'&&d.due&&docStatus(d)!=='paid'?' · due '+fmtDate(d.due):''}</small></div>${docBadge(d)}<b class="num">${money2(t.total)}</b></li>`}).join('')}</ul>
+      ${billed?`<div class="split" style="margin-top:10px"><span class="note">Billed ${money2(billed)} · paid ${money2(paid)}</span><b class="num ${billed-paid>0.005?'neg':''}">${money2(billed-paid)} owed</b></div>`:''}`
+    :'<p class="note">Send the customer an estimate to approve, then invoice them and track what\'s been paid.</p>'}</div>`}
+function owedCard(){const o=moneyOwed();if(!o.length)return '';const late=o.filter(x=>x.late);
+  return `<div class="card"><div class="card-head"><h2>Money owed to you</h2><b class="num">${money2(sum(o,x=>x.bal))}</b></div>
+    ${late.length?`<div class="insight bad" style="margin-bottom:8px"><b>Overdue</b><span>${late.length} invoice${late.length>1?'s are':' is'} past due: ${money2(sum(late,x=>x.bal))}.</span></div>`:''}
+    <ul class="list">${o.slice(0,8).map(({d,bal,late})=>`<li class="click" data-href="#/job/${d.jobId}"><div class="grow"><b>${esc(d.billTo?.name||job(d.jobId)?.name||d.num)}</b><small>${d.num}${d.due?` · ${late?'was due':'due'} ${fmtDate(d.due)}`:''}</small></div>${late?'<span class="badge bad">Overdue</span>':docBadge(d)}<b class="num">${money2(bal)}</b></li>`).join('')}</ul></div>`}
+function moneyOwed(){const t=today();return S.docs.filter(d=>d.kind==='invoice'&&d.status!=='draft'&&docTotals(d).balance>0.005).map(d=>({d,bal:docTotals(d).balance,late:d.due&&d.due<t})).sort((a,b)=>(a.d.due||'').localeCompare(b.d.due||''))}
+
+/* ---------- daily job reports ---------- */
+// Owner reports live in S.reports (photos in S.photos, kind 'report'). Crew reports live in the daily_reports table,
+// with photos uploaded to photos/<company>/reports/<id>.jpg, which the owner can read.
+function allReports(jobId){const own=S.reports.filter(r=>!jobId||r.jobId===jobId).map(r=>({...r,who:S.profile?.name||'You',photos:r.photoIds||[],mine:true}));
+  const crew=(CLOUD.crewReports||[]).filter(r=>!jobId||r.job_id===jobId).map(r=>({id:r.id,jobId:r.job_id,date:r.date,notes:r.notes||'',photos:r.photos||[],who:emp(r.employee_id)?.name||'Crew',crew:true}));
+  return own.concat(crew).sort((a,b)=>(b.date||'').localeCompare(a.date||''))}
+function reportItem(r,showJob){return `<li style="display:block"><div class="split"><b>${esc(r.who)}${showJob?` · ${esc(job(r.jobId)?.name||'Job')}`:''}</b><small class="note">${fmtDate(r.date)}</small></div>
+  ${r.notes?`<p style="margin:4px 0 0;white-space:pre-line">${esc(r.notes)}</p>`:''}
+  ${r.photos.length?`<div class="photos" style="margin-top:8px">${r.photos.map(id=>`<button data-act="rphoto" data-id="${esc(id)}"><img data-photo="${esc(id)}" alt="Report photo" loading="lazy"></button>`).join('')}</div>`:''}
+  ${r.mine?`<div class="btns" style="margin-top:6px"><button class="btn sm ghost" data-act="report-edit" data-id="${r.id}">Edit</button></div>`:''}</li>`}
+function reportsCard(j){const rs=allReports(j.id);
+  return `<div class="card"><div class="card-head"><h2>Daily reports</h2><button class="btn sm" data-act="report-new">+ Add report</button></div>
+    ${rs.length?`<ul class="list">${rs.slice(0,UI.allReports===j.id?999:5).map(r=>reportItem(r)).join('')}</ul>${rs.length>5&&UI.allReports!==j.id?`<button class="btn sm ghost" data-act="reports-all" data-id="${j.id}">Show all ${rs.length}</button>`:''}`
+      :`<p class="note">What got done each day, problems, and photos. ${isOwnerCloud()?'Your crew can add reports from their phones too.':''}</p>`}</div>`}
+function reportForm(r,pre={}){const isNew=!r,crew=isEmp();r=r||{date:today(),jobId:pre.jobId||''};
+  let jobs=S.jobs.filter(j=>j.status!=='done'||j.id===r.jobId);if(crew){const mine=new Set(S.shifts.filter(s=>s.empId===CLOUD.employeeId&&s.date>=addDays(today(),-7)).map(s=>s.jobId));jobs=jobs.filter(j=>mine.has(j.id)||j.status==='active')}
+  if(!r.jobId){const s=S.shifts.find(s=>s.date===today()&&(!crew||s.empId===CLOUD.employeeId));r.jobId=s?.jobId||jobs[0]?.id||''}
+  if(!jobs.length){toast('No jobs to report on yet');return}
+  openForm({title:isNew?'Daily report':'Edit report',submit:isNew?'Send report':'Save',
+    body:`<div class="fields">${field('Job',`<select name="jobId">${jobs.map(j=>opt(j.id,j.name,r.jobId)).join('')}</select>`)}${field('Date',inp('date',r.date,'date'))}</div>
+      ${field('What got done, problems, what\'s needed',`<textarea name="notes" rows="5" placeholder="Hung drywall in the basement. Need 6 more sheets and mud for tomorrow.">${esc(r.notes||'')}</textarea>`,'full')}
+      ${isNew?`<label class="btn sm" style="flex-direction:row;color:var(--ink);width:max-content">Add photos<input type="file" accept="image/*" multiple name="rphotos" hidden></label><p class="note" id="rp-count"></p>`:''}`,
+    onOpen:f=>{const i=f.querySelector('[name=rphotos]');if(i)i.addEventListener('change',()=>{$('#rp-count',f).textContent=i.files.length?`${i.files.length} photo${i.files.length>1?'s':''} added`:''})},
+    onDelete:isNew||crew?null:async()=>{for(const id of r.photoIds||[]){await photoDel(id);S.photos=S.photos.filter(p=>p.id!==id)}S.reports=S.reports.filter(x=>x.id!==r.id);save();toast('Report deleted')},
+    onSubmit:async(fd,f)=>{const notes=fd.get('notes').trim(),files=[...(f.querySelector('[name=rphotos]')?.files||[])];
+      if(!notes&&!files.length){toast('Write a few words or add a photo');return false}
+      const jobId=fd.get('jobId'),date=fd.get('date')||today();
+      if(crew){const sb=CLOUD.sb,photos=[];
+        for(const file of files){try{const b=await downscale(file),id='reports/'+uid()+uid()+'.jpg';const {error}=await sb.storage.from('photos').upload(`${CLOUD.company}/${id}`,b,{contentType:b.type||'image/jpeg'});if(!error)photos.push(id)}catch(e){}}
+        const {error}=await sb.from('daily_reports').insert({company_id:CLOUD.company,user_id:CLOUD.user.id,employee_id:CLOUD.employeeId,job_id:jobId,date,notes,photos});
+        if(error){toast('Could not send: '+errMsg(error));return false}await empExtrasLoad();toast(files.length&&photos.length<files.length?'Report sent, but some photos didn\'t upload':'Report sent');return}
+      const o=isNew?{id:uid(),photoIds:[]}:r;Object.assign(o,{jobId,date,notes});for(const file of files)o.photoIds.push(await addPhoto(file,jobId,'report'));
+      if(isNew)S.reports.push(o);save();toast(isNew?'Report added':'Report saved')}})}
+
+/* ---------- time off ---------- */
+// S.timeOff holds approved days off ({empId,from,to,note}); crew send requests through the time_off table.
+const offOn=(empId,date)=>S.timeOff.find(t=>t.empId===empId&&t.from<=date&&t.to>=date);
+const offRange=t=>t.from===t.to?fmtDate(t.from):`${fmtDate(t.from)} – ${fmtDate(t.to)}`;
+const offShifts=()=>S.shifts.filter(s=>s.status==='scheduled'&&s.date>=today()&&offOn(s.empId,s.date));
+function timeOffCard(){const t=today(),reqs=(CLOUD.timeReqs||[]).filter(r=>r.status==='pending'),up=S.timeOff.filter(x=>x.to>=t).sort((a,b)=>a.from.localeCompare(b.from)),clash=offShifts();
+  return `<div class="card"><div class="card-head"><h2>Time off</h2><button class="btn sm" data-act="off-new">+ Add time off</button></div>
+    ${reqs.length?`<h3>Requests</h3><ul class="list">${reqs.map(r=>{const e=emp(r.employee_id);return `<li><span class="dot" style="background:${e?.color||'#999'}"></span><div class="grow"><b>${esc(e?.name||'Crew')}</b><small>${offRange({from:r.start_date,to:r.end_date})}${r.reason?' · '+esc(r.reason):''}</small></div>
+      <div class="btns" style="flex-wrap:nowrap"><button class="btn sm primary" data-act="off-ok" data-id="${r.id}">Approve</button><button class="btn sm ghost" data-act="off-no" data-id="${r.id}">Deny</button></div></li>`}).join('')}</ul>`:''}
+    ${clash.length?`<div class="insight warn" style="margin:8px 0"><b>Scheduled while off</b><span>${[...new Set(clash.map(s=>emp(s.empId)?.name))].map(esc).join(', ')} ${clash.length===1?'has a shift':`have ${clash.length} shifts`} on days off. <button class="btn sm" data-act="off-clear">Remove ${clash.length===1?'it':'them'}</button></span></div>`:''}
+    ${up.length?`<ul class="list">${up.map(x=>{const e=emp(x.empId);return `<li class="click" data-act="off-edit" data-id="${x.id}"><span class="dot" style="background:${e?.color||'#999'}"></span><div class="grow"><b>${esc(e?.name||'Removed')}</b><small>${offRange(x)}${x.note?' · '+esc(x.note):''}</small></div></li>`}).join('')}</ul>`
+      :reqs.length?'':`<p class="note">Days off block the schedule, so nobody gets booked while they're away.${isOwnerCloud()?' Your crew can request time off from their phones.':''}</p>`}</div>`}
+function offForm(x){const isNew=!x;x=x||{from:today(),to:today(),empId:S.employees.find(e=>e.active!==false)?.id};
+  if(!S.employees.length){toast('Add an employee first');return}
+  openForm({title:isNew?'Add time off':'Time off',
+    body:`<div class="fields">${field('Employee',`<select name="empId">${S.employees.filter(e=>e.active!==false||e.id===x.empId).map(e=>opt(e.id,e.name,x.empId)).join('')}</select>`,'full')}
+      ${field('First day off',inp('from',x.from,'date'))}${field('Last day off',inp('to',x.to,'date'))}${field('Note',inp('note',x.note,'text','placeholder="Vacation, doctor, family…"'),'full')}</div>`,
+    onDelete:isNew?null:()=>{S.timeOff=S.timeOff.filter(t=>t.id!==x.id);save();toast('Time off removed')},deleteLabel:'Remove',
+    onSubmit:fd=>{const from=fd.get('from'),to=fd.get('to')||from;if(!from){toast('Pick the first day off');return false}if(to<from){toast('The last day is before the first day');return false}
+      const o=isNew?{id:uid()}:x;Object.assign(o,{empId:fd.get('empId'),from,to,note:fd.get('note').trim()});if(isNew)S.timeOff.push(o);save();
+      const n=offShifts().filter(s=>s.empId===o.empId).length;toast(n?`Saved. ${n} scheduled shift${n>1?'s':''} fall on those days.`:'Time off saved')}})}
+async function offDecide(id,ok){const r=(CLOUD.timeReqs||[]).find(x=>x.id===id);if(!r)return;
+  const {error}=await CLOUD.sb.from('time_off').update({status:ok?'approved':'denied',decided_at:new Date().toISOString()}).eq('id',id);if(error)return toast(errMsg(error));
+  r.status=ok?'approved':'denied';if(ok&&!S.timeOff.some(t=>t.reqId===id))S.timeOff.push({id:uid(),reqId:id,empId:r.employee_id,from:r.start_date,to:r.end_date,note:r.reason||''});
+  save();route();const n=ok?offShifts().filter(s=>s.empId===r.employee_id).length:0;toast(ok?(n?`Approved. ${n} scheduled shift${n>1?'s':''} fall on those days.`:'Time off approved'):'Request denied')}
+
+/* ---------- crew side: reports and time-off requests ---------- */
+function crewExtras(){const mine=CLOUD.myReports||[],reqs=CLOUD.myTimeOff||[],t=today();
+  const st={pending:['active','Waiting'],approved:['done','Approved'],denied:['bad','Denied']};
+  return `<div class="grid2"><div class="card"><div class="card-head"><h2>Daily report</h2><button class="btn sm primary" data-act="report-new">+ New report</button></div>
+      ${mine.length?`<ul class="list">${mine.slice(0,4).map(r=>`<li><div class="grow"><b>${esc(job(r.job_id)?.name||'Job')}</b><small>${fmtDate(r.date)}${r.photos?.length?` · ${r.photos.length} photo${r.photos.length>1?'s':''}`:''}${r.notes?' · '+esc(r.notes.slice(0,80)):''}</small></div></li>`).join('')}</ul>`
+        :'<p class="note">Tell your boss what got done today and what you need. Add photos of the work.</p>'}</div>
+    <div class="card"><div class="card-head"><h2>Time off</h2><button class="btn sm" data-act="off-req">Request time off</button></div>
+      ${reqs.filter(r=>r.end_date>=t||r.status==='pending').length?`<ul class="list">${reqs.filter(r=>r.end_date>=t||r.status==='pending').map(r=>`<li><div class="grow"><b>${offRange({from:r.start_date,to:r.end_date})}</b><small>${esc(r.reason||'')}</small></div><span class="badge ${st[r.status]?.[0]||''}">${st[r.status]?.[1]||r.status}</span></li>`).join('')}</ul>`
+        :'<p class="note">Ask for days off. Your boss approves it and you won\'t be scheduled those days.</p>'}</div></div>`}
+function offRequestForm(){openForm({title:'Request time off',submit:'Send request',
+    body:`<div class="fields">${field('First day off',inp('from',addDays(today(),7),'date'))}${field('Last day off',inp('to',addDays(today(),7),'date'))}${field('Reason (optional)',inp('reason','','text','placeholder="Vacation, appointment…" maxlength="200"'),'full')}</div>`,
+    onSubmit:async fd=>{const from=fd.get('from'),to=fd.get('to')||from;if(!from){toast('Pick the first day off');return false}if(to<from){toast('The last day is before the first day');return false}
+      const {error}=await CLOUD.sb.from('time_off').insert({company_id:CLOUD.company,user_id:CLOUD.user.id,employee_id:CLOUD.employeeId,start_date:from,end_date:to,reason:fd.get('reason').trim()||null});
+      if(error){toast('Could not send: '+errMsg(error));return false}await empExtrasLoad();toast('Request sent to your boss')}})}
+async function empExtrasLoad(){const sb=CLOUD.sb;if(!sb||!isEmp())return;
+  try{const [a,b]=await Promise.all([sb.from('daily_reports').select('id,job_id,date,notes,photos').eq('user_id',CLOUD.user.id).order('date',{ascending:false}).limit(20),
+    sb.from('time_off').select('*').eq('user_id',CLOUD.user.id).order('start_date',{ascending:false}).limit(30)]);
+    if(!a.error)CLOUD.myReports=a.data;if(!b.error)CLOUD.myTimeOff=b.data}catch(e){}}
+async function ownerExtrasLoad(){const sb=CLOUD.sb;if(!sb||!isOwnerCloud())return false;let ch=false;
+  try{const since=addDays(today(),-120);const [a,b]=await Promise.all([sb.from('daily_reports').select('*').eq('company_id',CLOUD.company).gte('date',since).order('date',{ascending:false}).limit(300),
+    sb.from('time_off').select('*').eq('company_id',CLOUD.company).order('created_at',{ascending:false}).limit(200)]);
+    if(!a.error){const fresh=a.data.filter(r=>CLOUD.crewReports&&!CLOUD.crewReports.some(x=>x.id===r.id));if(JSON.stringify(a.data)!==JSON.stringify(CLOUD.crewReports||[]))ch=true;CLOUD.crewReports=a.data;
+      if(fresh.length)toast(fresh.length===1?`New daily report from ${emp(fresh[0].employee_id)?.name||'your crew'}`:`${fresh.length} new daily reports`)}
+    if(!b.error){const newReq=b.data.filter(r=>r.status==='pending'&&CLOUD.timeReqs&&!CLOUD.timeReqs.some(x=>x.id===r.id));if(JSON.stringify(b.data)!==JSON.stringify(CLOUD.timeReqs||[]))ch=true;CLOUD.timeReqs=b.data;
+      if(newReq.length)toast(`${emp(newReq[0].employee_id)?.name||'Someone'} asked for time off`)}}catch(e){}
+  return ch}
 
 function empForm(e){const isNew=!e;e=e||{burden:S.settings.burden,active:true,color:EMP_COLORS[S.employees.length%EMP_COLORS.length]};
   openForm({title:isNew?'Add employee':'Edit employee',
@@ -944,7 +1194,9 @@ function shiftForm(s,pre={}){const isNew=!s;
     onOpen:f=>{const upd=()=>{const h=shiftHours({start:f.start.value,end:f.end.value,breakMin:f.breakMin.value});const e=emp(f.empId.value);
         $('#sh-hours').textContent=`${hrs(h)} · about ${money2(h*(e?.rate||0))} in wages`};f.addEventListener('input',upd);upd()},
     onDelete:isNew?null:async()=>{if(s.punchId&&isOwnerCloud()){await CLOUD.sb.from('punches').delete().eq('id',s.punchId);CLOUD.punches=CLOUD.punches.filter(p=>p.id!==s.punchId)}const un=payTouch(s.empId,s.date);S.shifts=S.shifts.filter(x=>x.id!==s.id);save();toast(un?'Shift deleted. Approval removed, approve these hours again.':'Shift deleted')},
-    onSubmit:fd=>{const e=emp(fd.get('empId'));const base={empId:fd.get('empId'),jobId:fd.get('jobId'),start:fd.get('start')||'07:00',end:fd.get('end')||'15:30',breakMin:num(fd.get('breakMin')),status:fd.get('status'),note:fd.get('note').trim()};
+    onSubmit:(fd,f)=>{const e=emp(fd.get('empId'));const off=fd.get('status')==='scheduled'&&offOn(fd.get('empId'),fd.get('date')||today());
+      if(off&&f.dataset.offok!=='1'){f.dataset.offok='1';toast(`${e?.name||'They'} ${e?'is':'are'} off ${offRange(off)}. Tap Save again to book anyway.`);return false}
+      const base={empId:fd.get('empId'),jobId:fd.get('jobId'),start:fd.get('start')||'07:00',end:fd.get('end')||'15:30',breakMin:num(fd.get('breakMin')),status:fd.get('status'),note:fd.get('note').trim()};
       const date=fd.get('date')||today();const again=' Approval removed, approve these hours again.';
       if(isNew){const dates=[date];if(fd.get('repeat')){let d=addDays(date,1);while(pd(d).getDay()!==6&&pd(d).getDay()!==0){dates.push(d);d=addDays(d,1)}}
         const shut=dates.find(d=>closedFor(d));if(shut){toast(`The pay period with ${fmtDate(shut)} is closed. Reopen it under Crew & Pay first.`);return false}
@@ -1004,6 +1256,7 @@ function pageDashboard(){
     <div class="kpi"><span>Gross profit</span><b class="${prof<0?'neg':'pos'}">${money(prof)}</b><small>${isFinite(em)?`bid for ${money(estProf)}`:'&nbsp;'}</small></div>
     <div class="kpi"><span>Margin</span><b class="${dm<0?'neg':''}">${pct(dm,1)}</b><small>${isFinite(em)?`estimated ${pct(em,1)}`:'&nbsp;'}</small></div>
   </div>
+  ${owedCard()}
   <div class="grid2">
     <div class="stack">
       <div class="card"><div class="card-head"><h2>Profit by job</h2><span class="note">finished jobs</span></div>
@@ -1084,6 +1337,7 @@ function pageJob(id){const j=job(id);if(!j)return emptyBox('That job was not fou
 
     <div class="card"><div class="card-head"><h2>Photos</h2><div class="btns"><label class="btn sm" style="flex-direction:row;color:var(--ink)">Take photo<input type="file" accept="image/*" capture="environment" data-photo-input hidden></label><label class="btn sm" style="flex-direction:row;color:var(--ink)">Upload<input type="file" accept="image/*" multiple data-photo-input hidden></label></div></div>
       ${photos.length?`<div class="photos">${photos.map(p=>`<button data-act="photo" data-id="${p.id}"><img data-photo="${p.id}" alt="${esc(p.caption||'Job photo')}" loading="lazy"><small>${esc(p.caption||fmtDate(p.date))}</small></button>`).join('')}</div>`:emptyBox('Before, during and after photos, damage, rough-ins and inspections all in one place.')}</div>
+    ${reportsCard(j)}
   </div><div class="stack">
     <div class="card"><div class="card-head"><h2>Crew on this job</h2><div class="btns"><button class="btn sm" data-act="job-edit">${j.plan?.crew?.length?'Edit crew &amp; dates':'Schedule crew'}</button><button class="btn sm" data-act="shift-new-job">+ Log hours</button></div></div>
       ${Object.keys(byEmp).length?`<div class="table-wrap"><table><thead><tr><th>Employee</th><th class="n">Hours</th><th class="n">Wages</th><th class="n">Cost</th></tr></thead><tbody>
@@ -1091,6 +1345,7 @@ function pageJob(id){const j=job(id);if(!j)return emptyBox('That job was not fou
       <tfoot><tr><td>Total</td><td class="n">${hrs(s.hours)}</td><td class="n">${money(sum(Object.values(byEmp),r=>r.wage))}</td><td class="n">${money(s.cost.labor)}</td></tr></tfoot></table></div>
       <p class="note" style="margin-top:8px">Cost includes labor burden and overtime. Only shifts marked Worked count.</p>`:emptyBox('No hours logged yet. Schedule the crew or log hours worked.')}</div>
 
+    ${docsCard(j)}
     <div class="card"><div class="card-head"><h2>Change orders</h2><button class="btn sm" data-act="co-new">+ Add</button></div>
       ${(j.changeOrders||[]).length?`<ul class="list">${j.changeOrders.map(c=>`<li class="click" data-act="co-edit" data-id="${c.id}"><div class="grow"><b>${esc(c.desc)}</b><small>${fmtDate(c.date)}</small></div><b class="num ${c.amount<0?'neg':''}">${c.amount>=0?'+':''}${money(c.amount)}</b></li>`).join('')}</ul>`:'<p class="note">Extra work the client approved. It\'s added to the job\'s revenue.</p>'}</div>
 
@@ -1102,7 +1357,7 @@ function weekCards(days,inWeek,RO){const now=today();
   return `<div class="wk">${days.map(d=>{const list=inWeek.filter(s=>s.date===d&&s.status!=='missed').sort((a,b)=>a.start.localeCompare(b.start)),groups={};
     for(const s of list)(groups[s.jobId]=groups[s.jobId]||[]).push(s);const wd=pd(d).getDay(),off=wd===0||wd===6;
     return `<div class="wk-day${d===now?' today':''}${off&&d!==now?' off':''}"><div class="wk-head"><span>${pd(d).toLocaleDateString('en-US',{weekday:'short'})}</span><b>${pd(d).getDate()}</b></div>
-      <div class="wk-list">${Object.entries(groups).map(([jid,ss])=>{const j=job(jid),same=ss.every(x=>x.start===ss[0].start&&x.end===ss[0].end);
+      <div class="wk-list">${(()=>{const o=S.employees.filter(e=>offOn(e.id,d));return o.length?`<div class="wk-off">Off: ${o.map(e=>esc(e.name.split(' ')[0])).join(', ')}</div>`:''})()}${Object.entries(groups).map(([jid,ss])=>{const j=job(jid),same=ss.every(x=>x.start===ss[0].start&&x.end===ss[0].end);
         return `<div class="wk-job" style="--jc:${jobColor(j)}"><div class="wk-jt">${esc(j?.name||'Job removed')}</div><div class="wk-av">${ss.map(x=>{const e=emp(x.empId),t=`${esc(e?.name||'')} · ${fmtTime(x.start)}–${fmtTime(x.end)}${x.status==='worked'?' · worked':''}`;
           return RO?`<span class="av" style="background:${e?.color||'#999'}" title="${t}">${esc(initials(e?.name))}</span>`:`<button class="av" style="background:${e?.color||'#999'}" data-act="shift-edit" data-id="${x.id}" title="${t}" aria-label="${t}">${esc(initials(e?.name))}</button>`}).join('')}</div>
           <div class="wk-time">${same?`${fmtTime(ss[0].start)} – ${fmtTime(ss[0].end)}`:'Mixed hours'}</div></div>`}).join('')}
@@ -1131,7 +1386,7 @@ function pageSchedule(){const RO=isEmp(),wk=UI.week,days=[...Array(7)].map((_,i)
   return `<div class="page-head"><div><div class="eyebrow">${pd(now).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div><h1>${greet()}${first?', '+esc(first):''}.</h1><p class="sub">${S.employees.length?line:'Add your crew to start scheduling.'}</p></div>
     ${RO||!S.employees.length?'':`<button class="btn primary big" data-act="shift-new">+ Add shift</button>`}</div>
   ${!S.employees.length?`<div class="stack">${emptyBox('Add your crew first, then schedule them on jobs. Or load the sample company to see how it works.','<a class="btn primary" href="#/crew">Add employees</a>'+(S.jobs.length?'':'<button class="btn" data-act="sample">Load sample data</button>'))}${monthCal()}</div>`:`
-  <div class="stack">${RO?clockCard():''}
+  <div class="stack">${RO?clockCard()+crewExtras():''}
   <div class="split"><div class="week-nav"><button class="btn sm" data-act="week" data-v="-7" aria-label="Previous week">‹</button><button class="btn sm" data-act="week" data-v="0">This week</button><button class="btn sm" data-act="week" data-v="7" aria-label="Next week">›</button><b style="margin-left:6px">${label}</b></div>
     <div class="btns"><div class="seg" role="group" aria-label="View">${[['days','Days'],['crew','By crew']].map(([k,l])=>`<button data-act="sched-view" data-v="${k}" aria-pressed="${view===k}">${l}</button>`).join('')}</div>
     ${RO?'':`${pastSched?`<button class="btn sm dark" data-act="confirm-past">Mark ${pastSched} past shift${pastSched>1?'s':''} worked</button>`:''}<button class="btn sm" data-act="copy-week">Copy last week</button>`}</div></div>
@@ -1204,6 +1459,7 @@ function pageCrew(){const L=laborCalc(),[from,to]=periodOf(UI.pp||today());UI.pp
     ${Object.keys(perJob).length?`<div class="table-wrap"><table><thead><tr><th>Job</th><th class="n">Hours</th><th class="n">Wages</th><th class="n">Labor cost</th></tr></thead><tbody>
     ${Object.entries(perJob).map(([id,p])=>{const j=job(id);return `<tr class="click" data-href="#/job/${id}"><td><span class="dot" style="background:${jobColor(j)}"></span> ${esc(j?.name||'Job removed')}</td><td class="n">${hrs(p.h)}</td><td class="n">${money(p.wage)}</td><td class="n">${money(p.cost)}</td></tr>`}).join('')}</tbody></table></div>`:emptyBox('No worked hours in this period.')}</div>
   </div><div class="stack">
+  ${timeOffCard()}
   ${isOwnerCloud()?onClockCard():''}
   <div class="card"><div class="card-head"><h2>Crew</h2>${isOwnerCloud()?'<span class="note">Invite people to clock in on the app</span>':''}</div>
   ${S.employees.length?`<ul class="list">${S.employees.slice().sort((a,b)=>(a.active===false)-(b.active===false)||a.name.localeCompare(b.name)).map(e=>{const h=sum(S.shifts.filter(s=>s.empId===e.id&&s.date>=wk&&s.date<=addDays(wk,6)&&s.status!=='missed'),shiftHours);
@@ -1297,7 +1553,12 @@ const curJob=()=>{const[p,id]=location.hash.slice(2).split('/');return p==='job'
 const ACT={
   'job-new':()=>jobForm(),'job-edit':()=>jobForm(curJob()),
   'exp-new':()=>expenseForm(null,curJob()?.id),'exp-edit':a=>expenseForm(S.expenses.find(x=>x.id===a.dataset.id)),
-  'co-new':()=>coForm(curJob()),'co-edit':a=>{const j=curJob();coForm(j,j.changeOrders.find(c=>c.id===a.dataset.id))},
+  'report-new':()=>reportForm(null,{jobId:curJob()?.id}),'report-edit':a=>reportForm(S.reports.find(r=>r.id===a.dataset.id)),'reports-all':a=>{UI.allReports=a.dataset.id;route()},
+'rphoto':a=>openForm({title:'Photo',closeLabel:'Close',body:`<div class="viewer"><img data-photo="${esc(a.dataset.id)}" alt="Report photo"></div>`,onOpen:f=>hydratePhotos(f)}),
+'off-new':()=>offForm(),'off-edit':a=>offForm(S.timeOff.find(t=>t.id===a.dataset.id)),'off-ok':a=>offDecide(a.dataset.id,true),'off-no':a=>offDecide(a.dataset.id,false),'off-req':()=>offRequestForm(),
+'off-clear':()=>{const ids=new Set(offShifts().map(s=>s.id));S.shifts=S.shifts.filter(s=>!ids.has(s.id));save();route();toast(`${ids.size} shift${ids.size>1?'s':''} removed`)},
+'doc-new':a=>{const j=curJob();docForm(newDoc(a.dataset.kind,j),true)},'doc-open':a=>{const d=S.docs.find(x=>x.id===a.dataset.id);if(d)docView(d)},
+'co-new':()=>coForm(curJob()),'co-edit':a=>{const j=curJob();coForm(j,j.changeOrders.find(c=>c.id===a.dataset.id))},
   'emp-new':()=>empForm(),'emp-edit':a=>empForm(emp(a.dataset.id)),
   'shift-new':a=>shiftForm(null,{empId:a.dataset.emp,date:a.dataset.date}),
   'shift-new-job':()=>shiftForm(null,{jobId:curJob().id,status:'worked'}),
@@ -1395,8 +1656,8 @@ async function loadMembership(){const sb=CLOUD.sb;await acceptPending();
   const {data,error}=await sb.from('members').select('company_id,role,employee_id').eq('user_id',CLOUD.user.id);
   if(error){const c=JSON.parse(LS.get('role')||'null');if(c){Object.assign(CLOUD,{mode:c.mode,company:c.company,employeeId:c.employeeId||null,sync:'offline'});if(c.mode==='employee')empApplyCache();return}CLOUD.mode='onboard';return}
   const own=data.find(m=>m.role==='owner'),em=data.find(m=>m.role==='employee');
-  if(own){Object.assign(CLOUD,{mode:'owner',company:own.company_id});LS.set('role',JSON.stringify({mode:'owner',company:own.company_id}));await ownerPull(true);startPolling()}
-  else if(em){Object.assign(CLOUD,{mode:'employee',company:em.company_id,employeeId:em.employee_id});LS.set('role',JSON.stringify({mode:'employee',company:em.company_id,employeeId:em.employee_id}));await empLoad();startPolling()}
+  if(own){Object.assign(CLOUD,{mode:'owner',company:own.company_id});LS.set('role',JSON.stringify({mode:'owner',company:own.company_id}));await ownerPull(true);await ownerExtrasLoad();startPolling()}
+  else if(em){Object.assign(CLOUD,{mode:'employee',company:em.company_id,employeeId:em.employee_id});LS.set('role',JSON.stringify({mode:'employee',company:em.company_id,employeeId:em.employee_id}));await empLoad();await empExtrasLoad();startPolling()}
   else CLOUD.mode='onboard'}
 
 /* ----- owner: the whole company lives in the account; employees get a money-free copy ----- */
@@ -1420,6 +1681,7 @@ function publicDoc(){const cut=addDays(today(),-120),p=S.profile||{};
     settings:{ot:S.settings.ot!==false,otThreshold:num(S.settings.otThreshold)||40,requireLocation:!!S.settings.requireLocation,showPay:S.settings.showPay!==false},
     jobs:S.jobs.map(j=>({id:j.id,name:j.name,address:j.address||'',status:j.status,start:j.start||'',end:j.end||'',color:jobColor(j)})),
     employees:S.employees.map(e=>({id:e.id,name:e.name,role:e.role||'',color:e.color,active:e.active!==false})),
+    timeOff:S.timeOff.filter(t=>t.to>=addDays(today(),-30)).map(t=>({empId:t.empId,from:t.from,to:t.to})),
     shifts:S.shifts.filter(s=>s.date>=cut).map(s=>({id:s.id,empId:s.empId,jobId:s.jobId,date:s.date,start:s.start,end:s.end,breakMin:+s.breakMin||0,status:s.status,note:s.note||''}))}}
 const photoPath=id=>`${CLOUD.company}/${id}`;
 async function uploadPhoto(id,blob){if(!isOwnerCloud()||!blob)return;try{await CLOUD.sb.storage.from('photos').upload(photoPath(id),blob,{upsert:true,contentType:blob.type||'image/jpeg'})}catch(e){}}
@@ -1442,7 +1704,7 @@ function applyPunches(){let changed=false;
 
 /* ----- employee ----- */
 function empApply(pub,rate,punches){pub=pub||{};CLOUD.pub=pub;CLOUD.myRate=rate;CLOUD.punches=punches||[];
-  S=Object.assign(blank(),{jobs:pub.jobs||[],employees:pub.employees||[],shifts:pub.shifts||[],settings:Object.assign(blank().settings,pub.settings||{}),
+  S=Object.assign(blank(),{jobs:pub.jobs||[],employees:pub.employees||[],shifts:pub.shifts||[],timeOff:pub.timeOff||[],settings:Object.assign(blank().settings,pub.settings||{}),
     profile:{company:pub.company?.name||'',logo:pub.company?.logo||'',accent:pub.company?.accent==='green'?'blue':(pub.company?.accent||'blue'),mode:LS.get('empMode')||pub.company?.mode||'light'}})}
 function empApplyCache(){try{const c=JSON.parse(LS.get('empCache')||'null');if(c)empApply(c.pub,c.rate,c.punches)}catch(e){}}
 async function empLoad(){const sb=CLOUD.sb,cid=CLOUD.company;
@@ -1462,8 +1724,8 @@ window.addEventListener('online',()=>{if(isOwnerCloud()&&LS.get('dirty')==='1')c
 async function poll(){if(document.hidden||!CLOUD.user)return;
   try{if(isOwnerCloud()){let ch=false;
       if(LS.get('dirty')!=='1'){const {data}=await CLOUD.sb.from('company_state').select('updated_at').eq('company_id',CLOUD.company).maybeSingle();if(data&&data.updated_at!==CLOUD.stateAt){await ownerPull(false);ch=true}}
-      if(await ownerPunches())ch=true;if(await loadMembers())ch=true;if(ch)softRender()}
-    else if(isEmp()){await empLoad();softRender()}}catch(e){}}
+      if(await ownerPunches())ch=true;if(await loadMembers())ch=true;if(await docsPull())ch=true;if(await ownerExtrasLoad())ch=true;if(ch)softRender()}
+    else if(isEmp()){await empLoad();await empExtrasLoad();softRender()}}catch(e){}}
 function softRender(){if($('#dlg').open)return;const ae=document.activeElement;if(ae&&ae.matches('input,select,textarea')&&$('#view').contains(ae))return;route()}
 setInterval(()=>$$('[data-elapsed]').forEach(el=>el.textContent=dur(Math.floor((Date.now()-new Date(el.dataset.elapsed))/60000))),20000);
 function syncText(){if(isEmp())return CLOUD.user?.email||'';return{synced:'✓ Synced to your account',saving:'Saving…',offline:'Offline · changes will sync when you reconnect'}[CLOUD.sync]||''}
@@ -1599,7 +1861,7 @@ Object.assign(ACT,{
     openForm({title:'Delete your account?',body:`<p>This permanently deletes your login (<b>${esc(CLOUD.user?.email||'')}</b>)${owner?' and your company: every job, expense, photo, schedule, crew member, invite and time punch. Your crew lose access too.':' and your clock-in history. Your boss keeps the hours already added to the schedule.'}</p><p><b>This can't be undone.</b>${owner?' Export a backup in Settings first if you want a copy.':''}</p>`,
       deleteLabel:'Delete my account',onDelete:async()=>{const sb=CLOUD.sb;
         {const {error}=await sb.rpc('delete_my_account',{p_confirm:false});if(error){toast(errMsg(error));throw error}}
-        if(owner&&CLOUD.company){try{for(;;){const {data}=await sb.storage.from('photos').list(CLOUD.company,{limit:100});if(!data?.length)break;const {error}=await sb.storage.from('photos').remove(data.map(o=>`${CLOUD.company}/${o.name}`));if(error)break}}catch(e){}}
+        if(owner&&CLOUD.company){for(const pre of [CLOUD.company,CLOUD.company+'/reports'])try{for(let n=0;n<200;n++){const {data}=await sb.storage.from('photos').list(pre,{limit:100});const files=(data||[]).filter(o=>o.id);if(!files.length)break;const {error}=await sb.storage.from('photos').remove(files.map(o=>`${pre}/${o.name}`));if(error)break}}catch(e){}}
         const {error}=await sb.rpc('delete_my_account',{p_confirm:true});if(error){toast(errMsg(error));throw error}
         clearInterval(CLOUD.pollT);try{await sb.auth.signOut({scope:'local'})}catch(e){}
         S=blank();if(!memOnly){await DB.put('kv','state',S).catch(()=>{});await DB.clear('photos').catch(()=>{})}
