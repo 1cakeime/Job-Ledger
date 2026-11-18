@@ -2,6 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<script>/* Website only: people who aren't signed in and haven't used Blue Board on this browser see the intro page (welcome.html) first. Never in the iPhone app or the installed web app, and never for links with a #route or ?query (email links, invites, sign in). */
+(function(){try{if(!/^https?:$/.test(location.protocol)||window.Capacitor||navigator.standalone||matchMedia('(display-mode: standalone)').matches)return;
+if((location.hash&&location.hash!=='#'&&location.hash!=='#/')||location.search)return;
+if(Object.keys(localStorage).some(function(k){return k.indexOf('cm.')===0||/^sb-.*-auth-token/.test(k)}))return;
+location.replace('welcome.html')}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Blue Board</title>
 <meta name="description" content="Organize every job, track expenses, purchases, photos and crew hours, and see the real profit on each job.">
@@ -2027,6 +2032,7 @@ function pageSettings(){const st=S.settings;const iOS=/iphone|ipad|ipod/i.test(n
 /* ---------- router ---------- */
 function route(){const h=(location.hash||'#/schedule').slice(2),[page,id]=h.split('/');const v=$('#view');
   if(page==='join'&&id){LS.set('invite',id.toUpperCase().replace(/[^A-Z0-9]/g,''));if(!CLOUD.user){CLOUD.mode='signedout';UI.authTab='up'}else if(CLOUD.mode==='onboard'){acceptPending().then(ok=>ok&&loadMembership()).then(()=>route())}location.hash='#/schedule';return}
+  if(page==='signup'&&!CLOUD.user){if(CLOUD.mode==='local')CLOUD.mode='signedout';UI.authTab='up';location.hash='#/signin';return}
   let P;
   if(page==='reset')P=pageReset;
   else if(page==='newpw'&&UI.recovery&&CLOUD.user)P=pageNewPw;
@@ -2272,7 +2278,7 @@ function pageAuth(){const code=LS.get('invite'),tab=UI.authTab||(code?'up':'in')
       <button class="btn primary big" type="submit">${tab==='up'?'Create account':'Sign in'}</button>
       ${tab==='in'?'<button type="button" class="btn ghost sm" data-act="auth-tab" data-v="forgot">Forgot password?</button>':''}</form>`}
     ${code?'':`<div class="hr"></div><button class="btn ghost" data-act="go-local">Use on this device without an account</button>
-    <p class="note">Without an account your data stays on this device and your crew can't use the app.</p>`}</div></div>`}
+    <p class="note">Without an account your data stays on this device and your crew can't use the app.</p>`}${window.Capacitor?'':'<p class="note" style="text-align:center"><a href="welcome.html">What is Blue Board? See features and pricing</a></p>'}</div></div>`}
 function pageOnboard(){const co=S.profile?.company||'';const hasLocal=S.jobs.length||S.employees.length;
   return `<div class="page-head"><div><h1>Welcome${CLOUD.user?.email?', '+esc(CLOUD.user.email.split('@')[0]):''}</h1><p class="sub">Pick one below. Joining a crew? You need the invite code your boss sent you.</p></div><button class="btn ghost" data-act="signout">Sign out</button></div>
   <div class="onb">
