@@ -698,6 +698,10 @@ dialog.mk[open]{display:flex;flex-direction:column}
 .mk-colors{display:flex;gap:10px}.mk-colors button{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,.35);cursor:pointer;padding:0}
 .mk-colors button[aria-pressed="true"]{outline:3px solid #fff;outline-offset:2px}
 .mk-text{width:100%;padding:10px 14px;border-radius:12px;border:0;font:inherit;font-size:16px;color:#10142b;background:#fff}
+.plan-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:760px){.plan-grid{grid-template-columns:minmax(0,1fr)}}
+.plan-card.on{outline:2px solid var(--hi);outline-offset:-2px}
+.plan-price{font:800 34px/1 Manrope,sans-serif}.plan-price small{font:500 14px 'DM Sans',sans-serif;color:var(--muted);margin-left:2px}
 </style>
 </head>
 <body>
@@ -1184,6 +1188,46 @@ function payCard(){if(!isOwnerCloud())return '';const b=CLOUD.billing,on=b?.char
     <p class="note" id="pay-msg" hidden></p></div>`}
 const docsCardPay=()=>isOwnerCloud()&&CLOUD.billing?.charges_enabled;
 
+/* ----- Blue Board plan (subscriptions table, "billing" Edge Function) -----
+   Plans are bought on the website only; the iPhone app shows status but no buy buttons (App Store rules).
+   If the table can't be read (offline, or the SQL isn't installed yet), access is allowed. */
+const PLANS={solo:{name:'Solo',price:29,crew:2,who:'Owner plus up to 2 crew'},crew:{name:'Crew',price:59,crew:10,who:'Owner plus up to 10 crew'},company:{name:'Company',price:119,crew:Infinity,who:'Unlimited crew'}};
+const isNative=()=>!!window.Capacitor?.isNativePlatform?.();
+const subDate=x=>new Date(x).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+function subSet(s){CLOUD.sub=s||null;LS.set('sub',s?JSON.stringify(s):null)}
+async function subLoad(){if(!CLOUD.sb||!CLOUD.company)return;const {data,error}=await CLOUD.sb.from('subscriptions').select('*').eq('company_id',CLOUD.company).maybeSingle();
+  if(error){let c=null;try{c=JSON.parse(LS.get('sub')||'null')}catch(e){}CLOUD.sub=c&&c.company_id===CLOUD.company?c:null;return}subSet(data)}
+const subPaid=s=>!!s?.stripe_subscription_id&&['active','trialing','past_due'].includes(s.status);
+function subAccess(){const s=CLOUD.sub;return !s||s.comp||subPaid(s)||new Date(s.trial_ends)>new Date()}
+function trialDays(){const s=CLOUD.sub;if(!s||s.comp||s.stripe_subscription_id)return null;return Math.max(0,Math.ceil((new Date(s.trial_ends)-Date.now())/864e5))}
+function crewLimit(){const s=CLOUD.sub;return !s||s.comp||!subPaid(s)||!PLANS[s.plan]?Infinity:PLANS[s.plan].crew}
+const activeCrew=()=>S.employees.filter(e=>e.active!==false).length;
+async function planCall(action,plan){const {data,error}=await CLOUD.sb.functions.invoke('billing',{body:{action,plan}});
+  if(error){let m=error.message;try{m=(await error.context.json()).error||m}catch(e){}throw new Error(m)}return data}
+async function planSync(){try{const r=await planCall('sync');if(r?.sub)subSet(r.sub)}catch(e){}await subLoad();if(location.hash.startsWith('#/plan'))route()}
+const dayWord=d=>d===1?'1 day':d+' days';
+function trialBanner(page){const d=trialDays();if(!isOwnerCloud()||!d||isNative()||page==='plan')return '';
+  return `<div class="insight ${d<=3?'warn':''}" style="margin-bottom:14px"><b>Free trial</b><span>${dayWord(d)} left. <a href="#/plan">Choose a plan</a></span></div>`}
+function planLine(){const s=CLOUD.sub,d=trialDays();if(!s)return 'Your plan and billing.';if(s.comp)return 'Your company has free access.';
+  if(subPaid(s))return `${PLANS[s.plan]?.name||'Your'} plan${s.status==='past_due'?': last payment didn\'t go through':''}.`;
+  if(d)return `Free trial: ${dayWord(d)} left.`;return s.stripe_subscription_id?'Your plan has ended.':'Your free trial has ended.'}
+function pagePlan(){const s=CLOUD.sub||{},d=trialDays(),paid=subPaid(s),cur=paid?s.plan:null,nat=isNative(),n=activeCrew(),P=PLANS[cur];let st;
+  if(s.comp)st='<div class="insight good"><b>Free</b><span>Your company has free access to Blue Board.</span></div>';
+  else if(paid&&s.status==='past_due')st=`<div class="insight warn"><b>Payment</b><span>Your last payment didn't go through.${nat?'':' Update your card below so your plan doesn\'t stop.'}</span></div>`;
+  else if(paid)st=`<div class="insight good"><b>${esc(P?.name||'Plan')}</b><span>${P?money(P.price)+'/month. ':''}${s.current_period_end?(s.cancel_at_period_end?'Ends on ':s.status==='trialing'?'First charge on ':'Renews on ')+subDate(s.current_period_end)+'.':''}</span></div>`;
+  else if(d)st=`<div class="insight"><b>Free trial</b><span>${dayWord(d)} left (ends ${subDate(s.trial_ends)}). Every feature is on, with no crew limit.${nat?'':' Pick a plan any time; you won\'t be charged until the trial ends.'}</span></div>`;
+  else if(CLOUD.sub)st=`<div class="insight warn"><b>Paused</b><span>${s.stripe_subscription_id?'Your plan has ended.':'Your free trial has ended.'} ${nat?'Plans can\'t be bought in the app.':'Choose a plan to keep using Blue Board.'} Your jobs and data are safe.</span></div>`;
+  else st='<p class="note">Your plan details couldn\'t be loaded. Check your connection.</p>';
+  const cards=nat?'':`<div class="plan-grid">${Object.entries(PLANS).map(([k,p])=>`<div class="card stack plan-card ${k===cur?'on':''}"><h2>${p.name}</h2><div class="plan-price">${money(p.price)}<small>/month</small></div><p class="note">${p.who}</p>
+    ${k===cur?'<button class="btn" disabled>Your plan</button>':`<button class="btn ${!cur&&k==='crew'?'primary':''}" data-act="plan-pick" data-v="${k}">${cur?'Switch to ':'Choose '}${p.name}</button>`}</div>`).join('')}</div>`;
+  return `<div class="page-head"><div><h1>Plan &amp; billing</h1><p class="sub">Every plan includes every feature. Plans differ by crew size.</p></div></div>
+  <div class="stack">${st}${cards}
+  <div class="card stack"><p>You have <b>${n}</b> active crew member${n===1?'':'s'}${P&&P.crew!==Infinity?` of ${P.crew} on your plan`:''}.</p>
+    <div class="btns">${!nat&&s.stripe_customer_id&&!s.comp?'<button class="btn" data-act="plan-portal">Card, invoices and cancelling</button>':''}<button class="btn" data-act="export">Export backup</button></div></div></div>`}
+function pageLockedEmp(){return `<div class="auth"><div class="card auth-card stack"><h1>Blue Board is paused</h1>
+  <p>Your company's Blue Board plan isn't active right now, so the schedule and clock-in are paused. Let your boss know. Everything will be right where you left it.</p>
+  <a class="btn" href="#/profile">My account</a></div></div>`}
+
 function docsCard(j){const ds=S.docs.filter(d=>d.jobId===j.id).sort((a,b)=>(b.date+b.num).localeCompare(a.date+a.num));
   const billed=sum(ds.filter(d=>d.kind==='invoice'),d=>docTotals(d).total),paid=sum(ds.filter(d=>d.kind==='invoice'),d=>docTotals(d).paid);
   return `<div class="card"><div class="card-head"><h2>Estimates &amp; invoices</h2><div class="btns"><button class="btn sm" data-act="doc-new" data-kind="estimate">+ Estimate</button><button class="btn sm primary" data-act="doc-new" data-kind="invoice">+ Invoice</button></div></div>
@@ -1416,6 +1460,7 @@ function empForm(e){const isNew=!e;e=e||{burden:S.settings.burden,active:true,co
     onDelete:isNew?null:()=>{if(S.shifts.some(s=>s.empId===e.id)){e.active=false;toast('Marked inactive (they have hours on record)')}else S.employees=S.employees.filter(x=>x.id!==e.id);save()},
     deleteLabel:'Remove',
     onSubmit:fd=>{const rate=num(fd.get('rate'));if(!rate){toast('Enter an hourly pay rate');return false}
+      const lim=crewLimit();if(fd.get('active')&&(isNew||e.active===false)&&S.employees.filter(x=>x.active!==false&&x!==e).length>=lim){toast(`Your ${PLANS[CLOUD.sub.plan].name} plan includes up to ${lim} crew.${isNative()?'':' Switch plans under Settings → Plan & billing.'}`);return false}
       const o=isNew?{id:uid()}:e;Object.assign(o,{name:fd.get('name').trim(),role:fd.get('role').trim(),phone:fd.get('phone').trim(),payrollId:(fd.get('payrollId')||'').trim(),rate,burden:num(fd.get('burden')),color:fd.get('color'),active:!!fd.get('active')});
       if(isNew)S.employees.push(o);save();toast('Saved')}})}
 
@@ -2021,6 +2066,7 @@ function pageSettings(){const st=S.settings;const iOS=/iphone|ipad|ipod/i.test(n
   ${acctCard()}
   ${payCard()}
   </div><div class="stack">
+  ${isOwnerCloud()?`<div class="card stack"><h2>Plan &amp; billing</h2><p>${planLine()}</p><div class="btns"><a class="btn" href="#/plan">${isNative()?'View plan':'Plan &amp; billing'}</a></div></div>`:''}
   ${accountCard()}
   <div class="card stack"><h2>Install the app</h2>
     ${standalone?'<p>You\'re using the installed app.</p>':iOS?'<p>On iPhone or iPad: open this page in <b>Safari</b>, tap the <b>Share</b> button, then <b>Add to Home Screen</b>.</p>':`<p>Install Blue Board to get its own icon and open it full-screen, even offline.</p>${deferredInstall?'<div><button class="btn primary" data-act="install">Install app</button></div>':'<p class="note">In Chrome or Edge, use the install icon in the address bar, or the browser menu → <b>Install Blue Board</b> / <b>Add to Home screen</b>.</p>'}`}</div>
@@ -2033,16 +2079,18 @@ function pageSettings(){const st=S.settings;const iOS=/iphone|ipad|ipod/i.test(n
 function route(){const h=(location.hash||'#/schedule').slice(2),[page,id]=h.split('/');const v=$('#view');
   if(page==='join'&&id){LS.set('invite',id.toUpperCase().replace(/[^A-Z0-9]/g,''));if(!CLOUD.user){CLOUD.mode='signedout';UI.authTab='up'}else if(CLOUD.mode==='onboard'){acceptPending().then(ok=>ok&&loadMembership()).then(()=>route())}location.hash='#/schedule';return}
   if(page==='signup'&&!CLOUD.user){if(CLOUD.mode==='local')CLOUD.mode='signedout';UI.authTab='up';location.hash='#/signin';return}
+  if(page==='plan'&&id==='done'){history.replaceState(null,'',location.pathname+location.search+'#/plan');planSync()}
   let P;
   if(page==='reset')P=pageReset;
   else if(page==='newpw'&&UI.recovery&&CLOUD.user)P=pageNewPw;
   else if(CLOUD.mode==='signedout'||(page==='signin'&&!CLOUD.user))P=pageAuth;
   else if(CLOUD.mode==='onboard')P=pageOnboard;
+  else if(!subAccess()&&!(isEmp()?['profile']:['settings','profile','plan']).includes(page))P=isEmp()?pageLockedEmp:pagePlan;
   else if(isEmp())P={schedule:pageSchedule,crew:pageEmpCrew,pay:pageMyPay,profile:pageEmpAccount}[page]||pageSchedule;
-  else P={dashboard:pageDashboard,jobs:pageJobs,job:()=>pageJob(id),customers:pageCustomers,customer:()=>pageCustomer(id),schedule:pageSchedule,crew:pageCrew,settings:pageSettings,profile:pageProfile}[page]||pageSchedule;
+  else P={dashboard:pageDashboard,jobs:pageJobs,job:()=>pageJob(id),customers:pageCustomers,customer:()=>pageCustomer(id),schedule:pageSchedule,crew:pageCrew,settings:pageSettings,profile:pageProfile,plan:pagePlan}[page]||pageSchedule;
   document.body.classList.toggle('emp',isEmp());document.body.classList.toggle('gate',P===pageAuth||P===pageOnboard||P===pageReset||P===pageNewPw);
   $('#crew-label').textContent=isEmp()?'My crew':'Crew & Pay';renderMenu();
-  const keepScroll=route.last===h;const y=scrollY;const gate=P===pageAuth||P===pageOnboard||P===pageReset||P===pageNewPw;v.innerHTML=(gate?'':nearBanner(page,id))+P();route.last=h;
+  const keepScroll=route.last===h;const y=scrollY;const gate=P===pageAuth||P===pageOnboard||P===pageReset||P===pageNewPw;v.innerHTML=(gate?'':nearBanner(page,id)+trialBanner(page))+P();route.last=h;
   const navKey=page==='job'?'jobs':page==='customer'?'customers':P===pageSchedule?'schedule':P===pageMyPay?'pay':P===pageEmpCrew?'crew':P===pageEmpAccount?'profile':page;
   $$('[data-nav],[data-menu]').forEach(a=>a.removeAttribute('aria-current'));$$(`[data-nav="${navKey}"],[data-menu="${navKey}"]`).forEach(a=>a.setAttribute('aria-current','page'));
   const pr=S.profile||{},me=isEmp()?emp(CLOUD.employeeId):null;$('#menu-who').innerHTML=me?`<span class="avatar" style="background:${me.color}">${esc(initials(me.name))}</span><span><b>${esc(me.name)}</b><small>${esc(me.role||'Crew')}</small></span>`:`<span class="avatar">${esc(initials(pr.name||pr.company))}</span><span><b>${esc(pr.name||'Set up your profile')}</b><small>${esc(pr.company||'Name, company, license')}</small></span>`;
@@ -2074,6 +2122,12 @@ const ACT={
 'pay-status':async a=>{const m=$('#pay-msg');a.disabled=true;try{const r=await billingCall('status');await billingLoad();route();toast(r.charges_enabled?'Card payments are on':'Stripe still needs more details')}catch(e){m.hidden=false;m.textContent=e.message;a.disabled=false}},
 'doc-new':a=>{const j=curJob();docForm(newDoc(a.dataset.kind,j),true)},'doc-open':a=>{const d=S.docs.find(x=>x.id===a.dataset.id);if(d)docView(d)},
 'co-new':()=>coForm(curJob()),'co-edit':a=>{const j=curJob();coForm(j,j.changeOrders.find(c=>c.id===a.dataset.id))},
+  'plan-pick':async a=>{const k=a.dataset.v,p=PLANS[k],n=activeCrew();
+    if(subPaid(CLOUD.sub)){if(n>p.crew&&!confirm(`${p.name} includes up to ${p.crew} crew and you have ${n} active. You won't be able to add crew until you're under the limit. Switch anyway?`))return;
+      if(!confirm(`Switch to ${p.name} for ${money(p.price)}/month? The difference is prorated on your next bill.`))return;
+      a.disabled=true;try{const r=await planCall('change',k);if(r?.sub)subSet(r.sub);route();toast(`You're on ${p.name}`)}catch(e){toast(e.message);a.disabled=false}return}
+    a.disabled=true;a.textContent='Opening checkout…';try{const {url}=await planCall('checkout',k);location.href=url}catch(e){toast(e.message);a.disabled=false;a.textContent='Choose '+p.name}},
+  'plan-portal':async a=>{a.disabled=true;try{const {url}=await planCall('portal');location.href=url}catch(e){toast(e.message);a.disabled=false}},
   'emp-new':()=>empForm(),'emp-edit':a=>empForm(emp(a.dataset.id)),
   'shift-new':a=>shiftForm(null,{empId:a.dataset.emp,date:a.dataset.date}),
   'shift-new-job':()=>shiftForm(null,{jobId:curJob().id,status:'worked'}),
@@ -2183,7 +2237,7 @@ async function loadMembership(){const sb=CLOUD.sb;await acceptPending();
   const own=data.find(m=>m.role==='owner'),em=data.find(m=>m.role==='employee');
   if(own){Object.assign(CLOUD,{mode:'owner',company:own.company_id});LS.set('role',JSON.stringify({mode:'owner',company:own.company_id}));await ownerPull(true);await ownerExtrasLoad();startPolling();pushSetup()}
   else if(em){Object.assign(CLOUD,{mode:'employee',company:em.company_id,employeeId:em.employee_id});LS.set('role',JSON.stringify({mode:'employee',company:em.company_id,employeeId:em.employee_id}));await empLoad();await empExtrasLoad();startPolling();pushSetup()}
-  else CLOUD.mode='onboard'}
+  else CLOUD.mode='onboard';await subLoad()}
 
 /* ----- owner: the whole company lives in the account; employees get a money-free copy ----- */
 async function ownerPull(initial){const {data,error}=await CLOUD.sb.from('company_state').select('data,updated_at').eq('company_id',CLOUD.company).maybeSingle();
@@ -2435,7 +2489,7 @@ document.addEventListener('submit',async e=>{const f=e.target;
     UI.recovery=false;location.hash='#/schedule';route();toast('Password updated')}
   else if(f.id==='create-co'){e.preventDefault();const name=f.company.value.trim();if(!name)return toast('Enter your company name');const btn=$('[type=submit]',f);btn.disabled=true;
     const {data,error}=await CLOUD.sb.rpc('create_company',{p_name:name});if(error){btn.disabled=false;return toast(errMsg(error))}
-    Object.assign(CLOUD,{mode:'owner',company:data});LS.set('role',JSON.stringify({mode:'owner',company:data}));
+    Object.assign(CLOUD,{mode:'owner',company:data});LS.set('role',JSON.stringify({mode:'owner',company:data}));subLoad();
     const st=await CLOUD.sb.from('company_state').select('data,updated_at').eq('company_id',data).maybeSingle();
     if(st.data){S=normState(st.data.data||{});CLOUD.stateAt=st.data.updated_at}else{S.profile=Object.assign(S.profile||{},{company:name});await cloudPush();uploadAllPhotos()}
     if(!memOnly)DB.put('kv','state',S).catch(()=>{});startPolling();location.hash='#/schedule';route();toast('Your company is set up')}

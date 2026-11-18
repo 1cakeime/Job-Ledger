@@ -526,3 +526,36 @@ begin
 end $$;
 revoke all on function public.portal_token_for_code(text) from public;
 grant execute on function public.portal_token_for_code(text) to anon, authenticated;
+
+-- ============ Blue Board plans (subscriptions) ============
+-- One row per company. Written only by the "billing" Edge Function (service role) and the trigger
+-- below; everyone in the company can read it (crew need to know if the company's plan has lapsed).
+-- status is 'trialing' with no stripe_subscription_id during the free trial, otherwise Stripe's status.
+-- comp = true gives a company free access (demo account, friends, testing).
+create table if not exists public.subscriptions (
+  company_id uuid primary key references public.companies(id) on delete cascade,
+  plan text check (plan in ('solo','crew','company')),
+  status text not null default 'trialing',
+  trial_ends timestamptz not null default now() + interval '14 days',
+  comp boolean not null default false,
+  stripe_customer_id text unique,
+  stripe_subscription_id text unique,
+  current_period_end timestamptz,
+  cancel_at_period_end boolean not null default false,
+  updated_at timestamptz not null default now()
+);
+alter table public.subscriptions enable row level security;
+drop policy if exists subscriptions_read on public.subscriptions;
+create policy subscriptions_read on public.subscriptions for select using (public.is_member(company_id));
+
+-- Every new company starts a 14-day free trial.
+create or replace function public.start_trial() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.subscriptions(company_id) values (new.id) on conflict do nothing;
+  return new;
+end $$;
+drop trigger if exists companies_start_trial on public.companies;
+create trigger companies_start_trial after insert on public.companies for each row execute function public.start_trial();
+
+-- Companies that existed before plans get a 14-day trial from the day this runs.
+insert into public.subscriptions(company_id) select id from public.companies on conflict do nothing;

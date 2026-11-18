@@ -17,7 +17,7 @@ not only on the device.
 - `welcome.html` – website-only intro page (features, deals, pricing; images in `site/`). A small script at
   the top of `index.html` sends signed-out first-time web visitors there; never in the iPhone app or
   installed web app. Its buttons open `./#/signin` and `./#/signup`. Not copied into `www/`.
-  Prices shown there (Solo $29, Crew $59, Company $119) are not charged anywhere yet; there is no billing.
+  Prices there must match `PLANS` in index.html and `supabase/functions/billing`.
 - `privacy.html`, `support.html` – public pages linked from the app and App Store listing.
   Update them when a feature changes what data is collected.
 - `sw.js` – service worker. **Bump `VERSION`** whenever a cached file (see `SHELL`) changes.
@@ -25,6 +25,11 @@ not only on the device.
 - `supabase/schema.sql` – database schema and SQL functions.
 - `supabase/functions/notify` (push notifications), `supabase/functions/payments` (Stripe Connect),
   `supabase/functions/join` (crew sign-up from an invite code, no confirmation email).
+- `supabase/functions/billing` – Blue Board's own plans (Solo/Crew/Company) through Stripe Checkout and the
+  `public.subscriptions` table (one row per company; 14-day trial made by a trigger; `comp=true` = free).
+  Plans are bought on the website only: the iPhone app shows plan status but no buy buttons or links
+  (App Store rules). Client side: `PLANS`, `subAccess()`, `crewLimit()`, `pagePlan` (`#/plan`) in index.html.
+  If the table can't be read, the app allows access. Limits are enforced in the app only.
 - `ios/` – Xcode project (Capacitor 8, Swift Package Manager). `ios/App/App/ReceiptScan.swift`
   is a native receipt-OCR plugin.
 - `www/` – build output for Capacitor (gitignored; made by `scripts/build-www.mjs`).
@@ -54,8 +59,8 @@ Pushing to `main` updates the live site immediately, so make sure it works first
 ## Supabase
 SQL changes and Edge Function deploys are done by a person in the Supabase dashboard; Claude
 has no admin access. When changing the database, update `supabase/schema.sql` and give the
-exact SQL to run. Function deploys: `payments`, `join` and `notify` must have Verify JWT **off** (`notify` is called by customer pages with no sign-in). Secrets
-(APNs keys, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) are set in the dashboard, never in code.
+exact SQL to run. Function deploys: `payments`, `billing`, `join` and `notify` must have Verify JWT **off** (`notify` is called by customer pages with no sign-in). Secrets
+(APNs keys, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_BILLING_WEBHOOK_SECRET`) are set in the dashboard, never in code.
 
 ## Domain
 getblueboard.com DNS is on Cloudflare pointing at GitHub Pages. Keep the records DNS-only
