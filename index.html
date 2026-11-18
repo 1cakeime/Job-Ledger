@@ -2215,7 +2215,7 @@ async function cloudStart(){const sb=sbClient();if(!sb){CLOUD.mode='local';retur
 
 // Links in Supabase emails come back as #access_token=…&type=signup|recovery, or #error=…
 async function emailLinkStart(sb){const H=new URLSearchParams((location.hash||'').replace(/^#\/?/,''));const clean=h=>history.replaceState(null,'',location.pathname+location.search+h);
-  if(H.get('error')||H.get('error_code')){UI.authNote=H.get('error_code')==='otp_expired'?'That email link has expired or was already used. Ask for a new one below.':'That email link didn\'t work. Try again below.';UI.authTab='in';clean('#/signin');return}
+  if(H.get('error')||H.get('error_code')){UI.authNote=H.get('error_code')==='otp_expired'?'That email link has expired or was already used. Try signing in below: your account may already be confirmed. If not, you can ask for a new link.':'That email link didn\'t work. Try again below.';UI.authTab='in';clean('#/signin');return}
   if(!H.get('access_token')||!H.get('refresh_token'))return;const type=H.get('type');
   try{const {error}=await sb.auth.setSession({access_token:H.get('access_token'),refresh_token:H.get('refresh_token')});if(error)throw error}
   catch(e){UI.authNote='That email link didn\'t work. Try again below.';clean('#/signin');return}
@@ -2431,6 +2431,9 @@ function pageReset(){return `<div class="auth"><div class="card auth-card stack"
     <a class="btn ghost" href="#/schedule">Cancel</a></div></div>`}
 /* ----- actions & forms ----- */
 Object.assign(ACT,{
+  'auth-resend':async a=>{const sb=sbClient(),err=$('#auth-err');a.disabled=true;
+    try{const {error}=await sb.auth.resend({type:'signup',email:a.dataset.email,options:{emailRedirectTo:SITE_URL}});if(error)throw error;err.textContent='Sent. Open the newest email from Blue Board and tap the link, then sign in here.'}
+    catch(x){a.disabled=false;toast(errMsg(x))}},
   'auth-tab':a=>{const em=$('#auth-form [name=email],#forgot-form [name=email]')?.value;if(em)UI.authEmail=em;UI.authTab=a.dataset.v;UI.authNote='';route()},
   'go-local':()=>{LS.set('local','1');CLOUD.mode='local';location.hash='#/schedule';route()},
   'signout':async a=>{closeMenu();if(isOwnerCloud()&&LS.get('dirty')==='1'&&!armTwoStep(a,'Changes not synced yet. Tap again'))return;
@@ -2474,7 +2477,7 @@ document.addEventListener('submit',async e=>{const f=e.target;
       const {data,error}=up&&!joined?await sb.auth.signUp({email,password,options:{emailRedirectTo:SITE_URL}}):await sb.auth.signInWithPassword({email,password});if(error)throw error;
       if(!data.session){err.hidden=false;err.textContent='Check your email for a confirmation link, then come back and sign in.';return}
       CLOUD.user=data.session.user;LS.set('local',null);await loadMembership();location.hash='#/schedule';route();toast(up?'Account created':'Signed in')}
-    catch(x){err.hidden=false;err.textContent=/invalid login/i.test(errMsg(x))?'Wrong email or password.':errMsg(x)}finally{btn.disabled=false}}
+    catch(x){err.hidden=false;const m=errMsg(x);if(/not confirmed/i.test(m)){err.innerHTML=`Your email isn't confirmed yet. Open the link we emailed you, or <button type="button" class="btn sm" data-act="auth-resend" data-email="${esc(email)}">Send the confirmation email again</button>`}else err.textContent=/invalid login/i.test(m)?'Wrong email or password.':m}finally{btn.disabled=false}}
   else if(f.id==='task-add'){e.preventDefault();const j=curJob(),text=f.text.value.trim();if(!j||!text)return;
     (j.tasks=j.tasks||[]).push({id:uid(),text,empId:f.empId.value,done:false,createdAt:isoNow()});save();UI.taskEmp=f.empId.value;route();const n=$('#task-add');if(n){n.empId.value=UI.taskEmp||'';n.text.focus()}}
   else if(f.id==='forgot-form'){e.preventDefault();const sb=sbClient(),msg=$('#forgot-msg'),btn=$('[type=submit]',f),email=f.email.value.trim();
