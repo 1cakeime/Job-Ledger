@@ -7,6 +7,9 @@
 // Secrets (Edge Functions -> Secrets):
 //   STRIPE_SECRET_KEY      your platform's secret key (sk_live_... or sk_test_...)
 //   STRIPE_WEBHOOK_SECRET  signing secret of the Connect webhook pointing at this function (whsec_...)
+//                          ("Connected accounts" scope: checkout.session.completed, checkout.session.async_payment_succeeded, account.updated)
+// Connected accounts are created with Stripe Accounts v2 (required for new platforms), full Stripe dashboard,
+// Stripe collects fees and covers losses, no platform fee.
 // SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY are provided automatically.
 //
 // Requests (POST JSON):
@@ -39,6 +42,31 @@ async function stripe(path: string, params: Record<string, string | number> = {}
   const data = await r.json();
   if (!r.ok) throw new Error(data?.error?.message || `Stripe error ${r.status}`);
   return data;
+}
+
+// Stripe Accounts v2 (JSON). New Connect platforms must create connected accounts this way;
+// the v2 account id (acct_...) still works with the v1 calls above (Checkout via Stripe-Account).
+const STRIPE_V2_VERSION = '2026-11-18.endive';
+async function stripeV2(path: string, body?: unknown, method = 'POST') {
+  const r = await fetch(`https://api.stripe.com/v2/${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${Deno.env.get('STRIPE_SECRET_KEY')}`,
+      'Stripe-Version': STRIPE_V2_VERSION,
+      ...(body ? { 'Content-Type': 'application/json' } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data?.error?.message || `Stripe error ${r.status}`);
+  return data;
+}
+// Card payments are on when the merchant configuration's card_payments capability is active.
+async function accountStatus(id: string) {
+  const a = await stripeV2(`core/accounts/${id}?include=configuration.merchant&include=requirements`, undefined, 'GET');
+  const charges = a?.configuration?.merchant?.capabilities?.card_payments?.status === 'active';
+  const due = (a?.requirements?.entries ?? []).some((e: any) => ['currently_due', 'past_due'].includes(e?.minimum_deadline?.status));
+  return { charges_enabled: charges, details_submitted: charges || (!!a?.requirements && !due) };
 }
 
 async function ownerCompany(req: Request) {
@@ -85,8 +113,9 @@ async function webhook(req: Request) {
       if (doc) await db.from('doc_payments').upsert({ token, company_id: doc.company_id, amount: (s.amount_total || 0) / 100, method: 'Card (online)', stripe_session: s.id, paid_at: new Date((s.created || Date.now() / 1000) * 1000).toISOString() }, { onConflict: 'stripe_session', ignoreDuplicates: true });
     }
   } else if (ev.type === 'account.updated') {
-    const a = ev.data.object;
-    await db.from('company_billing').update({ charges_enabled: !!a.charges_enabled, details_submitted: !!a.details_submitted, updated_at: new Date().toISOString() }).eq('stripe_account_id', a.id);
+    // Re-read through v2 so the result matches the "status" action.
+    const id = ev.account || ev.data?.object?.id;
+    if (id) await db.from('company_billing').update({ ...(await accountStatus(id)), updated_at: new Date().toISOString() }).eq('stripe_account_id', id);
   }
   return json({ received: true });
 }
@@ -134,18 +163,28 @@ Deno.serve(async (req) => {
 
     if (body.action === 'connect') {
       if (!bill?.stripe_account_id) {
-        const acct = await stripe('accounts', { type: 'standard', email: owner.user.email ?? '', 'metadata[company_id]': owner.company_id });
+        const acct = await stripeV2('core/accounts', {
+          contact_email: owner.user.email ?? undefined,
+          identity: { country: 'US' },
+          dashboard: 'full',
+          defaults: { responsibilities: { fees_collector: 'stripe', losses_collector: 'stripe' } },
+          configuration: { merchant: { capabilities: { card_payments: { requested: true } } } },
+          metadata: { company_id: owner.company_id },
+        });
         await db.from('company_billing').upsert({ company_id: owner.company_id, stripe_account_id: acct.id, charges_enabled: false, details_submitted: false, updated_at: new Date().toISOString() });
         bill = { stripe_account_id: acct.id };
       }
-      const link = await stripe('account_links', { account: bill!.stripe_account_id, type: 'account_onboarding', refresh_url: `${SITE}#/settings`, return_url: `${SITE}#/settings` });
+      const link = await stripeV2('core/account_links', {
+        account: bill!.stripe_account_id,
+        use_case: { type: 'account_onboarding', account_onboarding: { configurations: ['merchant'], refresh_url: `${SITE}#/settings`, return_url: `${SITE}#/settings` } },
+      });
       return json({ url: link.url });
     }
     if (body.action === 'status') {
       if (!bill?.stripe_account_id) return json({ connected: false, charges_enabled: false });
-      const a = await stripe(`accounts/${bill.stripe_account_id}`, {}, undefined, 'GET');
-      await db.from('company_billing').update({ charges_enabled: !!a.charges_enabled, details_submitted: !!a.details_submitted, updated_at: new Date().toISOString() }).eq('company_id', owner.company_id);
-      return json({ connected: true, charges_enabled: !!a.charges_enabled, details_submitted: !!a.details_submitted });
+      const st = await accountStatus(bill.stripe_account_id);
+      await db.from('company_billing').update({ ...st, updated_at: new Date().toISOString() }).eq('company_id', owner.company_id);
+      return json({ connected: true, ...st });
     }
     return json({ error: 'Unknown action' }, 400);
   } catch (e) {
