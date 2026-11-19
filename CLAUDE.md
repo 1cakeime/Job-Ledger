@@ -32,7 +32,11 @@ not only on the device.
   If the table can't be read, the app allows access. Limits are enforced in the app only.
 - Time fixes: crew send "Fix my time" requests (forgot to clock in/out) into `public.time_fixes`; the owner
   approves on Crew & Pay, which calls `decide_time_fix()` (writes the punch) and updates the shift.
-  Client side: `fixCard`, `fixDecide`, `fixMineCard`, `fixForm` in index.html.
+  Client side: `fixCard`, `fixDecide`, `fixForm` in index.html.
+- Breaks: crew Start/End break (`break_toggle()`, punches `break_min`/`break_at`); the shift's break comes from the punch.
+- Owner home (Schedule) shows `startCard` (getting-started checklist) and `attentionCard` (everything waiting on the owner).
+- `notify` also emails website-only owners (`RESEND_API_KEY`, requests sent with `email: true`) and sends
+  "Still on the clock?" reminders when a pg_cron job calls it with `x-cron-key` = `CRON_SECRET` (see schema.sql).
 - `ios/` – Xcode project (Capacitor 8, Swift Package Manager). `ios/App/App/ReceiptScan.swift`
   is a native receipt-OCR plugin.
 - `www/` – build output for Capacitor (gitignored; made by `scripts/build-www.mjs`).
@@ -63,7 +67,7 @@ Pushing to `main` updates the live site immediately, so make sure it works first
 SQL changes and Edge Function deploys are done by a person in the Supabase dashboard; Claude
 has no admin access. When changing the database, update `supabase/schema.sql` and give the
 exact SQL to run. Function deploys: `payments`, `billing`, `join` and `notify` must have Verify JWT **off** (`notify` is called by customer pages with no sign-in). Secrets
-(APNs keys, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_BILLING_WEBHOOK_SECRET`) are set in the dashboard, never in code.
+(APNs keys, `RESEND_API_KEY`, `CRON_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_BILLING_WEBHOOK_SECRET`) are set in the dashboard, never in code.
 
 ## Domain
 getblueboard.com DNS is on Cloudflare pointing at GitHub Pages. Keep the records DNS-only

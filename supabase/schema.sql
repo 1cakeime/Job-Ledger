@@ -611,3 +611,65 @@ begin
 end $$;
 revoke all on function public.decide_time_fix(uuid, boolean) from public, anon;
 grant execute on function public.decide_time_fix(uuid, boolean) to authenticated;
+
+-- ============ Breaks and clock-out reminders ============
+-- break_at: when the current break started (null = working). break_min: finished break minutes.
+-- reminded_at: when the "Still on the clock?" reminder went out (one per clock-in).
+alter table public.punches add column if not exists break_min integer not null default 0;
+alter table public.punches add column if not exists break_at timestamptz;
+alter table public.punches add column if not exists reminded_at timestamptz;
+
+create or replace function public.break_toggle() returns public.punches
+language plpgsql security definer set search_path = public as $$
+declare r punches;
+begin
+  update punches set
+    break_min = break_min + case when break_at is null then 0 else greatest(0, round(extract(epoch from now() - break_at) / 60))::int end,
+    break_at = case when break_at is null then now() else null end
+    where user_id = auth.uid() and out_at is null returning * into r;
+  if r.id is null then raise exception 'You are not clocked in'; end if;
+  return r;
+end $$;
+revoke all on function public.break_toggle() from public, anon;
+grant execute on function public.break_toggle() to authenticated;
+
+create or replace function public.clock_out(p_lat double precision, p_lng double precision, p_acc double precision, p_note text)
+returns public.punches language plpgsql security definer set search_path = public as $$
+declare r punches;
+begin
+  update punches set out_at = now(), out_lat = p_lat, out_lng = p_lng, out_acc = p_acc, note = nullif(trim(coalesce(p_note, '')), ''),
+    break_min = break_min + case when break_at is null then 0 else greatest(0, round(extract(epoch from now() - break_at) / 60))::int end,
+    break_at = null
+    where user_id = auth.uid() and out_at is null returning * into r;
+  if r.id is null then raise exception 'You are not clocked in'; end if;
+  return r;
+end $$;
+
+create or replace function public.decide_time_fix(p_id uuid, p_ok boolean) returns public.punches
+language plpgsql security definer set search_path = public as $$
+declare f time_fixes; r punches;
+begin
+  select * into f from time_fixes where id = p_id for update;
+  if not found then raise exception 'That request was not found'; end if;
+  if not public.is_owner(f.company_id) then raise exception 'Only the owner can approve time fixes'; end if;
+  if f.status <> 'pending' then raise exception 'That request was already answered'; end if;
+  update time_fixes set status = case when p_ok then 'approved' else 'denied' end, decided_at = now() where id = p_id;
+  if not p_ok then return null; end if;
+  if f.punch_id is not null then
+    update punches set in_at = f.in_at, out_at = f.out_at, job_id = f.job_id, break_at = null where id = f.punch_id returning * into r;
+  end if;
+  if r.id is null then
+    insert into punches(company_id, user_id, employee_id, job_id, in_at, out_at, note)
+      values (f.company_id, f.user_id, f.employee_id, f.job_id, f.in_at, f.out_at, f.reason) returning * into r;
+  end if;
+  return r;
+end $$;
+
+-- Every 15 minutes, ask the "notify" function to send "Still on the clock?" reminders.
+-- Needs the pg_cron and pg_net extensions and the CRON_SECRET function secret. Run once with the
+-- real project URL and secret filled in (never commit the secret):
+--   create extension if not exists pg_cron; create extension if not exists pg_net;
+--   select cron.schedule('bb-clock-reminders', '*/15 * * * *', $$select net.http_post(
+--     url := 'https://<project>.supabase.co/functions/v1/notify',
+--     headers := jsonb_build_object('Content-Type', 'application/json', 'x-cron-key', '<CRON_SECRET>'),
+--     body := '{"action":"reminders"}'::jsonb)$$);

@@ -144,6 +144,13 @@ label.check input{width:20px;height:20px;min-height:0;accent-color:var(--hi)}
 .fields.three{grid-template-columns:repeat(3,minmax(0,1fr))}
 .fields.times{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 84px!important}
 @media (max-width:560px){.fields,.fields.three{grid-template-columns:minmax(0,1fr)}.fields.three.keep{grid-template-columns:repeat(3,minmax(0,1fr))}.fields.pair{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.acts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.act-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-height:84px;padding:12px 6px;border:0;border-radius:20px;background:var(--surface2);color:var(--ink);font-family:inherit;font-size:13px;font-weight:700;line-height:1.2;text-align:center;cursor:pointer}
+.act-btn svg{width:24px;height:24px;color:var(--hi)}.act-btn:hover{background:var(--surface3)}.act-btn:active{transform:scale(.97)}
+.att li{flex-wrap:wrap}.att li .grow{flex:1 1 220px;min-width:0}.att li .grow b,.start-steps li .grow b{white-space:normal;overflow:visible}
+@media (max-width:560px){.att li>.btns{width:100%;padding-left:22px}}
+.start-steps li .chk{width:24px;height:24px;border-radius:50%;border:2px solid var(--line2);display:grid;place-items:center;flex:none;font-size:13px;font-weight:800}
+.start-steps li.ok .chk{background:var(--good);border-color:var(--good);color:#fff}.start-steps li.ok b{color:var(--muted);text-decoration:line-through}
 fieldset{border:1px solid var(--line);border-radius:16px;padding:14px;margin:0;background:var(--surface2)}
 legend{font-size:13px;font-weight:700;padding:0 6px;color:var(--ink)}
 .seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px;gap:2px;flex-wrap:wrap}
@@ -1326,11 +1333,38 @@ async function fixDecide(id,ok){const r=(CLOUD.fixReqs||[]).find(x=>x.id===id);i
   notify({employee_ids:[r.employee_id],title:ok?'Time fix approved':'Time fix denied',body:fixRange(r),hash:'#/pay'});
   save();route();toast(ok?(had?'Approved. Hours updated; approve their pay again.':'Approved. Hours updated.'):'Request denied')}
 
+/* ---------- owner home: "Needs your attention" and the getting-started checklist ---------- */
+const repSeen=()=>{const m=(CLOUD.crewReports||[]).reduce((a,r)=>(r.created_at||'')>a?r.created_at:a,LS.get('repSeen')||'');LS.set('repSeen',m)};
+function attentionCard(){if(isEmp())return '';const t=today(),out=[];
+  const row=(dot,title,sub,btns)=>`<li><span class="dot" style="background:${dot}"></span><div class="grow"><b>${title}</b>${sub?`<small>${sub}</small>`:''}</div><div class="btns" style="flex-wrap:nowrap">${btns}</div></li>`;
+  for(const r of (CLOUD.fixReqs||[]).filter(r=>r.status==='pending')){const e=emp(r.employee_id),p=r.punch_id&&CLOUD.punches.find(x=>x.id===r.punch_id);
+    out.push(row(e?.color||'#999',`Time fix · ${esc(e?.name||'Crew')}`,`${esc(job(r.job_id)?.name||'Job')}: ${fixRange(r)}${p?` (clock: ${timeOf(p.in_at)}–${p.out_at?timeOf(p.out_at):'still in'})`:r.punch_id?'':' (not clocked)'}${r.reason?' · '+esc(r.reason):''}`,
+      `<button class="btn sm primary" data-act="fix-ok" data-id="${r.id}">Approve</button><button class="btn sm ghost" data-act="fix-no" data-id="${r.id}">Deny</button>`))}
+  for(const r of (CLOUD.timeReqs||[]).filter(r=>r.status==='pending')){const e=emp(r.employee_id);
+    out.push(row(e?.color||'#999',`Time off · ${esc(e?.name||'Crew')}`,`${offRange({from:r.start_date,to:r.end_date})}${r.reason?' · '+esc(r.reason):''}`,
+      `<button class="btn sm primary" data-act="off-ok" data-id="${r.id}">Approve</button><button class="btn sm ghost" data-act="off-no" data-id="${r.id}">Deny</button>`))}
+  for(const p of (CLOUD.punches||[]).filter(p=>!p.out_at&&Date.now()-new Date(p.in_at)>12*36e5)){const e=emp(p.employee_id);
+    out.push(row('var(--warn)',`${esc(e?.name||'Someone')} is still clocked in`,`Since ${fmtDate(ds(new Date(p.in_at)))} at ${timeOf(p.in_at)} · ${esc(job(p.job_id)?.name||'Job')}. Ask them to clock out and send a time fix.`,`<a class="btn sm" href="#/crew">Crew &amp; Pay</a>`))}
+  const past=S.shifts.filter(s=>s.status==='scheduled'&&s.date<t&&s.date>=addDays(t,-14));
+  if(past.length)out.push(row('var(--warn)',`${past.length} past shift${past.length>1?'s':''} still Scheduled`,'They don\'t count toward pay or job cost until they\'re marked worked.',`<button class="btn sm" data-act="att-past">Mark worked</button>`));
+  const seen=LS.get('repSeen')||'',reps=(CLOUD.crewReports||[]).filter(r=>(r.created_at||'')>seen&&r.date>=addDays(t,-7));
+  if(reps.length)out.push(row('var(--hi)',`${reps.length} new daily report${reps.length>1?'s':''}`,reps.slice(0,3).map(r=>`<a href="#/job/${r.job_id}" data-act="rep-open">${esc(emp(r.employee_id)?.name||'Crew')} · ${esc(job(r.job_id)?.name||'Job')}</a>`).join(', ')+(reps.length>3?'…':''),`<button class="btn sm ghost" data-act="rep-seen">Mark read</button>`));
+  const late=moneyOwed().filter(x=>x.late);
+  if(late.length)out.push(row('var(--bad)',`${late.length} overdue invoice${late.length>1?'s':''} · ${money(sum(late,x=>x.bal))}`,late.slice(0,3).map(x=>esc(x.d.billTo?.name||job(x.d.jobId)?.name||x.d.num)).join(', '),`<a class="btn sm" href="#/job/${late[0].d.jobId}">Open</a>`));
+  if(!out.length)return '';
+  return `<div class="card"><div class="card-head"><h2>Needs your attention</h2><span class="badge warn">${out.length}</span></div><ul class="list att">${out.join('')}</ul></div>`}
+function startCard(){if(isEmp()||S.settings.startDone)return '';const cloud=isOwnerCloud();
+  const steps=[['Add your company name','Shown on estimates, invoices and your crew\'s app.',!!S.profile?.company,'<a class="btn sm" href="#/profile">Add</a>'],
+    ['Add your first job','A customer, address and price.',S.jobs.length>0,'<a class="btn sm" href="#/jobs">Add job</a>'],
+    ['Add your crew','Names and pay rates.',S.employees.length>0,'<a class="btn sm" href="#/crew">Add crew</a>'],
+    ...(cloud?[['Invite your crew to the app','They clock in and out and see their schedule.',CLOUD.members.some(m=>m.role==='employee'),'<a class="btn sm" href="#/crew">Invite</a>']]:[]),
+    ['Put someone on the schedule','Tap + on any day.',S.shifts.length>0,'<button class="btn sm" data-act="shift-new">Add shift</button>']];
+  const done=steps.filter(x=>x[2]).length;if(done===steps.length)return '';
+  return `<div class="card"><div class="card-head"><h2>Get set up</h2><button class="btn sm ghost" data-act="start-hide">Hide</button></div>
+    <div class="bar" style="margin-bottom:8px"><i class="ok" style="width:${Math.round(done/steps.length*100)}%"></i></div><p class="note">${done} of ${steps.length} done</p>
+    <ul class="list start-steps">${steps.map(([t,sub,ok,btn])=>`<li class="${ok?'ok':''}"><span class="chk">${ok?'✓':''}</span><div class="grow"><b>${t}</b><small>${sub}</small></div>${ok?'':btn}</li>`).join('')}</ul></div>`}
+
 /* crew side */
-function fixMineCard(){const mine=(CLOUD.myFixes||[]).filter(r=>r.status==='pending'||Date.now()-new Date(r.decided_at||r.created_at)<7*864e5);
-  return `<div class="card"><div class="card-head"><h2>Fix my time</h2><button class="btn sm" data-act="fix-req">Forgot to clock in or out?</button></div>
-    ${mine.length?`<ul class="list">${mine.map(r=>`<li><div class="grow"><b>${esc(job(r.job_id)?.name||'Job')}</b><small>${fixRange(r)}${r.reason?' · '+esc(r.reason):''}</small></div><span class="badge ${FIX_ST[r.status]?.[0]||''}">${FIX_ST[r.status]?.[1]||r.status}</span></li>`).join('')}</ul>`
-      :'<p class="note">Missed a clock-in or clock-out? Send the right times and your boss approves them.</p>'}</div>`}
 function fixForm(punchId){const ps=CLOUD.punches.filter(p=>Date.now()-new Date(p.in_at)<21*864e5).slice(0,30),pend=new Set((CLOUD.myFixes||[]).filter(r=>r.status==='pending').map(r=>r.punch_id));
   const lab=p=>`${pd(ds(new Date(p.in_at))).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})} · ${job(p.job_id)?.name||'Job'} · ${timeOf(p.in_at)}–${p.out_at?timeOf(p.out_at):'still clocked in'}`;
   const jobs=S.jobs.filter(j=>j.status!=='done'||ps.some(p=>p.job_id===j.id));if(!jobs.length)return toast('No jobs yet. Ask your boss to add one.');
@@ -1353,25 +1387,26 @@ function fixForm(punchId){const ps=CLOUD.punches.filter(p=>Date.now()-new Date(p
       const row={company_id:CLOUD.company,user_id:CLOUD.user.id,employee_id:CLOUD.employeeId,punch_id:fd.get('punch')||null,job_id:fd.get('jobId'),in_at:t[0].toISOString(),out_at:t[1].toISOString(),reason};
       const {error}=await CLOUD.sb.from('time_fixes').insert(row);
       if(error){toast(/time_fixes/.test(error.message||'')?'Time fixes aren\'t turned on yet. Ask your boss.':'Could not send: '+errMsg(error));return false}
-      notify({to:'owner',title:'Time fix request',body:`${emp(CLOUD.employeeId)?.name||'Crew'}: ${fixRange(row)}`,hash:'#/crew'});await empExtrasLoad();route();toast('Sent to your boss')}})}
+      notify({to:'owner',email:true,title:'Time fix request',body:`${emp(CLOUD.employeeId)?.name||'Crew'}: ${fixRange(row)}`,hash:'#/crew'});await empExtrasLoad();route();toast('Sent to your boss')}})}
 function fixTimes(date,start,end){if(!date||!start||!end)return null;const a=new Date(`${date}T${start}`),b=new Date(`${date}T${end}`);if(isNaN(a)||isNaN(b))return null;if(b<=a)b.setDate(b.getDate()+1);return [a,b]}
 
 /* ---------- crew side: reports and time-off requests ---------- */
-function crewExtras(){const mine=CLOUD.myReports||[],reqs=CLOUD.myTimeOff||[],t=today();
-  const st={pending:['active','Waiting'],approved:['done','Approved'],denied:['bad','Denied']};
-  const waiting=OB.filter(x=>x.type==='report');
-  return `${myTasksCard()}<div class="grid2"><div class="card"><div class="card-head"><h2>Daily report</h2><button class="btn sm primary" data-act="report-new">+ Photos &amp; report</button></div>
-      ${waiting.length?`<ul class="list" style="margin-bottom:8px">${waiting.map(r=>`<li><div class="grow"><b>${esc(job(r.jobId)?.name||'Job')}</b><small>${fmtDate(r.date)}${r.media.length?` · ${r.media.length} photo${r.media.length>1?'s':''}`:''}${r.notes?' · '+esc(r.notes.slice(0,80)):''}</small></div><span class="badge warn">Waiting for signal</span></li>`).join('')}</ul>`:''}
-      ${mine.length?`<ul class="list">${mine.slice(0,4).map(r=>`<li><div class="grow"><b>${esc(job(r.job_id)?.name||'Job')}</b><small>${fmtDate(r.date)}${r.photos?.length?` · ${r.photos.length} photo${r.photos.length>1?'s':''}`:''}${r.notes?' · '+esc(r.notes.slice(0,80)):''}</small></div></li>`).join('')}</ul>`
-        :'<p class="note">Tell your boss what got done today and what you need. Add photos of the work.</p>'}</div>
-    <div class="card"><div class="card-head"><h2>Time off</h2><button class="btn sm" data-act="off-req">Request time off</button></div>
-      ${reqs.filter(r=>r.end_date>=t||r.status==='pending').length?`<ul class="list">${reqs.filter(r=>r.end_date>=t||r.status==='pending').map(r=>`<li><div class="grow"><b>${offRange({from:r.start_date,to:r.end_date})}</b><small>${esc(r.reason||'')}</small></div><span class="badge ${st[r.status]?.[0]||''}">${st[r.status]?.[1]||r.status}</span></li>`).join('')}</ul>`
-        :'<p class="note">Ask for days off. Your boss approves it and you won\'t be scheduled those days.</p>'}</div></div>${fixMineCard()}`}
+function crewExtras(){const reqs=CLOUD.myTimeOff||[],fx=CLOUD.myFixes||[],t=today(),wk=Date.now()-7*864e5,waiting=OB.filter(x=>x.type==='report'),last=(CLOUD.myReports||[])[0];
+  const badge=st=>`<span class="badge ${FIX_ST[st]?.[0]||''}">${FIX_ST[st]?.[1]||st}</span>`;
+  const items=[...waiting.map(r=>`<li><div class="grow"><b>Report · ${esc(job(r.jobId)?.name||'Job')}</b><small>${fmtDate(r.date)}${r.media.length?` · ${r.media.length} photo${r.media.length>1?'s':''}`:''}${r.notes?' · '+esc(r.notes.slice(0,60)):''}</small></div><span class="badge warn">Waiting for signal</span></li>`),
+    ...reqs.filter(r=>r.end_date>=t||r.status==='pending').map(r=>`<li><div class="grow"><b>Time off · ${offRange({from:r.start_date,to:r.end_date})}</b>${r.reason?`<small>${esc(r.reason)}</small>`:''}</div>${badge(r.status)}</li>`),
+    ...fx.filter(r=>r.status==='pending'||new Date(r.decided_at||r.created_at)>wk).map(r=>`<li><div class="grow"><b>Time fix · ${esc(job(r.job_id)?.name||'Job')}</b><small>${fixRange(r)}</small></div>${badge(r.status)}</li>`)];
+  const ic=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  return `${myTasksCard()}<div class="card"><div class="acts">
+      <button class="act-btn" data-act="report-new">${ic('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>')}<span>Photos &amp; report</span></button>
+      <button class="act-btn" data-act="off-req">${ic('<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>')}<span>Time off</span></button>
+      <button class="act-btn" data-act="fix-req">${ic('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>')}<span>Fix my time</span></button></div>
+    ${items.length?`<ul class="list" style="margin-top:10px">${items.join('')}</ul>`:last?`<p class="note" style="margin-top:12px">Last report: ${esc(job(last.job_id)?.name||'Job')}, ${fmtDate(last.date)}.</p>`:''}</div>`}
 function offRequestForm(){openForm({title:'Request time off',submit:'Send request',
     body:`<div class="fields">${field('First day off',inp('from',addDays(today(),7),'date'))}${field('Last day off',inp('to',addDays(today(),7),'date'))}${field('Reason (optional)',inp('reason','','text','placeholder="Vacation, appointment…" maxlength="200"'),'full')}</div>`,
     onSubmit:async fd=>{const from=fd.get('from'),to=fd.get('to')||from;if(!from){toast('Pick the first day off');return false}if(to<from){toast('The last day is before the first day');return false}
       const {error}=await CLOUD.sb.from('time_off').insert({company_id:CLOUD.company,user_id:CLOUD.user.id,employee_id:CLOUD.employeeId,start_date:from,end_date:to,reason:fd.get('reason').trim()||null});
-      if(error){toast('Could not send: '+errMsg(error));return false}notify({to:'owner',title:'Time-off request',body:`${emp(CLOUD.employeeId)?.name||'Crew'} asked for ${offRange({from,to})} off`,hash:'#/crew'});await empExtrasLoad();toast('Request sent to your boss')}})}
+      if(error){toast('Could not send: '+errMsg(error));return false}notify({to:'owner',email:true,title:'Time-off request',body:`${emp(CLOUD.employeeId)?.name||'Crew'} asked for ${offRange({from,to})} off`,hash:'#/crew'});await empExtrasLoad();toast('Request sent to your boss')}})}
 async function empExtrasLoad(){const sb=CLOUD.sb;if(!sb||!isEmp())return;
   try{const [a,b]=await Promise.all([sb.from('daily_reports').select('id,job_id,date,notes,photos').eq('user_id',CLOUD.user.id).order('date',{ascending:false}).limit(20),
     sb.from('time_off').select('*').eq('user_id',CLOUD.user.id).order('start_date',{ascending:false}).limit(30)]);
@@ -1990,8 +2025,8 @@ function pageSchedule(){const RO=isEmp(),wk=UI.week,days=[...Array(7)].map((_,i)
   </tbody><tfoot><tr><td>Day total</td>${days.map(d=>`<td class="num">${hrs(sum(inWeek.filter(s=>s.date===d&&s.status!=='missed'),shiftHours))}</td>`).join('')}</tr></tfoot></table></div></div>`;
   return `<div class="page-head"><div><div class="eyebrow">${pd(now).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div><h1>${greet()}${first?', '+esc(first):''}.</h1><p class="sub">${S.employees.length?line:'Add your crew to start scheduling.'}</p></div>
     ${RO||!S.employees.length?'':`<button class="btn primary big" data-act="shift-new">+ Add shift</button>`}</div>
-  ${!S.employees.length?`<div class="stack">${emptyBox('Add your crew first, then schedule them on jobs. Or load the sample company to see how it works.','<a class="btn primary" href="#/crew">Add employees</a>'+(S.jobs.length?'':'<button class="btn" data-act="sample">Load sample data</button>'))}${monthCal()}</div>`:`
-  <div class="stack">${RO?clockCard()+crewExtras():''}
+  ${!S.employees.length?`<div class="stack">${RO?'':startCard()}${emptyBox('Add your crew first, then schedule them on jobs. Or load the sample company to see how it works.','<a class="btn primary" href="#/crew">Add employees</a>'+(S.jobs.length?'':'<button class="btn" data-act="sample">Load sample data</button>'))}${monthCal()}</div>`:`
+  <div class="stack">${RO?clockCard()+crewExtras():startCard()+attentionCard()}
   <div class="split"><div class="week-nav"><button class="btn sm" data-act="week" data-v="-7" aria-label="Previous week">‹</button><button class="btn sm" data-act="week" data-v="0">This week</button><button class="btn sm" data-act="week" data-v="7" aria-label="Next week">›</button><b style="margin-left:6px">${label}</b></div>
     <div class="btns"><div class="seg" role="group" aria-label="View">${[['days','Days'],['crew','By crew']].map(([k,l])=>`<button data-act="sched-view" data-v="${k}" aria-pressed="${view===k}">${l}</button>`).join('')}</div>
     ${RO?'':`${pastSched?`<button class="btn sm dark" data-act="confirm-past">Mark ${pastSched} past shift${pastSched>1?'s':''} worked</button>`:''}<button class="btn sm" data-act="copy-week">Copy last week</button>`}</div></div>
@@ -2170,7 +2205,10 @@ const ACT={
   openForm({title:v?'Video':'Photo',closeLabel:'Close',body:`<div class="viewer">${v?`<video data-photo="${esc(id)}" controls playsinline></video>`:`<img data-photo="${esc(id)}" alt="Report photo">`}</div>`,onOpen:f=>hydratePhotos(f)})},
 'share-new':()=>shareForm(curJob()),'share-open':a=>shareResult((S.shares||[]).find(s=>s.id===a.dataset.id)),'import-photos':()=>importPhotosForm(),
 'near-photo':()=>{if(UI.nearJob)quickCapture(UI.nearJob)},'near-report':()=>reportForm(null,{jobId:UI.nearJob}),'near-hide':()=>{LS.set('nearHide',UI.nearJob+today());route()},
-'off-new':()=>offForm(),'off-edit':a=>offForm(S.timeOff.find(t=>t.id===a.dataset.id)),'off-ok':a=>offDecide(a.dataset.id,true),'off-no':a=>offDecide(a.dataset.id,false),'off-req':()=>offRequestForm(),'fix-req':a=>fixForm(a.dataset.punch||''),'fix-ok':a=>fixDecide(a.dataset.id,true),'fix-no':a=>fixDecide(a.dataset.id,false),
+'off-new':()=>offForm(),'off-edit':a=>offForm(S.timeOff.find(t=>t.id===a.dataset.id)),'off-ok':a=>offDecide(a.dataset.id,true),'off-no':a=>offDecide(a.dataset.id,false),'off-req':()=>offRequestForm(),'fix-req':a=>fixForm(a.dataset.punch||''),
+  'att-past':()=>{const t=today();let n=0;S.shifts.forEach(s=>{if(s.status==='scheduled'&&s.date<t&&s.date>=addDays(t,-14)){s.status='worked';payTouch(s.empId,s.date);n++}});save();toast(`${n} shift${n>1?'s':''} marked worked`);route()},
+  'rep-seen':()=>{repSeen();route()},'rep-open':a=>{repSeen();location.hash=a.getAttribute('href')},
+  'start-hide':()=>{S.settings.startDone=true;save();route();toast('Setup checklist hidden')},'fix-ok':a=>fixDecide(a.dataset.id,true),'fix-no':a=>fixDecide(a.dataset.id,false),
 'off-clear':()=>{const ids=new Set(offShifts().map(s=>s.id));S.shifts=S.shifts.filter(s=>!ids.has(s.id));save();route();toast(`${ids.size} shift${ids.size>1?'s':''} removed`)},
 'cust-new':()=>custForm(),'cust-edit':a=>custForm(cust(a.dataset.id)),'cust-job':a=>{const c=cust(a.dataset.id);jobForm(null,{client:c.name,phone:c.phone,address:c.address})},
 'acct-range':a=>{UI.acct=a.dataset.v;route()},'acct-csv':async a=>{const k=a.dataset.v,[,,tag]=acctRange(),name=`blue-board-${k}-${tag}.csv`;await saveFile(name,toCSV(acctCSV(k)),'text/csv')},
@@ -2315,7 +2353,7 @@ async function cloudPush(){if(!isOwnerCloud())return;const sb=CLOUD.sb,cid=CLOUD
   catch(e){CLOUD.sync='offline'}syncBadge()}
 function publicDoc(){const cut=addDays(today(),-120),p=S.profile||{};
   return{company:{name:p.company||'',logo:p.logo||'',accent:p.accent==='green'?'blue':(p.accent||'blue'),mode:p.mode||'light'},
-    settings:{ot:S.settings.ot!==false,otThreshold:num(S.settings.otThreshold)||40,requireLocation:!!S.settings.requireLocation,showPay:S.settings.showPay!==false},
+    settings:{ot:S.settings.ot!==false,otThreshold:num(S.settings.otThreshold)||40,requireLocation:!!S.settings.requireLocation,showPay:S.settings.showPay!==false,tz:(()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||''}catch(e){return ''}})()},
     jobs:S.jobs.map(j=>({id:j.id,name:j.name,address:j.address||'',lat:j.lat??null,lng:j.lng??null,status:j.status,start:j.start||'',end:j.end||'',color:jobColor(j),tasks:j.status==='done'?[]:(j.tasks||[]).map(t=>({id:t.id,text:t.text,empId:t.empId||'',done:!!t.done,doneAt:t.doneAt||''}))})),
     employees:S.employees.map(e=>({id:e.id,name:e.name,role:e.role||'',color:e.color,active:e.active!==false})),
     timeOff:S.timeOff.filter(t=>t.to>=addDays(today(),-30)).map(t=>({empId:t.empId,from:t.from,to:t.to})),
@@ -2337,7 +2375,7 @@ function applyPunches(){let changed=false;
     const a=new Date(p.in_at),b=new Date(p.out_at),date=ds(a);
     const loc={in:p.in_lat!=null?[p.in_lat,p.in_lng]:null,out:p.out_lat!=null?[p.out_lat,p.out_lng]:null};
     const sched=S.shifts.find(s=>!s.punchId&&s.status==='scheduled'&&s.empId===e.id&&s.jobId===p.job_id&&s.date===date);
-    const f={start:pad(a.getHours())+':'+pad(a.getMinutes()),end:pad(b.getHours())+':'+pad(b.getMinutes()),breakMin:0,status:'worked',punchId:p.id,source:'clock',loc,note:p.note||sched?.note||''};
+    const f={start:pad(a.getHours())+':'+pad(a.getMinutes()),end:pad(b.getHours())+':'+pad(b.getMinutes()),breakMin:+p.break_min||0,status:'worked',punchId:p.id,source:'clock',loc,note:p.note||sched?.note||''};
     if(sched)Object.assign(sched,f);else S.shifts.push({id:uid(),empId:e.id,jobId:p.job_id,date,rate:e.rate,burden:e.burden,...f});payTouch(e.id,date);changed=true}
   if(changed)save();return changed}
 
@@ -2408,8 +2446,9 @@ function pageOnboard(){const co=S.profile?.company||'';const hasLocal=S.jobs.len
 function clockCard(){const open=CLOUD.punches.find(p=>!p.out_at),req=!!S.settings.requireLocation;
   if(open){const j=job(open.job_id),mins=Math.floor((Date.now()-new Date(open.in_at))/60000);
     return `<div class="card clock on"><div class="clock-row"><div><span class="badge done">On the clock</span><h2 style="margin-top:8px">${esc(j?.name||'Job')}</h2>
-      <p class="note">Since ${timeOf(open.in_at)} · <b data-elapsed="${esc(open.in_at)}">${dur(mins)}</b>${open.in_lat!=null?' · location recorded':''}</p></div>
-      <div class="clock-act"><input id="clock-note" placeholder="Note for your boss (optional)" maxlength="300"><button class="btn primary big" data-act="clock-out">Clock out</button></div></div>
+      <p class="note">Since ${timeOf(open.in_at)} · <b data-elapsed="${esc(open.in_at)}">${dur(mins)}</b>${+open.break_min?` · ${open.break_min} min break`:''}${open.in_lat!=null?' · location recorded':''}</p>
+      ${open.break_at?`<p style="margin-top:6px"><span class="badge warn">On break since ${timeOf(open.break_at)}</span></p>`:''}</div>
+      <div class="clock-act"><input id="clock-note" placeholder="Note for your boss (optional)" maxlength="300"><div class="btns" style="justify-content:flex-end"><button class="btn big" data-act="break-toggle">${open.break_at?'End break':'Start break'}</button><button class="btn primary big" data-act="clock-out">Clock out</button></div></div></div>
       ${mins>12*60||ds(new Date(open.in_at))!==today()?`<div class="insight warn" style="margin-top:12px"><b>Forgot to clock out?</b><span>You've been on the clock since ${fmtDate(ds(new Date(open.in_at)))}. ${(CLOUD.myFixes||[]).some(r=>r.punch_id===open.id&&r.status==='pending')?'Your fix is waiting for your boss. You can clock out now to start today.':'Send the time you really finished, then clock out to start today.'} <button class="btn sm" data-act="fix-req" data-punch="${open.id}">Fix this shift</button></span></div>`:''}</div>`}
   const me=CLOUD.employeeId,mine=S.shifts.find(s=>s.empId===me&&s.date===today()&&s.status!=='missed');
   const jobs=S.jobs.filter(j=>j.status!=='done'||j.id===mine?.jobId);
@@ -2424,7 +2463,7 @@ function pageEmpCrew(){const me=CLOUD.employeeId,wk=weekStart(today()),end=addDa
     return `<li><span class="avatar sm" style="background:${e.color}">${esc(initials(e.name))}</span><div class="grow"><b>${esc(e.name)}${e.id===me?' <span class="badge done">You</span>':''}</b>
       <small>${esc(e.role||'Crew')}${js.length?' · this week: '+js.map(x=>esc(job(x)?.name||'')).join(', '):''}</small></div>${withMe?'<span class="badge active">With you this week</span>':''}</li>`}).join('')}</ul>`:emptyBox('No crew listed yet.')}</div>`}
 function myPayRows(from,to){const th=num(S.settings.otThreshold)||40,ot=S.settings.ot!==false,rate=+CLOUD.myRate||0,acc={},rows=[];
-  for(const p of CLOUD.punches.filter(p=>p.out_at).sort((a,b)=>a.in_at.localeCompare(b.in_at))){const d=ds(new Date(p.in_at)),h=(new Date(p.out_at)-new Date(p.in_at))/36e5,k=weekStart(d),before=acc[k]||0;acc[k]=before+h;
+  for(const p of CLOUD.punches.filter(p=>p.out_at).sort((a,b)=>a.in_at.localeCompare(b.in_at))){const d=ds(new Date(p.in_at)),h=Math.max(0,(new Date(p.out_at)-new Date(p.in_at))/36e5-(+p.break_min||0)/60),k=weekStart(d),before=acc[k]||0;acc[k]=before+h;
     let reg=h,o=0;if(ot){reg=Math.max(0,Math.min(h,th-before));o=h-reg}if(d>=from&&d<=to)rows.push({p,d,h,reg,ot:o,pay:rate*(reg+1.5*o)})}
   return rows.reverse()}
 const pins=(la,ln,lab)=>la!=null?`<a class="btn sm ghost" href="${mapUrl(la,ln)}" target="_blank" rel="noopener">${lab} ↗</a>`:'';
@@ -2441,7 +2480,7 @@ function pageMyPay(){const R=payRange(),[from,to]=R[UI.pay],rows=myPayRows(from,
   <div class="card"><div class="card-head"><h2>Clock history</h2><span class="note">${rows.length} shift${rows.length===1?'':'s'}</span></div>
   ${rows.length?`<div class="table-wrap"><table><thead><tr><th>Day</th><th>Job</th><th>In</th><th>Out</th><th class="n">Hours</th>${show?'<th class="n">Pay</th>':''}<th>Location</th></tr></thead><tbody>
   ${rows.map(r=>{const j=job(r.p.job_id);return `<tr><td>${pd(r.d).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</td><td><span class="dot" style="background:${jobColor(j)}"></span> ${esc(j?.name||'Job')}${r.p.note?`<br><small class="muted">${esc(r.p.note)}</small>`:''}</td>
-    <td>${timeOf(r.p.in_at)}</td><td>${timeOf(r.p.out_at)}</td><td class="n">${hrs(r.h)}${r.ot?`<br><small class="neg">${hrs(r.ot)} OT</small>`:''}</td>${show?`<td class="n">${money2(r.pay)}</td>`:''}<td>${pins(r.p.in_lat,r.p.in_lng,'In')}${pins(r.p.out_lat,r.p.out_lng,'Out')}${(CLOUD.myFixes||[]).some(f=>f.punch_id===r.p.id&&f.status==='pending')?'<span class="badge active">Fix sent</span>':`<button class="btn sm ghost" data-act="fix-req" data-punch="${r.p.id}">Fix</button>`}</td></tr>`}).join('')}</tbody></table></div>`:emptyBox('No clocked hours in this period.')}
+    <td>${timeOf(r.p.in_at)}</td><td>${timeOf(r.p.out_at)}${+r.p.break_min?`<br><small class="muted">${r.p.break_min} min break</small>`:''}</td><td class="n">${hrs(r.h)}${r.ot?`<br><small class="neg">${hrs(r.ot)} OT</small>`:''}</td>${show?`<td class="n">${money2(r.pay)}</td>`:''}<td>${pins(r.p.in_lat,r.p.in_lng,'In')}${pins(r.p.out_lat,r.p.out_lng,'Out')}${(CLOUD.myFixes||[]).some(f=>f.punch_id===r.p.id&&f.status==='pending')?'<span class="badge active">Fix sent</span>':`<button class="btn sm ghost" data-act="fix-req" data-punch="${r.p.id}">Fix</button>`}</td></tr>`}).join('')}</tbody></table></div>`:emptyBox('No clocked hours in this period.')}
   <div class="btns" style="margin-top:10px"><button class="btn sm" data-act="fix-req">Forgot to clock in or out?</button></div>
   <p class="note" style="margin-top:10px">Hours are rounded from your clock times. Your boss may adjust them for breaks or corrections. Gross pay is before taxes and deductions.</p></div></div>`}
 function pageEmpAccount(){const me=emp(CLOUD.employeeId),p=S.profile;
@@ -2454,7 +2493,7 @@ function pageEmpAccount(){const me=emp(CLOUD.employeeId),p=S.profile;
 /* ----- owner extras ----- */
 function onClockCard(){const open=CLOUD.punches.filter(p=>!p.out_at),recent=CLOUD.punches.filter(p=>p.out_at).slice(0,6);
   const li=(p,live)=>{const e=emp(p.employee_id),j=job(p.job_id),h=((p.out_at?new Date(p.out_at):new Date())-new Date(p.in_at))/36e5;
-    return `<li><span class="avatar sm" style="background:${e?.color||'#999'}">${esc(initials(e?.name))}</span><div class="grow"><b>${esc(e?.name||'Unknown')}</b><small><span class="dot" style="background:${jobColor(j)};width:8px;height:8px"></span> ${esc(j?.name||'Job')} · ${live?'since '+timeOf(p.in_at):fmtDate(ds(new Date(p.in_at)))+', '+timeOf(p.in_at)+'–'+timeOf(p.out_at)}${p.note?' · '+esc(p.note):''}</small></div>
+    return `<li><span class="avatar sm" style="background:${e?.color||'#999'}">${esc(initials(e?.name))}</span><div class="grow"><b>${esc(e?.name||'Unknown')}</b><small><span class="dot" style="background:${jobColor(j)};width:8px;height:8px"></span> ${esc(j?.name||'Job')} · ${live?'since '+timeOf(p.in_at):fmtDate(ds(new Date(p.in_at)))+', '+timeOf(p.in_at)+'–'+timeOf(p.out_at)}${+p.break_min?` · ${p.break_min} min break`:''}${p.note?' · '+esc(p.note):''}</small>${live&&p.break_at?' <span class="badge warn">On break</span>':''}</div>
       ${pins(p.in_lat,p.in_lng,live?'Map':'In')}${live?'':pins(p.out_lat,p.out_lng,'Out')}<b class="num" style="min-width:58px;text-align:right">${live?`<span data-elapsed="${esc(p.in_at)}">${dur(Math.floor(h*60))}</span>`:hrs(h)}</b></li>`};
   return `<div class="card"><div class="card-head"><h2>On the clock</h2><span class="badge ${open.length?'done':''}">${open.length} working now</span></div>
     ${open.length?`<ul class="list">${open.map(p=>li(p,true)).join('')}</ul>`:'<p class="note">No one is clocked in right now.</p>'}
@@ -2517,6 +2556,9 @@ Object.assign(ACT,{
     const loc=await getLoc();if(!loc&&S.settings.requireLocation){a.disabled=false;a.textContent='Clock in';return toast('Turn on location for this app, then try again')}
     a.textContent='Clocking in…';const {data,error}=await CLOUD.sb.rpc('clock_in',{p_company:CLOUD.company,p_job:jobId,p_lat:loc?.lat??null,p_lng:loc?.lng??null,p_acc:loc?.acc??null});
     if(error){a.disabled=false;a.textContent='Clock in';return toast(errMsg(error))}CLOUD.punches.unshift(data);toast('Clocked in at '+timeOf(data.in_at));route()},
+  'break-toggle':async a=>{a.disabled=true;const {data,error}=await CLOUD.sb.rpc('break_toggle');
+    if(error){a.disabled=false;return toast(/break_toggle/.test(error.message||'')?'Breaks aren\'t turned on yet. Ask your boss.':errMsg(error))}
+    CLOUD.punches=CLOUD.punches.map(p=>p.id===data.id?data:p);toast(data.break_at?'Break started':`Break over · ${data.break_min} min so far`);route()},
   'clock-out':async a=>{const note=$('#clock-note')?.value||'';a.disabled=true;a.textContent='Getting location…';const loc=await getLoc();
     if(!loc&&S.settings.requireLocation){a.disabled=false;a.textContent='Clock out';return toast('Turn on location for this app, then try again')}
     a.textContent='Clocking out…';const {data,error}=await CLOUD.sb.rpc('clock_out',{p_lat:loc?.lat??null,p_lng:loc?.lng??null,p_acc:loc?.acc??null,p_note:note});
