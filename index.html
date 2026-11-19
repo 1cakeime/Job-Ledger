@@ -143,7 +143,7 @@ label.check input{width:20px;height:20px;min-height:0;accent-color:var(--hi)}
 .fields .full{grid-column:1/-1}
 .fields.three{grid-template-columns:repeat(3,minmax(0,1fr))}
 .fields.times{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 84px!important}
-@media (max-width:560px){.fields,.fields.three{grid-template-columns:minmax(0,1fr)}.fields.three.keep{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:560px){.fields,.fields.three{grid-template-columns:minmax(0,1fr)}.fields.three.keep{grid-template-columns:repeat(3,minmax(0,1fr))}.fields.pair{grid-template-columns:repeat(2,minmax(0,1fr))}}
 fieldset{border:1px solid var(--line);border-radius:16px;padding:14px;margin:0;background:var(--surface2)}
 legend{font-size:13px;font-weight:700;padding:0 6px;color:var(--ink)}
 .seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px;gap:2px;flex-wrap:wrap}
@@ -1302,6 +1302,60 @@ async function offDecide(id,ok){const r=(CLOUD.timeReqs||[]).find(x=>x.id===id);
   notify({employee_ids:[r.employee_id],title:ok?'Time off approved':'Time off denied',body:`${offRange({from:r.start_date,to:r.end_date})}`,hash:'#/schedule'});
   save();route();const n=ok?offShifts().filter(s=>s.empId===r.employee_id).length:0;toast(ok?(n?`Approved. ${n} scheduled shift${n>1?'s':''} fall on those days.`:'Time off approved'):'Request denied')}
 
+/* ---------- time fixes: crew ask to correct a forgotten clock in/out, the owner approves ---------- */
+// Rows live in the time_fixes table. Approving runs decide_time_fix(), which writes the punch;
+// the matching shift is then updated here (or made by applyPunches) so payroll and job cost follow.
+const hmOf=iso=>{const d=new Date(iso);return pad(d.getHours())+':'+pad(d.getMinutes())};
+const fixRange=f=>`${fmtDate(ds(new Date(f.in_at)))}, ${timeOf(f.in_at)}–${timeOf(f.out_at)} · ${hrs((new Date(f.out_at)-new Date(f.in_at))/36e5)}`;
+const FIX_ST={pending:['active','Waiting'],approved:['done','Approved'],denied:['bad','Denied']};
+function fixCard(){const reqs=(CLOUD.fixReqs||[]).filter(r=>r.status==='pending');if(!reqs.length)return '';
+  return `<div class="card"><div class="card-head"><h2>Time fixes</h2><span class="note">${reqs.length} waiting</span></div><ul class="list">${reqs.map(r=>{const e=emp(r.employee_id),p=r.punch_id&&CLOUD.punches.find(x=>x.id===r.punch_id);
+    const was=r.punch_id?(p?`Clock showed ${timeOf(p.in_at)}–${p.out_at?timeOf(p.out_at):'still clocked in'}`:'Changes a clock-in'):'Didn\'t clock in at all';
+    return `<li><span class="dot" style="background:${e?.color||'#999'}"></span><div class="grow"><b>${esc(e?.name||'Crew')} · ${esc(job(r.job_id)?.name||'Job')}</b>
+      <small>Asks for ${fixRange(r)}</small><small class="muted">${was}${r.reason?' · '+esc(r.reason):''}</small></div>
+      <div class="btns" style="flex-wrap:nowrap"><button class="btn sm primary" data-act="fix-ok" data-id="${r.id}">Approve</button><button class="btn sm ghost" data-act="fix-no" data-id="${r.id}">Deny</button></div></li>`}).join('')}</ul></div>`}
+async function fixDecide(id,ok){const r=(CLOUD.fixReqs||[]).find(x=>x.id===id);if(!r)return;
+  const date=ds(new Date(r.in_at)),old=r.punch_id?S.shifts.find(s=>s.punchId===r.punch_id):null;
+  const wasOk=d=>!!payRec(periodOf(d)[0])?.approved?.[r.employee_id],had=ok&&(wasOk(date)||(old&&wasOk(old.date)));
+  if(ok){const shut=closedFor(date)||(old&&closedFor(old.date));if(shut)return toast(`The ${fmtDate(shut.from)} – ${fmtDate(shut.to)} pay period is closed. Reopen it under Payroll first.`)}
+  const {data,error}=await CLOUD.sb.rpc('decide_time_fix',{p_id:id,p_ok:ok});if(error)return toast(errMsg(error));
+  r.status=ok?'approved':'denied';r.decided_at=new Date().toISOString();
+  if(ok&&data?.id){CLOUD.punches=[data,...CLOUD.punches.filter(p=>p.id!==data.id)];
+    if(old){payTouch(old.empId,old.date);Object.assign(old,{jobId:data.job_id,date:ds(new Date(data.in_at)),start:hmOf(data.in_at),end:hmOf(data.out_at),status:'worked',fixed:true});payTouch(old.empId,old.date)}
+    else{applyPunches();const s=S.shifts.find(x=>x.punchId===data.id);if(s)s.fixed=true}}
+  notify({employee_ids:[r.employee_id],title:ok?'Time fix approved':'Time fix denied',body:fixRange(r),hash:'#/pay'});
+  save();route();toast(ok?(had?'Approved. Hours updated; approve their pay again.':'Approved. Hours updated.'):'Request denied')}
+
+/* crew side */
+function fixMineCard(){const mine=(CLOUD.myFixes||[]).filter(r=>r.status==='pending'||Date.now()-new Date(r.decided_at||r.created_at)<7*864e5);
+  return `<div class="card"><div class="card-head"><h2>Fix my time</h2><button class="btn sm" data-act="fix-req">Forgot to clock in or out?</button></div>
+    ${mine.length?`<ul class="list">${mine.map(r=>`<li><div class="grow"><b>${esc(job(r.job_id)?.name||'Job')}</b><small>${fixRange(r)}${r.reason?' · '+esc(r.reason):''}</small></div><span class="badge ${FIX_ST[r.status]?.[0]||''}">${FIX_ST[r.status]?.[1]||r.status}</span></li>`).join('')}</ul>`
+      :'<p class="note">Missed a clock-in or clock-out? Send the right times and your boss approves them.</p>'}</div>`}
+function fixForm(punchId){const ps=CLOUD.punches.filter(p=>Date.now()-new Date(p.in_at)<21*864e5).slice(0,30),pend=new Set((CLOUD.myFixes||[]).filter(r=>r.status==='pending').map(r=>r.punch_id));
+  const lab=p=>`${pd(ds(new Date(p.in_at))).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})} · ${job(p.job_id)?.name||'Job'} · ${timeOf(p.in_at)}–${p.out_at?timeOf(p.out_at):'still clocked in'}`;
+  const jobs=S.jobs.filter(j=>j.status!=='done'||ps.some(p=>p.job_id===j.id));if(!jobs.length)return toast('No jobs yet. Ask your boss to add one.');
+  const mine=S.shifts.find(s=>s.empId===CLOUD.employeeId&&s.date===today()&&s.status!=='missed');
+  openForm({title:'Fix my time',submit:'Send to my boss',
+    body:`<div class="fields">${field('Which shift?',`<select name="punch"><option value="">A shift I didn't clock in for</option>${ps.map(p=>`<option value="${p.id}"${p.id===punchId?' selected':''}${pend.has(p.id)?' disabled':''}>${esc(lab(p))}${pend.has(p.id)?' (fix sent)':''}</option>`).join('')}</select>`,'full')}
+      ${field('Job',`<select name="jobId">${jobs.map(j=>opt(j.id,j.name,mine?.jobId)).join('')}</select>`)}${field('Date',inp('date',today(),'date'))}</div>
+      <div class="fields pair">${field('Started',inp('start',mine?.start||'07:00','time'))}${field('Finished',inp('end',mine?.end||'15:30','time'))}</div>
+      <p class="note" id="fx-hours"></p>
+      ${field('What happened?',inp('reason','','text','placeholder="Forgot to clock out, phone died…" maxlength="300"'))}
+      <p class="note">Your boss sees the clock times next to yours and approves or denies.</p>`,
+    onOpen:f=>{const upd=()=>{const t=fixTimes(f.date.value,f.start.value,f.end.value);$('#fx-hours').textContent=t?`${hrs((t[1]-t[0])/36e5)}${ds(t[1])!==ds(t[0])?' · ends the next day':''}`:''};
+      const fill=()=>{const p=ps.find(x=>x.id===f.punch.value);if(p){f.jobId.value=p.job_id;f.date.value=ds(new Date(p.in_at));f.start.value=hmOf(p.in_at);if(p.out_at)f.end.value=hmOf(p.out_at)}upd()};
+      f.punch.addEventListener('change',fill);f.addEventListener('input',upd);fill()},
+    onSubmit:async fd=>{const t=fixTimes(fd.get('date'),fd.get('start'),fd.get('end')),reason=fd.get('reason').trim();
+      if(!t){toast('Fill in the date and both times');return false}
+      if(t[1]-Date.now()>5*60000){toast('That finish time hasn\'t happened yet');return false}
+      if(t[1]-t[0]>24*36e5){toast('That\'s more than 24 hours. Check the times.');return false}
+      if(!reason){toast('Say what happened so your boss knows');return false}
+      const row={company_id:CLOUD.company,user_id:CLOUD.user.id,employee_id:CLOUD.employeeId,punch_id:fd.get('punch')||null,job_id:fd.get('jobId'),in_at:t[0].toISOString(),out_at:t[1].toISOString(),reason};
+      const {error}=await CLOUD.sb.from('time_fixes').insert(row);
+      if(error){toast(/time_fixes/.test(error.message||'')?'Time fixes aren\'t turned on yet. Ask your boss.':'Could not send: '+errMsg(error));return false}
+      notify({to:'owner',title:'Time fix request',body:`${emp(CLOUD.employeeId)?.name||'Crew'}: ${fixRange(row)}`,hash:'#/crew'});await empExtrasLoad();route();toast('Sent to your boss')}})}
+function fixTimes(date,start,end){if(!date||!start||!end)return null;const a=new Date(`${date}T${start}`),b=new Date(`${date}T${end}`);if(isNaN(a)||isNaN(b))return null;if(b<=a)b.setDate(b.getDate()+1);return [a,b]}
+
 /* ---------- crew side: reports and time-off requests ---------- */
 function crewExtras(){const mine=CLOUD.myReports||[],reqs=CLOUD.myTimeOff||[],t=today();
   const st={pending:['active','Waiting'],approved:['done','Approved'],denied:['bad','Denied']};
@@ -1312,7 +1366,7 @@ function crewExtras(){const mine=CLOUD.myReports||[],reqs=CLOUD.myTimeOff||[],t=
         :'<p class="note">Tell your boss what got done today and what you need. Add photos of the work.</p>'}</div>
     <div class="card"><div class="card-head"><h2>Time off</h2><button class="btn sm" data-act="off-req">Request time off</button></div>
       ${reqs.filter(r=>r.end_date>=t||r.status==='pending').length?`<ul class="list">${reqs.filter(r=>r.end_date>=t||r.status==='pending').map(r=>`<li><div class="grow"><b>${offRange({from:r.start_date,to:r.end_date})}</b><small>${esc(r.reason||'')}</small></div><span class="badge ${st[r.status]?.[0]||''}">${st[r.status]?.[1]||r.status}</span></li>`).join('')}</ul>`
-        :'<p class="note">Ask for days off. Your boss approves it and you won\'t be scheduled those days.</p>'}</div></div>`}
+        :'<p class="note">Ask for days off. Your boss approves it and you won\'t be scheduled those days.</p>'}</div></div>${fixMineCard()}`}
 function offRequestForm(){openForm({title:'Request time off',submit:'Send request',
     body:`<div class="fields">${field('First day off',inp('from',addDays(today(),7),'date'))}${field('Last day off',inp('to',addDays(today(),7),'date'))}${field('Reason (optional)',inp('reason','','text','placeholder="Vacation, appointment…" maxlength="200"'),'full')}</div>`,
     onSubmit:async fd=>{const from=fd.get('from'),to=fd.get('to')||from;if(!from){toast('Pick the first day off');return false}if(to<from){toast('The last day is before the first day');return false}
@@ -1321,7 +1375,8 @@ function offRequestForm(){openForm({title:'Request time off',submit:'Send reques
 async function empExtrasLoad(){const sb=CLOUD.sb;if(!sb||!isEmp())return;
   try{const [a,b]=await Promise.all([sb.from('daily_reports').select('id,job_id,date,notes,photos').eq('user_id',CLOUD.user.id).order('date',{ascending:false}).limit(20),
     sb.from('time_off').select('*').eq('user_id',CLOUD.user.id).order('start_date',{ascending:false}).limit(30)]);
-    if(!a.error)CLOUD.myReports=a.data;if(!b.error)CLOUD.myTimeOff=b.data;await taskChecksLoad()}catch(e){}}
+    if(!a.error)CLOUD.myReports=a.data;if(!b.error)CLOUD.myTimeOff=b.data;
+    const c=await sb.from('time_fixes').select('*').eq('user_id',CLOUD.user.id).order('created_at',{ascending:false}).limit(30);if(!c.error)CLOUD.myFixes=c.data;await taskChecksLoad()}catch(e){}}
 async function ownerExtrasLoad(){const sb=CLOUD.sb;if(!sb||!isOwnerCloud())return false;let ch=false;
   try{const since=addDays(today(),-120);const [a,b]=await Promise.all([sb.from('daily_reports').select('*').eq('company_id',CLOUD.company).gte('date',since).order('date',{ascending:false}).limit(300),
     sb.from('time_off').select('*').eq('company_id',CLOUD.company).order('created_at',{ascending:false}).limit(200)]);
@@ -1329,6 +1384,9 @@ async function ownerExtrasLoad(){const sb=CLOUD.sb;if(!sb||!isOwnerCloud())retur
       if(fresh.length)toast(fresh.length===1?`New daily report from ${emp(fresh[0].employee_id)?.name||'your crew'}`:`${fresh.length} new daily reports`)}
     if(!b.error){const newReq=b.data.filter(r=>r.status==='pending'&&CLOUD.timeReqs&&!CLOUD.timeReqs.some(x=>x.id===r.id));if(JSON.stringify(b.data)!==JSON.stringify(CLOUD.timeReqs||[]))ch=true;CLOUD.timeReqs=b.data;
       if(newReq.length)toast(`${emp(newReq[0].employee_id)?.name||'Someone'} asked for time off`)}
+    const c=await sb.from('time_fixes').select('*').eq('company_id',CLOUD.company).order('created_at',{ascending:false}).limit(100);
+    if(!c.error){const nf=c.data.filter(r=>r.status==='pending'&&CLOUD.fixReqs&&!CLOUD.fixReqs.some(x=>x.id===r.id));if(JSON.stringify(c.data)!==JSON.stringify(CLOUD.fixReqs||[]))ch=true;CLOUD.fixReqs=c.data;
+      if(nf.length)toast(`${emp(nf[0].employee_id)?.name||'Someone'} sent a time fix`)}
     if(await taskChecksLoad())ch=true}catch(e){}
   return ch}
 
@@ -2006,7 +2064,7 @@ function pageCrew(){const L=laborCalc(),[from,to]=periodOf(UI.pp||today());UI.pp
     ${Object.keys(perJob).length?`<div class="table-wrap"><table><thead><tr><th>Job</th><th class="n">Hours</th><th class="n">Wages</th><th class="n">Labor cost</th></tr></thead><tbody>
     ${Object.entries(perJob).map(([id,p])=>{const j=job(id);return `<tr class="click" data-href="#/job/${id}"><td><span class="dot" style="background:${jobColor(j)}"></span> ${esc(j?.name||'Job removed')}</td><td class="n">${hrs(p.h)}</td><td class="n">${money(p.wage)}</td><td class="n">${money(p.cost)}</td></tr>`}).join('')}</tbody></table></div>`:emptyBox('No worked hours in this period.')}</div>
   </div><div class="stack">
-  ${timeOffCard()}
+  ${fixCard()}${timeOffCard()}
   ${isOwnerCloud()?onClockCard():''}
   <div class="card"><div class="card-head"><h2>Crew</h2>${isOwnerCloud()?'<span class="note">Invite people to clock in on the app</span>':''}</div>
   ${S.employees.length?`<ul class="list">${S.employees.slice().sort((a,b)=>(a.active===false)-(b.active===false)||a.name.localeCompare(b.name)).map(e=>{const h=sum(S.shifts.filter(s=>s.empId===e.id&&s.date>=wk&&s.date<=addDays(wk,6)&&s.status!=='missed'),shiftHours);
@@ -2112,7 +2170,7 @@ const ACT={
   openForm({title:v?'Video':'Photo',closeLabel:'Close',body:`<div class="viewer">${v?`<video data-photo="${esc(id)}" controls playsinline></video>`:`<img data-photo="${esc(id)}" alt="Report photo">`}</div>`,onOpen:f=>hydratePhotos(f)})},
 'share-new':()=>shareForm(curJob()),'share-open':a=>shareResult((S.shares||[]).find(s=>s.id===a.dataset.id)),'import-photos':()=>importPhotosForm(),
 'near-photo':()=>{if(UI.nearJob)quickCapture(UI.nearJob)},'near-report':()=>reportForm(null,{jobId:UI.nearJob}),'near-hide':()=>{LS.set('nearHide',UI.nearJob+today());route()},
-'off-new':()=>offForm(),'off-edit':a=>offForm(S.timeOff.find(t=>t.id===a.dataset.id)),'off-ok':a=>offDecide(a.dataset.id,true),'off-no':a=>offDecide(a.dataset.id,false),'off-req':()=>offRequestForm(),
+'off-new':()=>offForm(),'off-edit':a=>offForm(S.timeOff.find(t=>t.id===a.dataset.id)),'off-ok':a=>offDecide(a.dataset.id,true),'off-no':a=>offDecide(a.dataset.id,false),'off-req':()=>offRequestForm(),'fix-req':a=>fixForm(a.dataset.punch||''),'fix-ok':a=>fixDecide(a.dataset.id,true),'fix-no':a=>fixDecide(a.dataset.id,false),
 'off-clear':()=>{const ids=new Set(offShifts().map(s=>s.id));S.shifts=S.shifts.filter(s=>!ids.has(s.id));save();route();toast(`${ids.size} shift${ids.size>1?'s':''} removed`)},
 'cust-new':()=>custForm(),'cust-edit':a=>custForm(cust(a.dataset.id)),'cust-job':a=>{const c=cust(a.dataset.id);jobForm(null,{client:c.name,phone:c.phone,address:c.address})},
 'acct-range':a=>{UI.acct=a.dataset.v;route()},'acct-csv':async a=>{const k=a.dataset.v,[,,tag]=acctRange(),name=`blue-board-${k}-${tag}.csv`;await saveFile(name,toCSV(acctCSV(k)),'text/csv')},
@@ -2351,7 +2409,8 @@ function clockCard(){const open=CLOUD.punches.find(p=>!p.out_at),req=!!S.setting
   if(open){const j=job(open.job_id),mins=Math.floor((Date.now()-new Date(open.in_at))/60000);
     return `<div class="card clock on"><div class="clock-row"><div><span class="badge done">On the clock</span><h2 style="margin-top:8px">${esc(j?.name||'Job')}</h2>
       <p class="note">Since ${timeOf(open.in_at)} · <b data-elapsed="${esc(open.in_at)}">${dur(mins)}</b>${open.in_lat!=null?' · location recorded':''}</p></div>
-      <div class="clock-act"><input id="clock-note" placeholder="Note for your boss (optional)" maxlength="300"><button class="btn primary big" data-act="clock-out">Clock out</button></div></div></div>`}
+      <div class="clock-act"><input id="clock-note" placeholder="Note for your boss (optional)" maxlength="300"><button class="btn primary big" data-act="clock-out">Clock out</button></div></div>
+      ${mins>12*60||ds(new Date(open.in_at))!==today()?`<div class="insight warn" style="margin-top:12px"><b>Forgot to clock out?</b><span>You've been on the clock since ${fmtDate(ds(new Date(open.in_at)))}. ${(CLOUD.myFixes||[]).some(r=>r.punch_id===open.id&&r.status==='pending')?'Your fix is waiting for your boss. You can clock out now to start today.':'Send the time you really finished, then clock out to start today.'} <button class="btn sm" data-act="fix-req" data-punch="${open.id}">Fix this shift</button></span></div>`:''}</div>`}
   const me=CLOUD.employeeId,mine=S.shifts.find(s=>s.empId===me&&s.date===today()&&s.status!=='missed');
   const jobs=S.jobs.filter(j=>j.status!=='done'||j.id===mine?.jobId);
   return `<div class="card clock"><div class="clock-row"><div><h2>Ready to work?</h2><p class="note">${mine?`Scheduled today: <b>${esc(job(mine.jobId)?.name||'')}</b> ${fmtTime(mine.start)}–${fmtTime(mine.end)}. `:'Pick the job you\'re on. '}${req?'Location is required to clock in.':'Your location is recorded when you clock in and out.'}</p></div>
@@ -2382,7 +2441,8 @@ function pageMyPay(){const R=payRange(),[from,to]=R[UI.pay],rows=myPayRows(from,
   <div class="card"><div class="card-head"><h2>Clock history</h2><span class="note">${rows.length} shift${rows.length===1?'':'s'}</span></div>
   ${rows.length?`<div class="table-wrap"><table><thead><tr><th>Day</th><th>Job</th><th>In</th><th>Out</th><th class="n">Hours</th>${show?'<th class="n">Pay</th>':''}<th>Location</th></tr></thead><tbody>
   ${rows.map(r=>{const j=job(r.p.job_id);return `<tr><td>${pd(r.d).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</td><td><span class="dot" style="background:${jobColor(j)}"></span> ${esc(j?.name||'Job')}${r.p.note?`<br><small class="muted">${esc(r.p.note)}</small>`:''}</td>
-    <td>${timeOf(r.p.in_at)}</td><td>${timeOf(r.p.out_at)}</td><td class="n">${hrs(r.h)}${r.ot?`<br><small class="neg">${hrs(r.ot)} OT</small>`:''}</td>${show?`<td class="n">${money2(r.pay)}</td>`:''}<td>${pins(r.p.in_lat,r.p.in_lng,'In')}${pins(r.p.out_lat,r.p.out_lng,'Out')}</td></tr>`}).join('')}</tbody></table></div>`:emptyBox('No clocked hours in this period.')}
+    <td>${timeOf(r.p.in_at)}</td><td>${timeOf(r.p.out_at)}</td><td class="n">${hrs(r.h)}${r.ot?`<br><small class="neg">${hrs(r.ot)} OT</small>`:''}</td>${show?`<td class="n">${money2(r.pay)}</td>`:''}<td>${pins(r.p.in_lat,r.p.in_lng,'In')}${pins(r.p.out_lat,r.p.out_lng,'Out')}${(CLOUD.myFixes||[]).some(f=>f.punch_id===r.p.id&&f.status==='pending')?'<span class="badge active">Fix sent</span>':`<button class="btn sm ghost" data-act="fix-req" data-punch="${r.p.id}">Fix</button>`}</td></tr>`}).join('')}</tbody></table></div>`:emptyBox('No clocked hours in this period.')}
+  <div class="btns" style="margin-top:10px"><button class="btn sm" data-act="fix-req">Forgot to clock in or out?</button></div>
   <p class="note" style="margin-top:10px">Hours are rounded from your clock times. Your boss may adjust them for breaks or corrections. Gross pay is before taxes and deductions.</p></div></div>`}
 function pageEmpAccount(){const me=emp(CLOUD.employeeId),p=S.profile;
   return `<div class="page-head"><div class="profile-head"><span class="avatar lg" style="background:${me?.color||'var(--hi)'}">${esc(initials(me?.name))}</span><div><h1>${esc(me?.name||'My account')}</h1><p class="sub">${esc([me?.role,p.company].filter(Boolean).join(' at '))}</p></div></div></div>

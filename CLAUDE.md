@@ -30,6 +30,9 @@ not only on the device.
   Plans are bought on the website only: the iPhone app shows plan status but no buy buttons or links
   (App Store rules). Client side: `PLANS`, `subAccess()`, `crewLimit()`, `pagePlan` (`#/plan`) in index.html.
   If the table can't be read, the app allows access. Limits are enforced in the app only.
+- Time fixes: crew send "Fix my time" requests (forgot to clock in/out) into `public.time_fixes`; the owner
+  approves on Crew & Pay, which calls `decide_time_fix()` (writes the punch) and updates the shift.
+  Client side: `fixCard`, `fixDecide`, `fixMineCard`, `fixForm` in index.html.
 - `ios/` – Xcode project (Capacitor 8, Swift Package Manager). `ios/App/App/ReceiptScan.swift`
   is a native receipt-OCR plugin.
 - `www/` – build output for Capacitor (gitignored; made by `scripts/build-www.mjs`).

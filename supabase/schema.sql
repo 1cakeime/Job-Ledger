@@ -559,3 +559,55 @@ create trigger companies_start_trial after insert on public.companies for each r
 
 -- Companies that existed before plans get a 14-day trial from the day this runs.
 insert into public.subscriptions(company_id) select id from public.companies on conflict do nothing;
+
+-- ============ Time fixes: crew ask to correct a forgotten clock in/out ============
+-- punch_id set: change that clock-in's times. punch_id null: add a shift they never clocked.
+-- Only the owner can approve, through decide_time_fix(), which writes the punch.
+create table if not exists public.time_fixes (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references public.companies(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  employee_id text not null,
+  punch_id uuid references public.punches(id) on delete cascade,
+  job_id text not null,
+  in_at timestamptz not null,
+  out_at timestamptz not null,
+  reason text check (length(reason) <= 300),
+  status text not null default 'pending' check (status in ('pending','approved','denied')),
+  decided_at timestamptz,
+  created_at timestamptz not null default now(),
+  check (out_at > in_at and out_at - in_at <= interval '24 hours')
+);
+create unique index if not exists time_fixes_one_pending on public.time_fixes(punch_id) where status = 'pending';
+alter table public.time_fixes enable row level security;
+drop policy if exists fixes_read on public.time_fixes;
+create policy fixes_read on public.time_fixes for select using (user_id = auth.uid() or public.is_owner(company_id));
+drop policy if exists fixes_insert on public.time_fixes;
+create policy fixes_insert on public.time_fixes for insert with check (
+  user_id = auth.uid() and status = 'pending' and employee_id = public.my_employee_id(company_id)
+  and out_at <= now() + interval '10 minutes'
+  and (punch_id is null or exists (select 1 from public.punches p where p.id = punch_id and p.user_id = auth.uid())));
+drop policy if exists fixes_delete on public.time_fixes;
+create policy fixes_delete on public.time_fixes for delete using ((user_id = auth.uid() and status = 'pending') or public.is_owner(company_id));
+
+create or replace function public.decide_time_fix(p_id uuid, p_ok boolean) returns public.punches
+language plpgsql security definer set search_path = public as $$
+declare f time_fixes; r punches;
+begin
+  select * into f from time_fixes where id = p_id for update;
+  if not found then raise exception 'That request was not found'; end if;
+  if not public.is_owner(f.company_id) then raise exception 'Only the owner can approve time fixes'; end if;
+  if f.status <> 'pending' then raise exception 'That request was already answered'; end if;
+  update time_fixes set status = case when p_ok then 'approved' else 'denied' end, decided_at = now() where id = p_id;
+  if not p_ok then return null; end if;
+  if f.punch_id is not null then
+    update punches set in_at = f.in_at, out_at = f.out_at, job_id = f.job_id where id = f.punch_id returning * into r;
+  end if;
+  if r.id is null then
+    insert into punches(company_id, user_id, employee_id, job_id, in_at, out_at, note)
+      values (f.company_id, f.user_id, f.employee_id, f.job_id, f.in_at, f.out_at, f.reason) returning * into r;
+  end if;
+  return r;
+end $$;
+revoke all on function public.decide_time_fix(uuid, boolean) from public, anon;
+grant execute on function public.decide_time_fix(uuid, boolean) to authenticated;
