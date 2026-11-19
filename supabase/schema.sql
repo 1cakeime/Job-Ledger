@@ -715,3 +715,74 @@ create table if not exists public.customer_reminders (
   sent_at timestamptz not null default now()
 );
 alter table public.customer_reminders enable row level security;
+
+-- ============ Demo company stays current (2026-11-19) ============
+-- The App Review demo login (getblueboard+demo@gmail.com, company "Ridgeline Builders") was filled with
+-- sample data once, so its dates go stale. refresh_demo() runs daily from pg_cron:
+--   * once 7+ days have passed since data.demoAnchor, every date in the demo moves forward by whole weeks
+--     (company_state JSON, shared docs, customer pages, punches, reports, time off, time fixes, picks);
+--   * past shifts still "scheduled" become "worked", future ones "scheduled"; the setup checklist stays hidden.
+-- Only touches the company owned by the demo login. Not callable from the app.
+create or replace function public._shift_dates(j jsonb, n int) returns jsonb
+language plpgsql immutable as $$
+declare s text;
+begin
+  if n = 0 or j is null then return j; end if;
+  case jsonb_typeof(j)
+    when 'object' then
+      return (select coalesce(jsonb_object_agg(k, public._shift_dates(v, n)), '{}'::jsonb) from jsonb_each(j) t(k, v));
+    when 'array' then
+      return (select coalesce(jsonb_agg(public._shift_dates(v, n) order by o), '[]'::jsonb) from jsonb_array_elements(j) with ordinality t(v, o));
+    when 'string' then
+      s := j #>> '{}';
+      begin
+        if s ~ '^\d{4}-\d{2}-\d{2}$' then return to_jsonb(to_char(s::date + n, 'YYYY-MM-DD')); end if;
+        if s ~ '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}' then
+          return to_jsonb(to_char((s::timestamptz + make_interval(days => n)) at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+        end if;
+      exception when others then return j;
+      end;
+      return j;
+    else return j;
+  end case;
+end $$;
+
+create or replace function public.refresh_demo() returns text
+language plpgsql security definer set search_path = public as $$
+declare cid uuid; st jsonb; anchor date; n int; iv interval;
+begin
+  select c.id into cid from companies c join auth.users u on u.id = c.owner
+   where u.email = 'getblueboard+demo@gmail.com' order by c.created_at limit 1;
+  if cid is null then return 'no demo company'; end if;
+  select data into st from company_state where company_id = cid for update;
+  if st is null then return 'no demo data'; end if;
+  anchor := coalesce((st->>'demoAnchor')::date, date '2026-11-17');
+  n := 7 * floor((current_date - anchor) / 7.0)::int;
+  st := jsonb_set(st, '{demoAnchor}', to_jsonb(to_char(anchor, 'YYYY-MM-DD')));
+  if n > 0 then
+    st := public._shift_dates(st, n);   -- demoAnchor moves with everything else
+    iv := make_interval(days => n);
+    update shared_docs set data = public._shift_dates(data, n), approved_at = approved_at + iv, viewed_at = viewed_at + iv,
+           created_at = created_at + iv, updated_at = now() where company_id = cid;
+    update customer_portals set data = public._shift_dates(data, n), viewed_at = viewed_at + iv, created_at = created_at + iv,
+           updated_at = now() where company_id = cid;
+    update portal_choices set decided_at = decided_at + iv, notified_at = notified_at + iv where company_id = cid;
+    update punches set in_at = in_at + iv, out_at = out_at + iv where company_id = cid;
+    update daily_reports set date = date + n, created_at = created_at + iv where company_id = cid;
+    update time_off set start_date = start_date + n, end_date = end_date + n, decided_at = decided_at + iv, created_at = created_at + iv where company_id = cid;
+    update time_fixes set in_at = in_at + iv, out_at = out_at + iv, decided_at = decided_at + iv, created_at = created_at + iv where company_id = cid;
+  end if;
+  st := jsonb_set(st, '{shifts}', coalesce((
+    select jsonb_agg(case
+      when sh->>'status' = 'scheduled' and (sh->>'date')::date < current_date then jsonb_set(sh, '{status}', '"worked"')
+      when sh->>'status' = 'worked' and (sh->>'date')::date > current_date and sh->>'punchId' is null then jsonb_set(sh, '{status}', '"scheduled"')
+      else sh end order by o)
+    from jsonb_array_elements(st->'shifts') with ordinality t(sh, o)), '[]'::jsonb));
+  st := jsonb_set(st, '{settings,startDone}', 'true');
+  update company_state set data = st, updated_at = now() where company_id = cid;
+  return format('demo refreshed, moved %s days', n);
+end $$;
+revoke all on function public.refresh_demo() from public, anon, authenticated;
+revoke all on function public._shift_dates(jsonb, int) from public, anon, authenticated;
+-- Daily at 10:00 UTC (early morning in the US):
+--   select cron.schedule('bb-demo-refresh', '0 10 * * *', $$select public.refresh_demo()$$);
