@@ -8,10 +8,11 @@ const grab = (re, what) => { const m = src.match(re); if (!m) throw new Error('b
 const code = [
   grab(/const esc=v=>[^\n]*/, 'esc'), grab(/const num=v=>[^\n]*/, 'num'), grab(/const sum=\(a,f=x=>x\)=>[^\n]*/, 'sum'),
   grab(/const money2=n=>[^\n]*/, 'money2'), grab(/const pd=[^\n]*/, 'pd'), grab(/const fmtDateY=[^\n]*/, 'fmtDateY'),
-  'const job=()=>null;', grab(/const DOC_KIND=[^\n]*/, 'DOC_KIND'), grab(/function docTotals\(d\)\{[\s\S]*?return\{sub,tax,total,paid,balance:total-paid\}\}/, 'docTotals'),
+  'const job=()=>null;', grab(/const DOC_KIND=[^\n]*/, 'DOC_KIND'), grab(/const docDeposit=[^\n]*/, 'docDeposit'), grab(/function docTotals\(d\)\{[\s\S]*?return\{sub,tax,total,paid,balance:total-paid\}\}/, 'docTotals'),
   grab(/function docHTML\(d,co\)\{[\s\S]*?<\/article>`\}/, 'docHTML'),
 ].join('\n');
 const css = grab(/\/\* estimates & invoices \*\/[\s\S]*?\.doc-ok\{[^}]*\}/, 'document styles');
+const page = readFileSync('scripts/doc-render.js', 'utf8');
 const sb = grab(/const SB_URL='[^']+',SB_KEY='[^']+';/, 'Supabase settings');
 
 const html = `<!doctype html>
@@ -26,7 +27,17 @@ const html = `<!doctype html>
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 'DM Sans',system-ui,sans-serif}
 main{max-width:820px;margin:0 auto;padding:24px 16px 64px}
 .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:14px}
-.bar h1{font:800 20px/1.2 Manrope,sans-serif;margin:0}
+.bar h2{font:800 18px/1.2 Manrope,sans-serif;margin:0}
+h1{font:800 26px/1.15 Manrope,sans-serif;margin:0}.sec{margin-top:26px}.sec>h2{font:800 18px Manrope,sans-serif;margin:0 4px 10px}
+.head{display:flex;gap:14px;align-items:center;margin:4px 0 18px}.logo{width:52px;height:52px;border-radius:16px;object-fit:contain;background:var(--surface);border:1px solid var(--line);flex:none}
+.co{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}.back{display:inline-block;margin-bottom:12px;color:var(--hi);font-weight:700;text-decoration:none}
+.big{display:block;font:800 28px/1.15 Manrope,sans-serif;margin:2px 0}.sum-row{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-end}.sum-row b{display:block}.sum-row .big{font-size:28px}
+.paid{list-style:none;padding:0;margin:12px 0 6px;border-top:1px solid var(--line)}.paid li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.sig{position:relative;margin:4px 0 12px}.sig canvas{display:block;width:100%;height:150px;border-radius:16px;border:1.5px dashed var(--line2);background:#fff;touch-action:none;cursor:crosshair}
+.sig-hint{position:absolute;left:16px;bottom:14px;color:#9aa1bd;font-size:14px;pointer-events:none}.sig .btn{position:absolute;right:6px;top:6px}
+.btn.sm{padding:8px 14px;font-size:13px}a.btn{text-decoration:none;display:inline-block}
+.sticky{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--line2);box-shadow:0 -8px 24px -12px rgba(16,24,40,.25);transition:transform .2s}
+.sticky b{display:block;font:800 18px Manrope,sans-serif}.sticky.gone{transform:translateY(110%)}main{padding-bottom:110px}
 .btn{appearance:none;border:0;border-radius:999px;padding:11px 18px;font:700 14px 'DM Sans',sans-serif;cursor:pointer;background:var(--surface2);color:var(--ink)}
 .btn.primary{background:linear-gradient(135deg,#2D5BFF,#00A8F0);color:#fff}.btn.ghost{background:transparent}.btn:disabled{opacity:.6}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:18px;margin-top:14px}
@@ -52,7 +63,7 @@ ${css}
 .ba-range{position:absolute;left:0;bottom:0;width:100%;height:4px;margin:0;opacity:0;pointer-events:none}
 .ba-l,.ba-r{position:absolute;top:10px;padding:4px 10px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;font-weight:700;z-index:2;pointer-events:none}
 .ba-l{left:10px}.ba-r{right:10px}.ba-print{display:none}
-@media print{body{background:#fff}.bar,.card,footer{display:none!important}main{padding:0;max-width:none}.doc-wrap{border:0;box-shadow:none;border-radius:0}
+@media print{body{background:#fff}.bar,.card,footer,.sticky,.sec,.back,.head{display:none!important}main{padding:0;max-width:none}.doc-wrap{border:0;box-shadow:none;border-radius:0}
   .pr{border:0;padding:0}.ba{display:none}.ba-print{display:grid;grid-template-columns:1fr 1fr;gap:10px}.ba-print figure{margin:0}.ba-print img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px}
   .pr-grid{grid-template-columns:1fr 1fr}.pr-grid video{display:none}}
 </style></head>
@@ -82,32 +93,7 @@ function renderPhotos(r){var d=r.data,co=d.company||{},items=d.items||[];documen
   app.innerHTML=h;$('#print').onclick=function(){window.print()};
   var ba=document.querySelector('.ba');if(ba){var set=function(ev){var b=ba.getBoundingClientRect(),x=Math.max(0,Math.min(100,(ev.clientX-b.left)/b.width*100));ba.style.setProperty('--x',x+'%')};
     ba.addEventListener('pointerdown',function(e){set(e);var up=function(){removeEventListener('pointermove',set);removeEventListener('pointerup',up)};addEventListener('pointermove',set);addEventListener('pointerup',up)})}}
-function render(r){if(r.data&&r.data.kind==='photos')return renderPhotos(r);const d=r.data,est=d.kind==='estimate',st=r.status,co=d.company||{};
-  const refs=new Set((d.payments||[]).map(p=>p.ref).filter(Boolean));for(const p of r.online||[])if(!refs.has(p.ref))(d.payments=d.payments||[]).push({amount:+p.amount,date:p.date,ref:p.ref});
-  const t=docTotals(d),due=Math.max(0,Math.round(t.balance*100)/100),justPaid=/[?&]paid=1/.test(location.search);
-  document.title=DOC_KIND[d.kind]+' '+d.num+(co.company?' · '+co.company:'');
-  const decided=st==='approved'||st==='declined';
-  app.innerHTML=\`<div class="bar"><h1>\${esc(DOC_KIND[d.kind]+' '+d.num)}</h1><button class="btn" id="print">Print or save PDF</button></div>
-    \${est?\`<div class="card" id="respond">\${decided?(st==='approved'?\`<p class="ok">Approved\${r.approved_name?' by '+esc(r.approved_name):''}. Thank you!</p>\`:'<p class="note">You declined this estimate. Contact us if you change your mind.</p>')
-      :\`<h2>Approve this estimate</h2><p class="note">Total \${money2(t.total)}. Type your name and tap Approve to accept it. \${esc(co.company||'The contractor')} will be notified.</p>
-        <input id="who" placeholder="Your full name" autocomplete="name"><div class="row"><button class="btn primary" id="approve">Approve estimate</button><button class="btn ghost" id="decline">Decline</button></div><p class="note err" id="msg" hidden></p>\`}</div>\`
-      :(due<0.005?'<div class="card"><p class="ok">Paid in full. Thank you!</p></div>':\`<div class="card"><h2>Amount due: \${money2(due)}</h2>
-        \${justPaid?'<p class="ok">Thank you! Your card payment went through. It can take a minute to show on this page.</p>':''}
-        \${r.can_pay&&!justPaid?\`<div class="row" style="margin:6px 0 10px"><button class="btn primary" id="pay">Pay \${money2(due)} by card</button></div><p class="note err" id="pmsg" hidden></p>\`:''}
-        <p class="note">\${d.due?'Due '+fmtDateY(d.due)+'. ':''}Contact \${esc(co.company||'us')}\${co.phone?' at '+esc(co.phone):''} with any questions about this invoice.</p></div>\`)}
-    <div class="doc-wrap" style="margin-top:14px">\${docHTML(d,co)}</div>\`;
-  $('#print').onclick=()=>window.print();
-  if($('#pay'))$('#pay').onclick=async()=>{const b=$('#pay'),m=$('#pmsg');b.disabled=true;b.textContent='Opening secure checkout…';
-    const {data,error}=await sbc.functions.invoke('payments',{body:{action:'checkout',token}});
-    if(error||!data?.url){let msg='Card payment isn\\'t available right now. Please try again later.';try{msg=(await error.context.json()).error||msg}catch(e){}m.hidden=false;m.textContent=msg;b.disabled=false;b.textContent='Pay '+money2(due)+' by card';return}
-    location.href=data.url};
-  const go=async ok=>{const who=$('#who').value.trim(),m=$('#msg');if(ok&&who.length<2){m.hidden=false;m.textContent='Type your name first.';$('#who').focus();return}
-    document.querySelectorAll('#respond .btn').forEach(b=>b.disabled=true);
-    const {data,error}=await sbc.rpc('respond_shared_doc',{p_token:token,p_name:who,p_approve:ok});
-    if(error){m.hidden=false;m.textContent='That didn\\'t go through. Check your connection and try again.';document.querySelectorAll('#respond .btn').forEach(b=>b.disabled=false);return}
-    render(data)};
-  if($('#approve')){$('#approve').onclick=()=>go(true);$('#decline').onclick=()=>{if(confirm('Decline this estimate?'))go(false)}}}
-load();
+${page}
 </script></body></html>
 `;
 writeFileSync('doc.html', html);

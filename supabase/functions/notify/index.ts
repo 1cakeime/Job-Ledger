@@ -14,6 +14,9 @@
 //   CRON_SECRET     (optional) lets the scheduled job call { action: 'reminders' } with an x-cron-key
 //                   header: "Still on the clock?" pushes an hour after a shift's scheduled end
 //                   (or 10 hours after clock-in when nothing was scheduled). See schema.sql.
+//                   The same run emails customers (RESEND_API_KEY): a pick due within 2 days, and an
+//                   invoice 1, 7 and 14 days overdue. Once each (customer_reminders), 9am-6pm their time,
+//                   unless the contractor turned customer reminders off in Settings.
 // SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY are provided automatically.
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
 
@@ -71,7 +74,9 @@ Deno.serve(async (req) => {
   const cronKey = Deno.env.get('CRON_SECRET');
   if (input.action === 'reminders') {
     if (!cronKey || req.headers.get('x-cron-key') !== cronKey) return json({ error: 'Not allowed' }, 403);
-    return json({ sent: await reminders(url) });
+    const sent = await reminders(url);
+    const emailed = await customerReminders(url).catch((e) => { console.error('customer reminders', e); return 0; });
+    return json({ sent, emailed });
   }
   if (typeof input.portal_token === 'string') return portalPick(url, input.portal_token, String(input.item_id ?? ''));
   const caller = createClient(url, Deno.env.get('SUPABASE_ANON_KEY')!, {
@@ -120,17 +125,119 @@ async function emailIfNoApp(admin: any, userIds: string[], title: string, body: 
     const { data } = await admin.auth.admin.getUserById(id);
     const to = data?.user?.email;
     if (!to) continue;
-    const html = `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#10142B">
-      <img src="https://getblueboard.com/icons/logo-seal.png" width="56" height="56" alt="Blue Board" style="display:block;margin-bottom:16px">
-      <h2 style="margin:0 0 8px;font-size:20px">${esc(title)}</h2><p style="font-size:16px;line-height:1.5;margin:0 0 20px">${esc(body)}</p>
-      <a href="${link}" style="display:inline-block;background:#2D5BFF;color:#fff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:999px">Open Blue Board</a>
-      <p style="font-size:12px;color:#6b7280;margin-top:24px">You get these emails because you don't have the Blue Board iPhone app signed in. Install it to get phone notifications instead.</p></div>`;
-    const r = await fetch('https://api.resend.com/emails', {
-      method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: 'Blue Board <no-reply@getblueboard.com>', to, subject: title.slice(0, 120), html, text: `${title}\n\n${body}\n\n${link}` }),
-    });
-    if (!r.ok) console.error('Resend', r.status, await r.text().catch(() => ''));
+    await sendEmail({ to, subject: title, title, body, link, button: 'Open Blue Board',
+      foot: "You get these emails because you don't have the Blue Board iPhone app signed in. Install it to get phone notifications instead." });
   }
+}
+
+async function sendEmail(o: { to: string; subject: string; title: string; body: string; link: string; button: string; foot: string; fromName?: string; replyTo?: string; logo?: string }): Promise<boolean> {
+  const key = Deno.env.get('RESEND_API_KEY');
+  if (!key) return false;
+  const logo = /^https:\/\//.test(o.logo ?? '') ? o.logo! : 'https://getblueboard.com/icons/logo-seal.png';
+  const html = `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#10142B">
+    <img src="${esc(logo)}" width="56" height="56" alt="" style="display:block;margin-bottom:16px;object-fit:contain">
+    <h2 style="margin:0 0 8px;font-size:20px">${esc(o.title)}</h2><p style="font-size:16px;line-height:1.5;margin:0 0 20px;white-space:pre-line">${esc(o.body)}</p>
+    <a href="${esc(o.link)}" style="display:inline-block;background:#2D5BFF;color:#fff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:999px">${esc(o.button)}</a>
+    <p style="font-size:12px;color:#6b7280;margin-top:24px">${esc(o.foot)}</p></div>`;
+  const name = (o.fromName || 'Blue Board').replace(/[<>"\r\n]/g, '').slice(0, 60);
+  const r = await fetch('https://api.resend.com/emails', {
+    method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: `${name} <no-reply@getblueboard.com>`, to: o.to, subject: o.subject.slice(0, 120), html,
+      text: `${o.title}\n\n${o.body}\n\n${o.link}`, ...(o.replyTo && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(o.replyTo) ? { reply_to: o.replyTo } : {}) }),
+  });
+  if (!r.ok) console.error('Resend', r.status, await r.text().catch(() => ''));
+  return r.ok;
+}
+
+const okEmail = (e: unknown) => typeof e === 'string' && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
+const money = (n: number) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const niceDay = (d: string) => new Date(d + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' });
+
+// Reminder emails to customers. Each key is claimed in customer_reminders first, so it goes out once.
+async function customerReminders(url: string): Promise<number> {
+  if (!Deno.env.get('RESEND_API_KEY')) return 0;
+  const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+  // deno-lint-ignore no-explicit-any
+  const settingsOf = new Map<string, any>();
+  const settings = async (cid: string) => {
+    if (!settingsOf.has(cid)) { const { data } = await admin.from('company_public').select('data').eq('company_id', cid).maybeSingle(); settingsOf.set(cid, data?.data?.settings ?? {}); }
+    return settingsOf.get(cid);
+  };
+  // Today in the company's time zone, or null outside 9am-6pm there (or when reminders are off).
+  const dayFor = async (cid: string) => {
+    const st = await settings(cid);
+    if (st.custRemind === false) return null;
+    const tz = st.tz || 'America/New_York';
+    try {
+      const hour = +new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', hourCycle: 'h23' }).format(new Date());
+      if (hour < 9 || hour >= 18) return null;
+      return dayIn(new Date().toISOString(), tz);
+    } catch (_) { return null; }
+  };
+  const claim = async (key: string, cid: string) => !(await admin.from('customer_reminders').insert({ key, company_id: cid })).error;
+  const days = (a: string, b: string) => Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 864e5);
+  let sent = 0;
+
+  // Choices due within 2 days on a customer page.
+  const { data: portals } = await admin.from('customer_portals').select('token, company_id, data').limit(2000);
+  for (const p of portals ?? []) {
+    // deno-lint-ignore no-explicit-any
+    const d: any = p.data ?? {};
+    if (!okEmail(d.email)) continue;
+    // deno-lint-ignore no-explicit-any
+    const picks = (d.items ?? []).filter((i: any) => i.kind === 'pick' && !i.locked && i.date);
+    if (!picks.length) continue;
+    const day = await dayFor(p.company_id);
+    if (!day) continue;
+    const { data: ch } = await admin.from('portal_choices').select('item_id').eq('token', p.token);
+    const done = new Set((ch ?? []).map((c: { item_id: string }) => c.item_id));
+    const due = [];
+    for (const it of picks) {
+      const left = days(day, it.date);
+      if (done.has(it.id) || left < 0 || left > 2) continue;
+      if (await claim(`pick:${p.token}:${it.id}`, p.company_id)) due.push(it);
+    }
+    if (!due.length) continue;
+    const co = d.company ?? {}, who = co.company || 'Your contractor';
+    // deno-lint-ignore no-explicit-any
+    const list = due.map((i: any) => `• ${i.title}: needed by ${niceDay(i.date)}`).join('\n');
+    if (await sendEmail({ to: d.email, fromName: who, replyTo: co.email, logo: co.logo, button: 'Make my choice',
+      subject: due.length === 1 ? `Reminder: ${due[0].title} for ${d.jobName || 'your project'}` : `Reminder: ${due.length} choices for ${d.jobName || 'your project'}`,
+      title: `${d.client ? d.client + ', w' : 'W'}e need ${due.length === 1 ? 'a choice' : due.length + ' choices'} from you`,
+      body: `${list}\n\nPick on your project page so ${who} can keep things on schedule.`,
+      link: `https://getblueboard.com/portal.html#${p.token}`, foot: `Sent for ${who} by Blue Board. Reply to this email to reach them.` })) sent++;
+  }
+
+  // Unpaid invoices: 1, 7 and 14 days after the due date.
+  const { data: docs } = await admin.from('shared_docs').select('token, company_id, data').eq('kind', 'invoice').limit(2000);
+  for (const r of docs ?? []) {
+    // deno-lint-ignore no-explicit-any
+    const d: any = r.data ?? {}, to = d.billTo?.email;
+    if (!okEmail(to) || !d.due) continue;
+    const day = await dayFor(r.company_id);
+    if (!day) continue;
+    // Only inside each window, so turning this on doesn't email about invoices that are months old.
+    const late = days(d.due, day), stage = late > 20 ? 0 : late >= 14 ? 14 : late >= 7 ? 7 : late >= 1 ? 1 : 0;
+    if (!stage) continue;
+    // deno-lint-ignore no-explicit-any
+    const sub = (d.items ?? []).reduce((t: number, i: any) => t + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
+    const total = sub + Math.round(sub * (Number(d.taxRate) || 0)) / 100;
+    const { data: online } = await admin.from('doc_payments').select('amount, stripe_session').eq('token', r.token);
+    // deno-lint-ignore no-explicit-any
+    const refs = new Set((d.payments ?? []).map((x: any) => x.ref).filter(Boolean));
+    // deno-lint-ignore no-explicit-any
+    const paid = (d.payments ?? []).reduce((t: number, x: any) => t + (Number(x.amount) || 0), 0)
+      + (online ?? []).filter((x) => !refs.has(x.stripe_session)).reduce((t, x) => t + Number(x.amount), 0);
+    const left = Math.round((total - paid) * 100) / 100;
+    if (left < 0.5) continue;
+    if (!(await claim(`inv:${r.token}:${stage}`, r.company_id))) continue;
+    const co = d.company ?? {}, who = co.company || 'Your contractor';
+    if (await sendEmail({ to, fromName: who, replyTo: co.email, logo: co.logo, button: 'View and pay',
+      subject: `Reminder: invoice ${d.num} is past due`, title: `Invoice ${d.num}: ${money(left)} is past due`,
+      body: `It was due ${niceDay(d.due)}${d.jobName ? ' for ' + d.jobName : ''}. If you've already paid, thank you, and you can ignore this.`,
+      link: `https://getblueboard.com/doc.html#${r.token}`, foot: `Sent for ${who} by Blue Board. Reply to this email to reach them.` })) sent++;
+  }
+  return sent;
 }
 
 // The UTC time of a wall-clock date and time ("2026-11-19", "15:30") in a time zone.

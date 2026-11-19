@@ -678,6 +678,20 @@
       footer a {
         color: inherit;
       }
+      .opt-list { display: grid; gap: 8px; margin-top: 12px; }
+      .opt { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 14px 16px; border-radius: 18px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
+      .opt .opt-label { flex: 1; }
+      .opt .price { font-weight: 700; color: var(--muted); }
+      .opt-dot { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line2, rgba(16,20,43,.2)); flex: none; }
+      .opt.on { border-color: var(--hi); background: var(--hi-soft); }
+      .opt.on .opt-dot { border: 6px solid var(--hi); }
+      .doc-links { padding: 6px 8px; }
+      .doc-link { display: flex; align-items: center; gap: 10px; padding: 14px 10px; color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); }
+      .doc-link:last-child { border-bottom: 0; }
+      .doc-link > div { flex: 1; min-width: 0; }
+      .doc-link b { display: block; }
+      .doc-link > div span { color: var(--muted); font-size: 13.5px; }
+      .doc-link .go { font-size: 22px; color: var(--muted); }
       .empty {
         text-align: center;
         padding: 28px 10px;
@@ -845,6 +859,9 @@
       }
       function deckHTML(it, opts, cur) {
         const n = opts.length;
+        // No photos or files on any option: a plain list is easier to read than empty photo cards.
+        if (opts.every((o) => { const m = optMedia(o); return !m.cover && !m.more.length && !m.docs.length; }))
+          return `<div class="opt-list" role="group" aria-label="Options">${opts.map((o) => `<button type="button" class="opt flash-choose${cur === o.id ? " on" : ""}" data-item="${esc(it.id)}" data-opt="${esc(o.id)}" aria-pressed="${cur === o.id}"><span class="opt-dot" aria-hidden="true"></span><span class="opt-label">${esc(o.label)}</span>${o.price != null ? `<span class="price">${o.price > 0 ? "+" : o.price < 0 ? "−" : ""}${money(Math.abs(o.price))}</span>` : ""}</button>`).join("")}</div>`;
         const card = (o, i) => {
           const m = optMedia(o);
           return `<article class="flash${cur === o.id ? " on" : ""}" data-card="${esc(o.id)}" aria-label="Option ${i + 1} of ${n}: ${esc(o.label)}">
@@ -966,6 +983,21 @@
         return `<div class="card"><ul class="tl">${dated.map(li).join("")}${undated.map(li).join("")}</ul></div>`;
       }
 
+      // Estimates, invoices and photo links for this job, so the customer only needs this one link.
+      const DOC_ST = { approved: ["good", "Approved"], declined: ["bad", "Declined"], paid: ["good", "Paid"], partial: ["warn", "Part paid"], sent: ["", "Ready to view"], viewed: ["", "Viewed"] };
+      function docsSection(d) {
+        const docs = d.docs || [], photos = d.photos || [];
+        if (!docs.length && !photos.length) return "";
+        const row = (href, title, sub, right) => `<a class="doc-link" href="${href}"><div><b>${title}</b><span>${sub}</span></div>${right}<span class="go" aria-hidden="true">›</span></a>`;
+        return `<section class="sec"><h2>Estimates, invoices &amp; photos</h2><div class="card doc-links">${docs
+          .map((x) => {
+            const est = x.kind === "estimate", st = x.status === "sent" || x.status === "viewed" ? (est ? ["warn", "Needs your OK"] : x.balance > 0.005 ? ["warn", "Due"] : ["good", "Paid"]) : DOC_ST[x.status] || ["", ""];
+            return row(`doc.html#${esc(x.token)}`, `${est ? "Estimate" : "Invoice"} ${esc(x.num)}`, `${fmt(x.date)} · ${!est && x.balance > 0.005 && x.balance < x.total - 0.005 ? money(x.balance) + " left of " + money(x.total) : money(x.total)}`, st[1] ? `<span class="badge ${st[0]}">${st[1]}</span>` : "");
+          })
+          .concat(photos.map((x) => row(`doc.html#${esc(x.token)}`, esc(x.title || "Photos"), `${fmt(x.date)} · ${x.count || 0} photo${x.count === 1 ? "" : "s"}`, "")))
+          .join("")}</div></section>`;
+      }
+
       function render() {
         const d = P.data || {},
           co = d.company || {},
@@ -1000,6 +1032,7 @@
         .join("")}</section>`
         : ""
     }
+    ${docsSection(d)}
     ${items.some((i) => i.date) ? `<section class="sec"><h2>Schedule</h2>${calendar(items)}</section>` : ""}
     ${items.length ? `<section class="sec"><h2>Everything on this project</h2>${timeline(items)}</section>` : ""}
     ${co.phone || co.email ? `<section class="sec"><h2>Questions?</h2><div class="contact">${co.phone ? `<a class="btn" href="tel:${esc(co.phone)}">Call ${esc(co.name ? co.name.split(" ")[0] : co.company || "us")}</a><a class="btn" href="sms:${esc(co.phone)}">Text</a>` : ""}${co.email ? `<a class="btn" href="mailto:${esc(co.email)}">Email</a>` : ""}</div></section>` : ""}`;
@@ -1069,7 +1102,7 @@
           chosen[t.dataset.item] = t.dataset.opt;
           $$(`.flash-choose[data-item="${CSS.escape(t.dataset.item)}"]`).forEach((b) => {
             b.setAttribute("aria-pressed", String(b === t));
-            b.closest(".flash").classList.toggle("on", b === t);
+            (b.closest(".flash") || b).classList.toggle("on", b === t);
           });
           const msg = $(`[data-msg="${CSS.escape(t.dataset.item)}"]`);
           if (msg) msg.hidden = true;

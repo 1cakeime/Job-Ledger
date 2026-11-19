@@ -73,6 +73,12 @@ function portalSnapshot(j) {
     jobName: j.name || "",
     address: j.address || "",
     client: (c?.name || j.client || "").split(" ")[0],
+    email: c?.email || "",
+    docs: S.docs
+      .filter((d) => d.jobId === j.id && d.token && d.status !== "draft")
+      .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
+      .map((d) => { const t = docTotals(d); return { kind: d.kind, num: d.num, date: d.date, token: d.token, total: Math.round(t.total * 100) / 100, balance: Math.max(0, Math.round(t.balance * 100) / 100), status: docStatus(d) }; }),
+    photos: (S.shares || []).filter((x) => x.jobId === j.id && x.token).map((x) => ({ title: x.title || "", date: x.date || "", token: x.token, count: x.count || 0 })),
     company: {
       company: p.company || "",
       name: p.name || "",

@@ -673,3 +673,45 @@ end $$;
 --     url := 'https://<project>.supabase.co/functions/v1/notify',
 --     headers := jsonb_build_object('Content-Type', 'application/json', 'x-cron-key', '<CRON_SECRET>'),
 --     body := '{"action":"reminders"}'::jsonb)$$);
+
+-- ============ Customer pages: signatures, deposits, reminders (2026-11-19) ============
+-- The customer's drawn signature (small PNG) saved when they approve an estimate.
+alter table public.shared_docs add column if not exists approved_sig text
+  check (approved_sig is null or (length(approved_sig) <= 200000 and approved_sig like 'data:image/png;base64,%'));
+
+create or replace function public.get_shared_doc(p_token text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare r shared_docs;
+begin
+  update shared_docs set viewed_at = coalesce(viewed_at, now()) where token = p_token returning * into r;
+  if r.token is null then return null; end if;
+  return jsonb_build_object('data', r.data, 'status', r.status, 'approved_name', r.approved_name, 'approved_at', r.approved_at, 'approved_sig', r.approved_sig,
+    'can_pay', r.kind in ('invoice', 'estimate') and exists (select 1 from company_billing b where b.company_id = r.company_id and b.charges_enabled),
+    'online', coalesce((select jsonb_agg(jsonb_build_object('amount', p.amount, 'ref', p.stripe_session, 'date', p.paid_at::date)) from doc_payments p where p.token = r.token), '[]'::jsonb));
+end $$;
+
+drop function if exists public.respond_shared_doc(text, text, boolean);
+create or replace function public.respond_shared_doc(p_token text, p_name text, p_approve boolean, p_sig text default null) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare r shared_docs;
+begin
+  update shared_docs set status = case when p_approve then 'approved' else 'declined' end,
+         approved_name = nullif(left(trim(coalesce(p_name, '')), 120), ''), approved_at = now(),
+         approved_sig = case when p_approve and p_sig like 'data:image/png;base64,%' and length(p_sig) <= 200000 then p_sig else null end
+   where token = p_token and kind = 'estimate' and status = 'sent' returning * into r;
+  if r.token is null then
+    select * into r from shared_docs where token = p_token;
+    if r.token is null then raise exception 'Not found'; end if;
+  end if;
+  return jsonb_build_object('data', r.data, 'status', r.status, 'approved_name', r.approved_name, 'approved_at', r.approved_at, 'approved_sig', r.approved_sig);
+end $$;
+revoke all on function public.respond_shared_doc(text, text, boolean, text) from public;
+grant execute on function public.respond_shared_doc(text, text, boolean, text) to anon, authenticated;
+
+-- Which reminder emails went to customers, so each one is sent once. Only the "notify" function uses it.
+create table if not exists public.customer_reminders (
+  key text primary key,
+  company_id uuid not null references public.companies(id) on delete cascade,
+  sent_at timestamptz not null default now()
+);
+alter table public.customer_reminders enable row level security;

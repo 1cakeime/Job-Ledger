@@ -12,7 +12,8 @@
 // Requests (POST JSON):
 //   { action: 'connect' }            owner: returns { url } to set up or finish their Stripe account
 //   { action: 'status' }             owner: refreshes and returns { connected, charges_enabled }
-//   { action: 'checkout', token }    anyone with an invoice link: returns { url } of a Stripe Checkout page
+//   { action: 'checkout', token }    anyone with an invoice link (or an approved estimate with a deposit):
+//                                    returns { url } of a Stripe Checkout page
 //   Stripe webhook (has a stripe-signature header): records payments and account status
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
 
@@ -101,14 +102,18 @@ Deno.serve(async (req) => {
   try {
     if (body.action === 'checkout') {
       const token = String(body.token || '').replace(/[^a-f0-9]/gi, '');
-      const { data: doc } = await db.from('shared_docs').select('token, company_id, kind, data').eq('token', token).maybeSingle();
-      if (!doc || doc.kind !== 'invoice') return json({ error: 'Invoice not found' }, 404);
+      const { data: doc } = await db.from('shared_docs').select('token, company_id, kind, data, status').eq('token', token).maybeSingle();
+      // Invoices are paid in full; an approved estimate can take its deposit (data.deposit = percent of the total).
+      const deposit = doc?.kind === 'estimate' && doc.status === 'approved' && Number(doc.data?.deposit) > 0;
+      if (!doc || (doc.kind !== 'invoice' && !deposit)) return json({ error: 'Invoice not found' }, 404);
       const { data: bill } = await db.from('company_billing').select('stripe_account_id, charges_enabled').eq('company_id', doc.company_id).maybeSingle();
       if (!bill?.stripe_account_id || !bill.charges_enabled) return json({ error: 'This business does not take card payments yet' }, 409);
       const { data: online } = await db.from('doc_payments').select('amount, stripe_session').eq('token', token);
-      const due = balanceOf(doc.data, online ?? []);
-      if (due < 0.5) return json({ error: 'This invoice is already paid' }, 409);
-      const name = `Invoice ${doc.data.num}` + (doc.data.company?.company ? ` · ${doc.data.company.company}` : '');
+      const balance = balanceOf(doc.data, online ?? []);
+      const total = balanceOf({ ...doc.data, payments: [] }, []);
+      const due = deposit ? Math.round((Math.round(total * Number(doc.data.deposit)) / 100 - (total - balance)) * 100) / 100 : balance;
+      if (due < 0.5) return json({ error: deposit ? 'The deposit is already paid' : 'This invoice is already paid' }, 409);
+      const name = (deposit ? `Deposit · Estimate ${doc.data.num}` : `Invoice ${doc.data.num}`) + (doc.data.company?.company ? ` · ${doc.data.company.company}` : '');
       const s = await stripe('checkout/sessions', {
         mode: 'payment',
         'line_items[0][quantity]': 1,

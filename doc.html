@@ -10,7 +10,17 @@
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 'DM Sans',system-ui,sans-serif}
 main{max-width:820px;margin:0 auto;padding:24px 16px 64px}
 .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:14px}
-.bar h1{font:800 20px/1.2 Manrope,sans-serif;margin:0}
+.bar h2{font:800 18px/1.2 Manrope,sans-serif;margin:0}
+h1{font:800 26px/1.15 Manrope,sans-serif;margin:0}.sec{margin-top:26px}.sec>h2{font:800 18px Manrope,sans-serif;margin:0 4px 10px}
+.head{display:flex;gap:14px;align-items:center;margin:4px 0 18px}.logo{width:52px;height:52px;border-radius:16px;object-fit:contain;background:var(--surface);border:1px solid var(--line);flex:none}
+.co{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}.back{display:inline-block;margin-bottom:12px;color:var(--hi);font-weight:700;text-decoration:none}
+.big{display:block;font:800 28px/1.15 Manrope,sans-serif;margin:2px 0}.sum-row{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-end}.sum-row b{display:block}.sum-row .big{font-size:28px}
+.paid{list-style:none;padding:0;margin:12px 0 6px;border-top:1px solid var(--line)}.paid li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.sig{position:relative;margin:4px 0 12px}.sig canvas{display:block;width:100%;height:150px;border-radius:16px;border:1.5px dashed var(--line2);background:#fff;touch-action:none;cursor:crosshair}
+.sig-hint{position:absolute;left:16px;bottom:14px;color:#9aa1bd;font-size:14px;pointer-events:none}.sig .btn{position:absolute;right:6px;top:6px}
+.btn.sm{padding:8px 14px;font-size:13px}a.btn{text-decoration:none;display:inline-block}
+.sticky{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--line2);box-shadow:0 -8px 24px -12px rgba(16,24,40,.25);transition:transform .2s}
+.sticky b{display:block;font:800 18px Manrope,sans-serif}.sticky.gone{transform:translateY(110%)}main{padding-bottom:110px}
 .btn{appearance:none;border:0;border-radius:999px;padding:11px 18px;font:700 14px 'DM Sans',sans-serif;cursor:pointer;background:var(--surface2);color:var(--ink)}
 .btn.primary{background:linear-gradient(135deg,#2D5BFF,#00A8F0);color:#fff}.btn.ghost{background:transparent}.btn:disabled{opacity:.6}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:18px;margin-top:14px}
@@ -38,7 +48,7 @@ footer{margin-top:22px;text-align:center;font-size:12.5px;color:var(--muted)}foo
 .doc-lines td{padding:8px 4px;border-bottom:1px solid #eceef5;vertical-align:top}.doc-lines .n{text-align:right;white-space:nowrap}
 .doc-sum{display:grid;grid-template-columns:1fr auto;gap:4px 18px;margin:14px 0 0 auto;max-width:300px}.doc-sum dt{color:#5b6280}.doc-sum dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
 .doc-sum .tot{font-weight:800;color:#141824;font-size:16px;border-top:1px solid #d8dce8;padding-top:6px}
-.doc-notes{white-space:pre-line;color:#3b4157;margin:18px 0 0;padding-top:12px;border-top:1px solid #eceef5;font-size:13px}.doc-ok{margin:12px 0 0;color:#127a3d;font-weight:700}
+.doc-notes{white-space:pre-line;color:#3b4157;margin:18px 0 0;padding-top:12px;border-top:1px solid #eceef5;font-size:13px}.doc-sig{display:block;max-width:240px;max-height:90px;margin:6px 0 0;border-bottom:1px solid #d6d9e6}.doc-ok{margin:12px 0 0;color:#127a3d;font-weight:700}
 .pr{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:20px;margin-top:4px}
 .pr-head{display:flex;gap:12px;align-items:center;padding-bottom:14px;border-bottom:1px solid var(--line)}
 .pr-head b{display:block;font:800 17px Manrope,sans-serif}.pr-head small{color:var(--muted);font-size:13px}
@@ -56,7 +66,7 @@ footer{margin-top:22px;text-align:center;font-size:12.5px;color:var(--muted)}foo
 .ba-range{position:absolute;left:0;bottom:0;width:100%;height:4px;margin:0;opacity:0;pointer-events:none}
 .ba-l,.ba-r{position:absolute;top:10px;padding:4px 10px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;font-weight:700;z-index:2;pointer-events:none}
 .ba-l{left:10px}.ba-r{right:10px}.ba-print{display:none}
-@media print{body{background:#fff}.bar,.card,footer{display:none!important}main{padding:0;max-width:none}.doc-wrap{border:0;box-shadow:none;border-radius:0}
+@media print{body{background:#fff}.bar,.card,footer,.sticky,.sec,.back,.head{display:none!important}main{padding:0;max-width:none}.doc-wrap{border:0;box-shadow:none;border-radius:0}
   .pr{border:0;padding:0}.ba{display:none}.ba-print{display:grid;grid-template-columns:1fr 1fr;gap:10px}.ba-print figure{margin:0}.ba-print img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px}
   .pr-grid{grid-template-columns:1fr 1fr}.pr-grid video{display:none}}
 </style></head>
@@ -72,6 +82,7 @@ const pd=s=>{const[y,m,d]=String(s).split('-').map(Number);return new Date(y,(m|
 const fmtDateY=s=>s?pd(s).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
 const job=()=>null;
 const DOC_KIND={estimate:'Estimate',invoice:'Invoice'};
+const docDeposit=d=>Math.round(docTotals(d).total*num(d.deposit))/100;
 function docTotals(d){const sub=sum(d.items||[],i=>num(i.qty)*num(i.rate)),tax=Math.round(sub*num(d.taxRate))/100,total=sub+tax,paid=sum(d.payments||[],p=>p.amount);
   return{sub,tax,total,paid,balance:total-paid}}
 function docHTML(d,co){const t=docTotals(d),c=co||S.profile||{},b=d.billTo||{},j=job(d.jobId),inv=d.kind==='invoice';
@@ -84,9 +95,10 @@ function docHTML(d,co){const t=docTotals(d),c=co||S.profile||{},b=d.billTo||{},j
   <table class="doc-lines"><thead><tr><th>Description</th><th class="n">Qty</th><th class="n">Rate</th><th class="n">Amount</th></tr></thead>
     <tbody>${(d.items||[]).map(i=>`<tr><td>${esc(i.desc)}</td><td class="n">${+num(i.qty).toFixed(2)}</td><td class="n">${money2(num(i.rate))}</td><td class="n">${money2(num(i.qty)*num(i.rate))}</td></tr>`).join('')}</tbody></table>
   <dl class="doc-sum"><dt>Subtotal</dt><dd>${money2(t.sub)}</dd>${num(d.taxRate)?`<dt>Tax (${+num(d.taxRate).toFixed(3)}%)</dt><dd>${money2(t.tax)}</dd>`:''}
-    <dt class="tot">Total</dt><dd class="tot">${money2(t.total)}</dd>${inv&&t.paid?`<dt>Paid</dt><dd>-${money2(t.paid)}</dd><dt class="tot">Balance due</dt><dd class="tot">${money2(Math.max(0,t.balance))}</dd>`:''}</dl>
+    <dt class="tot">Total</dt><dd class="tot">${money2(t.total)}</dd>${!inv&&num(d.deposit)?`<dt>Deposit to approve (${+num(d.deposit).toFixed(2)}%)</dt><dd>${money2(docDeposit(d))}</dd>`:''}${!inv&&t.paid?`<dt>Deposit paid</dt><dd>${money2(t.paid)}</dd>`:''}
+    ${inv&&t.paid?`${(d.payments||[]).slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(p=>`<dt>Paid ${p.date?fmtDateY(p.date):''}${p.method?' · '+esc(p.method):''}</dt><dd>-${money2(num(p.amount))}</dd>`).join('')}<dt class="tot">Balance due</dt><dd class="tot">${money2(Math.max(0,t.balance))}</dd>`:''}</dl>
   ${d.notes?`<p class="doc-notes">${esc(d.notes)}</p>`:''}
-  ${d.approvedBy?`<p class="doc-ok">Approved by ${esc(d.approvedBy)}${d.approvedAt?' on '+fmtDateY(d.approvedAt.slice(0,10)):''}</p>`:''}</article>`}
+  ${d.approvedBy?`<p class="doc-ok">Approved by ${esc(d.approvedBy)}${d.approvedAt?' on '+fmtDateY(d.approvedAt.slice(0,10)):''}</p>`:''}${/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(d.approvedSig||'')?`<img class="doc-sig" src="${d.approvedSig}" alt="Signature of ${esc(d.approvedBy||'customer')}">`:''}</article>`}
 const SB_URL='https://defbgjhyvleijkwdbwni.supabase.co',SB_KEY='sb_publishable_gwoNF0V3hqOgM_p5aP_xmQ_QkNlw6bq';
 const $=s=>document.querySelector(s),app=$('#app'),token=(location.hash||'').slice(1).replace(/[^a-f0-9]/gi,'');
 const sbc=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
@@ -108,30 +120,117 @@ function renderPhotos(r){var d=r.data,co=d.company||{},items=d.items||[];documen
   app.innerHTML=h;$('#print').onclick=function(){window.print()};
   var ba=document.querySelector('.ba');if(ba){var set=function(ev){var b=ba.getBoundingClientRect(),x=Math.max(0,Math.min(100,(ev.clientX-b.left)/b.width*100));ba.style.setProperty('--x',x+'%')};
     ba.addEventListener('pointerdown',function(e){set(e);var up=function(){removeEventListener('pointermove',set);removeEventListener('pointerup',up)};addEventListener('pointermove',set);addEventListener('pointerup',up)})}}
-function render(r){if(r.data&&r.data.kind==='photos')return renderPhotos(r);const d=r.data,est=d.kind==='estimate',st=r.status,co=d.company||{};
-  const refs=new Set((d.payments||[]).map(p=>p.ref).filter(Boolean));for(const p of r.online||[])if(!refs.has(p.ref))(d.payments=d.payments||[]).push({amount:+p.amount,date:p.date,ref:p.ref});
-  const t=docTotals(d),due=Math.max(0,Math.round(t.balance*100)/100),justPaid=/[?&]paid=1/.test(location.search);
-  document.title=DOC_KIND[d.kind]+' '+d.num+(co.company?' · '+co.company:'');
-  const decided=st==='approved'||st==='declined';
-  app.innerHTML=`<div class="bar"><h1>${esc(DOC_KIND[d.kind]+' '+d.num)}</h1><button class="btn" id="print">Print or save PDF</button></div>
-    ${est?`<div class="card" id="respond">${decided?(st==='approved'?`<p class="ok">Approved${r.approved_name?' by '+esc(r.approved_name):''}. Thank you!</p>`:'<p class="note">You declined this estimate. Contact us if you change your mind.</p>')
-      :`<h2>Approve this estimate</h2><p class="note">Total ${money2(t.total)}. Type your name and tap Approve to accept it. ${esc(co.company||'The contractor')} will be notified.</p>
-        <input id="who" placeholder="Your full name" autocomplete="name"><div class="row"><button class="btn primary" id="approve">Approve estimate</button><button class="btn ghost" id="decline">Decline</button></div><p class="note err" id="msg" hidden></p>`}</div>`
-      :(due<0.005?'<div class="card"><p class="ok">Paid in full. Thank you!</p></div>':`<div class="card"><h2>Amount due: ${money2(due)}</h2>
-        ${justPaid?'<p class="ok">Thank you! Your card payment went through. It can take a minute to show on this page.</p>':''}
-        ${r.can_pay&&!justPaid?`<div class="row" style="margin:6px 0 10px"><button class="btn primary" id="pay">Pay ${money2(due)} by card</button></div><p class="note err" id="pmsg" hidden></p>`:''}
-        <p class="note">${d.due?'Due '+fmtDateY(d.due)+'. ':''}Contact ${esc(co.company||'us')}${co.phone?' at '+esc(co.phone):''} with any questions about this invoice.</p></div>`)}
-    <div class="doc-wrap" style="margin-top:14px">${docHTML(d,co)}</div>`;
-  $('#print').onclick=()=>window.print();
-  if($('#pay'))$('#pay').onclick=async()=>{const b=$('#pay'),m=$('#pmsg');b.disabled=true;b.textContent='Opening secure checkout…';
-    const {data,error}=await sbc.functions.invoke('payments',{body:{action:'checkout',token}});
-    if(error||!data?.url){let msg='Card payment isn\'t available right now. Please try again later.';try{msg=(await error.context.json()).error||msg}catch(e){}m.hidden=false;m.textContent=msg;b.disabled=false;b.textContent='Pay '+money2(due)+' by card';return}
-    location.href=data.url};
-  const go=async ok=>{const who=$('#who').value.trim(),m=$('#msg');if(ok&&who.length<2){m.hidden=false;m.textContent='Type your name first.';$('#who').focus();return}
-    document.querySelectorAll('#respond .btn').forEach(b=>b.disabled=true);
-    const {data,error}=await sbc.rpc('respond_shared_doc',{p_token:token,p_name:who,p_approve:ok});
-    if(error){m.hidden=false;m.textContent='That didn\'t go through. Check your connection and try again.';document.querySelectorAll('#respond .btn').forEach(b=>b.disabled=false);return}
-    render(data)};
-  if($('#approve')){$('#approve').onclick=()=>go(true);$('#decline').onclick=()=>{if(confirm('Decline this estimate?'))go(false)}}}
+// Estimate and invoice pages in doc.html. scripts/build-doc.mjs pastes this in as plain browser JS.
+// Uses: $, app, token, sbc, esc, money2, fmtDateY, docTotals, docDeposit, docHTML, DOC_KIND, renderPhotos.
+const isImg = (u) => /^https:\/\/|^data:image\//.test(u || '');
+// Same header and contact buttons as the project page (portal.html), so every customer page looks alike.
+function headHTML(d, co, title) {
+  return `${d.portalToken ? `<a class="back" href="portal.html#${esc(d.portalToken)}">‹ Your whole project</a>` : ''}
+  <div class="head">${isImg(co.logo) ? `<img class="logo" src="${esc(co.logo)}" alt="">` : ''}<div>${co.company ? `<div class="co">${esc(co.company)}</div>` : ''}<h1>${esc(d.jobName || title)}</h1>${d.jobAddress ? `<p class="note">${esc(d.jobAddress)}</p>` : ''}</div></div>
+  <div class="bar"><h2>${esc(title)}</h2><button class="btn sm" id="print">Print or save PDF</button></div>`;
+}
+function contactHTML(co) {
+  if (!co.phone && !co.email) return '';
+  const first = co.name ? co.name.split(' ')[0] : co.company || 'us';
+  return `<section class="sec"><h2>Questions?</h2><div class="row">${co.phone ? `<a class="btn" href="tel:${esc(co.phone)}">Call ${esc(first)}</a><a class="btn" href="sms:${esc(co.phone)}">Text</a>` : ''}${co.email ? `<a class="btn" href="mailto:${esc(co.email)}">Email</a>` : ''}</div></section>`;
+}
+function paidList(d) {
+  const ps = (d.payments || []).filter((p) => +p.amount).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  return ps.length ? `<ul class="paid">${ps.map((p) => `<li><span>Paid${p.date ? ' ' + fmtDateY(p.date) : ''}${p.method ? ' · ' + esc(p.method) : ''}</span><b>${money2(+p.amount)}</b></li>`).join('')}</ul>` : '';
+}
+
+let R = null;
+function render(r) {
+  if (r.data && r.data.kind === 'photos') return renderPhotos(r);
+  R = r;
+  const d = r.data, est = d.kind === 'estimate', st = r.status, co = d.company || {};
+  const refs = new Set((d.payments || []).map((p) => p.ref).filter(Boolean));
+  for (const p of r.online || []) if (!refs.has(p.ref)) (d.payments = d.payments || []).push({ amount: +p.amount, date: p.date, ref: p.ref, method: 'Card' });
+  if (r.approved_name && !d.approvedBy) { d.approvedBy = r.approved_name; d.approvedAt = r.approved_at; }
+  if (r.approved_sig) d.approvedSig = r.approved_sig;
+  const t = docTotals(d), due = Math.max(0, Math.round(t.balance * 100) / 100), justPaid = /[?&]paid=1/.test(location.search);
+  const title = DOC_KIND[d.kind] + ' ' + d.num;
+  document.title = title + (co.company ? ' · ' + co.company : '');
+  let top = '', bottom = '', sticky = '';
+  if (est) {
+    const dep = docDeposit(d), depDue = Math.max(0, Math.round((dep - t.paid) * 100) / 100);
+    if (st === 'approved') {
+      top = `<div class="card"><p class="ok">Approved${r.approved_name ? ' by ' + esc(r.approved_name) : ''}${r.approved_at ? ' on ' + fmtDateY(String(r.approved_at).slice(0, 10)) : ''}. Thank you!</p>
+        ${dep > 0 ? (depDue < 0.005 ? `<p class="note">Deposit of ${money2(dep)} received.</p>${paidList(d)}`
+          : justPaid ? '<p class="ok">Thank you! Your deposit went through. It can take a minute to show here.</p>'
+          : r.can_pay ? `<p class="note">Next step: the ${money2(depDue)} deposit to get on the schedule.</p><div class="row" style="margin-top:10px"><button class="btn primary" id="pay" data-label="Pay ${money2(depDue)} deposit by card">Pay ${money2(depDue)} deposit by card</button></div><p class="note err" id="pmsg" hidden></p>`
+          : `<p class="note">A deposit of ${money2(depDue)} is due. ${esc(co.company || 'Your contractor')} will tell you how to pay it.</p>`) : ''}</div>`;
+    } else if (st === 'declined') {
+      top = `<div class="card"><p class="note">You declined this estimate. Contact ${esc(co.company || 'us')} if you change your mind.</p></div>`;
+    } else {
+      top = `<div class="card"><div class="sum-row"><div><span class="note">Estimate total</span><b class="big">${money2(t.total)}</b></div>${d.valid ? `<div><span class="note">Valid until</span><b>${fmtDateY(d.valid)}</b></div>` : ''}${dep > 0 ? `<div><span class="note">Deposit to start</span><b>${money2(dep)}</b></div>` : ''}</div>
+        <p class="note" style="margin-top:8px">Look over the details below, then sign at the bottom to approve.</p></div>`;
+      bottom = `<div class="card" id="respond"><h2>Approve this estimate</h2><p class="note">Type your name and sign with your finger or mouse.${dep > 0 && r.can_pay ? ` Then you'll pay the ${money2(dep)} deposit by card.` : ''} ${esc(co.company || 'The contractor')} is told right away.</p>
+        <input id="who" placeholder="Your full name" autocomplete="name">
+        <div class="sig"><canvas id="sig"></canvas><span class="sig-hint" aria-hidden="true">Sign here</span><button type="button" class="btn sm ghost" id="sig-clear">Clear</button></div>
+        <div class="row"><button class="btn primary" id="approve">${dep > 0 && r.can_pay ? 'Approve and pay deposit' : 'Approve estimate'}</button><button class="btn ghost" id="decline">Decline</button></div><p class="note err" id="msg" hidden></p></div>`;
+      sticky = `<div class="sticky" id="sticky"><div><span class="note">Total</span><b>${money2(t.total)}</b></div><button class="btn primary" id="to-approve">Review &amp; approve</button></div>`;
+    }
+  } else {
+    top = due < 0.005
+      ? `<div class="card"><p class="ok">Paid in full. Thank you!</p>${paidList(d)}</div>`
+      : `<div class="card"><span class="note">Amount due</span><b class="big">${money2(due)}</b>${d.due ? `<p class="note">Due ${fmtDateY(d.due)}</p>` : ''}
+        ${t.paid ? `${paidList(d)}<p class="note">Total ${money2(t.total)} · paid ${money2(t.paid)} · ${money2(due)} left</p>` : ''}
+        ${justPaid ? '<p class="ok">Thank you! Your card payment went through. It can take a minute to show on this page.</p>' : ''}
+        ${r.can_pay && !justPaid ? `<div class="row" style="margin-top:12px"><button class="btn primary" id="pay" data-label="Pay ${money2(due)} by card">Pay ${money2(due)} by card</button></div><p class="note err" id="pmsg" hidden></p>` : ''}</div>`;
+  }
+  app.innerHTML = headHTML(d, co, title) + top + `<div class="doc-wrap" style="margin-top:14px">${docHTML(d, co)}</div>` + bottom + contactHTML(co) + sticky;
+  $('#print').onclick = () => window.print();
+  if ($('#pay')) $('#pay').onclick = () => payNow($('#pay'), $('#pmsg'));
+  if ($('#approve')) wireApprove(est && docDeposit(d) > 0 && r.can_pay);
+}
+
+async function payNow(b, m) {
+  b.disabled = true; b.textContent = 'Opening secure checkout…';
+  const { data, error } = await sbc.functions.invoke('payments', { body: { action: 'checkout', token } });
+  if (error || !data?.url) {
+    let msg = "Card payment isn't available right now. Please try again later.";
+    try { msg = (await error.context.json()).error || msg; } catch (e) {}
+    m.hidden = false; m.textContent = msg; b.disabled = false; b.textContent = b.dataset.label || 'Pay by card';
+    return;
+  }
+  location.href = data.url;
+}
+
+function wireApprove(thenPay) {
+  const c = $('#sig'), hint = $('.sig-hint'), sticky = $('#sticky');
+  let signed = false, drawing = false, ctx;
+  const size = () => { const w = c.clientWidth, h = c.clientHeight, k = window.devicePixelRatio || 1; c.width = w * k; c.height = h * k; ctx = c.getContext('2d'); ctx.scale(k, k); ctx.lineWidth = 2.4; ctx.lineCap = ctx.lineJoin = 'round'; ctx.strokeStyle = '#10142B'; signed = false; hint.hidden = false; };
+  size();
+  const pt = (e) => { const b = c.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; };
+  c.addEventListener('pointerdown', (e) => { drawing = true; c.setPointerCapture(e.pointerId); const [x, y] = pt(e); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 0.1, y + 0.1); ctx.stroke(); signed = true; hint.hidden = true; e.preventDefault(); });
+  c.addEventListener('pointermove', (e) => { if (!drawing) return; const [x, y] = pt(e); ctx.lineTo(x, y); ctx.stroke(); e.preventDefault(); });
+  c.addEventListener('pointerup', () => { drawing = false; });
+  c.addEventListener('pointercancel', () => { drawing = false; });
+  $('#sig-clear').onclick = size;
+  if (sticky) {
+    $('#to-approve').onclick = () => { $('#respond').scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => $('#who').focus({ preventScroll: true }), 400); };
+    if ('IntersectionObserver' in window) new IntersectionObserver((es) => { sticky.classList.toggle('gone', es.some((x) => x.isIntersecting)); }).observe($('#respond'));
+  }
+  // A small PNG of the signature (white background removed), saved with the approval.
+  const sigData = () => { const w = 600, h = Math.round((w * c.height) / c.width), o = document.createElement('canvas'); o.width = w; o.height = h; o.getContext('2d').drawImage(c, 0, 0, w, h); return o.toDataURL('image/png'); };
+  const go = async (ok) => {
+    const who = $('#who').value.trim(), m = $('#msg');
+    if (ok && who.length < 2) { m.hidden = false; m.textContent = 'Type your name first.'; $('#who').focus(); return; }
+    if (ok && !signed) { m.hidden = false; m.textContent = 'Sign in the box first.'; return; }
+    document.querySelectorAll('#respond .btn').forEach((b) => (b.disabled = true));
+    const args = { p_token: token, p_name: who, p_approve: ok };
+    let res = await sbc.rpc('respond_shared_doc', ok ? { ...args, p_sig: sigData() } : args);
+    // Before the signature update is in the database, approve without it.
+    if (res.error && ok && /p_sig|function|schema cache/i.test(res.error.message || '')) res = await sbc.rpc('respond_shared_doc', args);
+    if (res.error) { m.hidden = false; m.textContent = "That didn't go through. Check your connection and try again."; document.querySelectorAll('#respond .btn').forEach((b) => (b.disabled = false)); return; }
+    render({ ...R, ...res.data, online: R.online, can_pay: R.can_pay });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (ok && thenPay && $('#pay')) payNow($('#pay'), $('#pmsg'));
+  };
+  $('#approve').onclick = () => go(true);
+  $('#decline').onclick = () => { if (confirm('Decline this estimate?')) go(false); };
+}
 load();
+
 </script></body></html>

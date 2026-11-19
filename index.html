@@ -651,7 +651,7 @@ svg.seal .seal-light{display:none}
 .doc-lines td{padding:8px 4px;border-bottom:1px solid #eceef5;vertical-align:top}.doc-lines .n{text-align:right;white-space:nowrap}
 .doc-sum{display:grid;grid-template-columns:1fr auto;gap:4px 18px;margin:14px 0 0 auto;max-width:300px}.doc-sum dt{color:#5b6280}.doc-sum dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
 .doc-sum .tot{font-weight:800;color:#141824;font-size:16px;border-top:1px solid #d8dce8;padding-top:6px}
-.doc-notes{white-space:pre-line;color:#3b4157;margin:18px 0 0;padding-top:12px;border-top:1px solid #eceef5;font-size:13px}.doc-ok{margin:12px 0 0;color:#127a3d;font-weight:700}
+.doc-notes{white-space:pre-line;color:#3b4157;margin:18px 0 0;padding-top:12px;border-top:1px solid #eceef5;font-size:13px}.doc-sig{display:block;max-width:240px;max-height:90px;margin:6px 0 0;border-bottom:1px solid #d6d9e6}.doc-ok{margin:12px 0 0;color:#127a3d;font-weight:700}
 input[type=date],input[type=time]{min-width:0;max-width:100%;width:100%;display:block;-webkit-appearance:none;appearance:none}
 .wk-off{font-size:12px;font-weight:700;color:var(--warn);background:var(--warn-bg);border-radius:10px;padding:4px 10px;width:max-content;max-width:100%}
 .task-add{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;margin-top:10px}.task-add select{width:auto;max-width:110px}
@@ -1098,6 +1098,7 @@ function coForm(j,c){const isNew=!c;c=c||{date:today()};
 const DOC_KIND={estimate:'Estimate',invoice:'Invoice'};
 const DOC_ST={draft:['','Draft'],sent:['active','Sent'],viewed:['active','Viewed'],approved:['done','Approved'],declined:['bad','Declined'],partial:['active','Part paid'],paid:['done','Paid']};
 const docBadge=d=>{const [c,l]=DOC_ST[docStatus(d)]||['',d.status];return `<span class="badge ${c}">${l}</span>`};
+const docDeposit=d=>Math.round(docTotals(d).total*num(d.deposit))/100;
 function docTotals(d){const sub=sum(d.items||[],i=>num(i.qty)*num(i.rate)),tax=Math.round(sub*num(d.taxRate))/100,total=sub+tax,paid=sum(d.payments||[],p=>p.amount);
   return{sub,tax,total,paid,balance:total-paid}}
 function docStatus(d){if(d.kind==='invoice'){const t=docTotals(d);if(t.paid>0&&t.balance<=0.005)return 'paid';if(t.paid>0)return 'partial'}return d.status||'draft'}
@@ -1110,7 +1111,7 @@ function docLinesFor(j,kind){const items=[{desc:j.name+(kind==='estimate'?'':' (
     const before=sum(S.docs.filter(d=>d.kind==='invoice'&&d.jobId===j.id),d=>docTotals(d).sub);if(before)items.push({desc:'Less previously invoiced',qty:1,rate:-before})}
   return items}
 function newDoc(kind,j,from){const d={id:uid(),kind,num:nextDocNum(kind),jobId:j?.id||'',date:today(),status:'draft',taxRate:from?.taxRate??(num(S.settings.taxRate)||0),
-    billTo:{name:j?.client||'',address:j?.address||'',phone:j?.phone||'',email:cust(j?.customerId)?.email||''},items:from?from.items.map(i=>({...i})):docLinesFor(j||{name:'Work'},kind),payments:[],
+    billTo:{name:j?.client||'',address:j?.address||'',phone:j?.phone||'',email:cust(j?.customerId)?.email||''},items:from?from.items.map(i=>({...i})):docLinesFor(j||{name:'Work'},kind),payments:from?(from.payments||[]).map(p=>({...p,id:uid(),method:'Deposit'+(p.method?' · '+p.method:'')})):[],
     notes:from?.notes||(kind==='estimate'?(S.settings.estTerms||'This estimate is valid for 30 days.'):(S.settings.invTerms||'Thank you for your business.'))};
   if(kind==='invoice')d.due=addDays(d.date,num(S.settings.dueDays)||14);else d.valid=addDays(d.date,30);if(from)d.fromId=from.id;return d}
 
@@ -1125,9 +1126,10 @@ function docHTML(d,co){const t=docTotals(d),c=co||S.profile||{},b=d.billTo||{},j
   <table class="doc-lines"><thead><tr><th>Description</th><th class="n">Qty</th><th class="n">Rate</th><th class="n">Amount</th></tr></thead>
     <tbody>${(d.items||[]).map(i=>`<tr><td>${esc(i.desc)}</td><td class="n">${+num(i.qty).toFixed(2)}</td><td class="n">${money2(num(i.rate))}</td><td class="n">${money2(num(i.qty)*num(i.rate))}</td></tr>`).join('')}</tbody></table>
   <dl class="doc-sum"><dt>Subtotal</dt><dd>${money2(t.sub)}</dd>${num(d.taxRate)?`<dt>Tax (${+num(d.taxRate).toFixed(3)}%)</dt><dd>${money2(t.tax)}</dd>`:''}
-    <dt class="tot">Total</dt><dd class="tot">${money2(t.total)}</dd>${inv&&t.paid?`<dt>Paid</dt><dd>-${money2(t.paid)}</dd><dt class="tot">Balance due</dt><dd class="tot">${money2(Math.max(0,t.balance))}</dd>`:''}</dl>
+    <dt class="tot">Total</dt><dd class="tot">${money2(t.total)}</dd>${!inv&&num(d.deposit)?`<dt>Deposit to approve (${+num(d.deposit).toFixed(2)}%)</dt><dd>${money2(docDeposit(d))}</dd>`:''}${!inv&&t.paid?`<dt>Deposit paid</dt><dd>${money2(t.paid)}</dd>`:''}
+    ${inv&&t.paid?`${(d.payments||[]).slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(p=>`<dt>Paid ${p.date?fmtDateY(p.date):''}${p.method?' · '+esc(p.method):''}</dt><dd>-${money2(num(p.amount))}</dd>`).join('')}<dt class="tot">Balance due</dt><dd class="tot">${money2(Math.max(0,t.balance))}</dd>`:''}</dl>
   ${d.notes?`<p class="doc-notes">${esc(d.notes)}</p>`:''}
-  ${d.approvedBy?`<p class="doc-ok">Approved by ${esc(d.approvedBy)}${d.approvedAt?' on '+fmtDateY(d.approvedAt.slice(0,10)):''}</p>`:''}</article>`}
+  ${d.approvedBy?`<p class="doc-ok">Approved by ${esc(d.approvedBy)}${d.approvedAt?' on '+fmtDateY(d.approvedAt.slice(0,10)):''}</p>`:''}${/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(d.approvedSig||'')?`<img class="doc-sig" src="${d.approvedSig}" alt="Signature of ${esc(d.approvedBy||'customer')}">`:''}</article>`}
 
 function docForm(d,isNew){const inv=d.kind==='invoice';
   const row=(i={})=>`<div class="line-row"><input name="desc" placeholder="Description" value="${esc(i.desc??'')}"><input name="qty" inputmode="decimal" placeholder="Qty" value="${esc(i.qty??1)}"><input name="rate" inputmode="decimal" placeholder="Rate" value="${i.rate===''||i.rate==null?'':esc(i.rate)}"><b class="num line-amt"></b><button type="button" class="x" data-del-line aria-label="Remove line">×</button></div>`;
@@ -1138,6 +1140,7 @@ function docForm(d,isNew){const inv=d.kind==='invoice';
       ${field('Customer phone',inp('bphone',d.billTo?.phone,'tel'))}${field('Address',inp('baddr',d.billTo?.address))}</div>
       <fieldset><legend>Line items</legend><div class="line-head"><span>Description</span><span>Qty</span><span>Rate</span><span>Amount</span><span></span></div><div id="lines">${(d.items.length?d.items:[{}]).map(row).join('')}</div>
         <button type="button" class="btn sm" id="add-line">+ Add line</button><div class="split" style="margin-top:12px"><span class="note" id="doc-sub"></span><b class="num" id="doc-total"></b></div></fieldset>
+      ${inv?'':field('Deposit to approve (% of total, optional)',inp('deposit',d.deposit||'','text','inputmode="decimal" placeholder="0"'),'full')}
       ${field('Notes / terms',`<textarea name="notes" rows="3">${esc(d.notes||'')}</textarea>`,'full')}`,
     onOpen:f=>{const L=$('#lines',f);const upd=()=>{const rows=$$('.line-row',L);let s=0;rows.forEach(r=>{const a=num(r.querySelector('[name=qty]').value)*num(r.querySelector('[name=rate]').value);s+=a;r.querySelector('.line-amt').textContent=money2(a)});
         const tx=Math.round(s*num(f.taxRate.value))/100;$('#doc-sub',f).textContent=`Subtotal ${money2(s)}${tx?` · tax ${money2(tx)}`:''}`;$('#doc-total',f).textContent='Total '+money2(s+tx)};
@@ -1150,7 +1153,7 @@ function docForm(d,isNew){const inv=d.kind==='invoice';
       if(!items.length){toast('Add at least one line');return false}
       Object.assign(d,{num:fd.get('num').trim()||d.num,date:fd.get('date')||today(),taxRate:num(fd.get('taxRate')),items,notes:fd.get('notes').trim(),
         billTo:{name:fd.get('bname').trim(),email:fd.get('bemail').trim(),phone:fd.get('bphone').trim(),address:fd.get('baddr').trim()}});
-      if(inv)d.due=fd.get('due');else d.valid=fd.get('valid');if(num(fd.get('taxRate')))S.settings.taxRate=num(fd.get('taxRate'));
+      if(inv)d.due=fd.get('due');else{d.valid=fd.get('valid');d.deposit=Math.min(100,Math.max(0,num(fd.get('deposit'))))||0}if(num(fd.get('taxRate')))S.settings.taxRate=num(fd.get('taxRate'));
       if(isNew){takeDocNum(d);S.docs.push(d)}save();if(d.token)shareDoc(d).catch(()=>{});toast(docTitle(d)+' saved');setTimeout(()=>docView(d),250)}})}
 
 function docView(d){const inv=d.kind==='invoice',t=docTotals(d),st=docStatus(d),cloud=isOwnerCloud();
@@ -1205,7 +1208,7 @@ function payForm(d){const t=docTotals(d);
 
 // Shared links: a snapshot of the document in shared_docs, readable only by its random token.
 function docSnapshot(d){const j=job(d.jobId),p=S.profile||{};
-  return{...d,token:undefined,payments:(d.payments||[]).map(x=>({amount:x.amount,date:x.date,ref:x.ref||undefined})),jobName:j?.name||'',jobAddress:j?.address||'',
+  return{...d,token:undefined,payments:(d.payments||[]).map(x=>({amount:x.amount,date:x.date,ref:x.ref||undefined})),jobName:j?.name||'',jobAddress:j?.address||'',portalToken:j?.portal?.token||'',
     company:{company:p.company||'',name:p.name||'',logo:p.logo||'',address:p.address||'',phone:p.phone||'',email:p.email||'',website:p.website||'',license:p.license||''},accent:p.accent||'blue',st:docStatus(d)}}
 async function shareDoc(d){if(!isOwnerCloud())throw new Error('Sign in first');
   if(!d.token){const r=crypto.getRandomValues(new Uint8Array(18));d.token=[...r].map(x=>x.toString(16).padStart(2,'0')).join('');save()}
@@ -1219,6 +1222,8 @@ async function docsPull(){if(!isOwnerCloud())return false;await billingLoad().ca
     if(r.status==='approved'&&d.status!=='approved'&&d.kind==='estimate'){Object.assign(d,{status:'approved',approvedBy:r.approved_name||'',approvedAt:r.approved_at});ch=true;toast(`${r.approved_name||'Your customer'} approved ${d.num}`)}
     else if(r.status==='declined'&&d.status!=='declined'&&d.status!=='approved'){d.status='declined';ch=true;toast(`${d.num} was declined`)}
     else if(r.viewed_at&&d.status==='sent'){d.status='viewed';ch=true}}
+  const sg=await CLOUD.sb.from('shared_docs').select('token,approved_sig').eq('company_id',CLOUD.company).not('approved_sig','is',null);
+  if(!sg.error)for(const r of sg.data||[]){const d=S.docs.find(x=>x.token===r.token);if(d&&d.approvedSig!==r.approved_sig){d.approvedSig=r.approved_sig;ch=true}}
   const pay=await CLOUD.sb.from('doc_payments').select('token,amount,stripe_session,paid_at').eq('company_id',CLOUD.company);
   if(!pay.error)for(const p of pay.data||[]){const d=S.docs.find(x=>x.token===p.token);if(!d||(d.payments||[]).some(x=>x.ref===p.stripe_session))continue;
     (d.payments=d.payments||[]).push({id:uid(),amount:+p.amount,date:String(p.paid_at).slice(0,10),method:'Card (online)',ref:p.stripe_session});ch=true;
@@ -2195,6 +2200,9 @@ function pageSettings(){const st=S.settings;const iOS=/iphone|ipad|ipod/i.test(n
     <p class="note">Every-2-weeks periods start on the Monday of the week you pick. Overtime is always counted by work week (Monday to Sunday), whatever the pay schedule.</p>
     <div><button class="btn primary" type="submit">Save settings</button></div></form>
   ${paySvcCard()}
+  ${isOwnerCloud()?`<form class="card stack" id="custrem-form"><h2>Customer reminders</h2>
+    <label class="check"><input type="checkbox" name="custRemind" ${S.settings.custRemind!==false?'checked':''}> Email customers for me</label>
+    <p class="note">Blue Board emails your customer when a choice on their project page is due within 2 days, and when an invoice is 1, 7 and 14 days past due. Emails come from your company name, and replies go to your email. Needs the customer's email on the job or invoice.</p></form>`:''}
   ${isOwnerCloud()?`<form class="card stack" id="empapp-form"><h2>Employee app</h2><p class="note">What your crew sees when they sign in. They never see job prices, expenses, profits or anyone else's pay.</p>
     <label class="check"><input type="checkbox" name="showPay" ${st.showPay!==false?'checked':''}> Show employees their pay rate and earnings</label>
     <label class="check"><input type="checkbox" name="requireLocation" ${st.requireLocation?'checked':''}> Require location to clock in and out</label></form>`:''}
@@ -2399,7 +2407,7 @@ async function cloudPush(){if(!isOwnerCloud())return;const sb=CLOUD.sb,cid=CLOUD
   catch(e){CLOUD.sync='offline'}syncBadge()}
 function publicDoc(){const cut=addDays(today(),-120),p=S.profile||{};
   return{company:{name:p.company||'',logo:p.logo||'',accent:p.accent==='green'?'blue':(p.accent||'blue'),mode:p.mode||'light'},
-    settings:{ot:S.settings.ot!==false,otThreshold:num(S.settings.otThreshold)||40,requireLocation:!!S.settings.requireLocation,showPay:S.settings.showPay!==false,tz:(()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||''}catch(e){return ''}})()},
+    settings:{ot:S.settings.ot!==false,otThreshold:num(S.settings.otThreshold)||40,requireLocation:!!S.settings.requireLocation,showPay:S.settings.showPay!==false,custRemind:S.settings.custRemind!==false,tz:(()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||''}catch(e){return ''}})()},
     jobs:S.jobs.map(j=>({id:j.id,name:j.name,address:j.address||'',lat:j.lat??null,lng:j.lng??null,status:j.status,start:j.start||'',end:j.end||'',color:jobColor(j),tasks:j.status==='done'?[]:(j.tasks||[]).map(t=>({id:t.id,text:t.text,empId:t.empId||'',done:!!t.done,doneAt:t.doneAt||''}))})),
     employees:S.employees.map(e=>({id:e.id,name:e.name,role:e.role||'',color:e.color,active:e.active!==false})),
     timeOff:S.timeOff.filter(t=>t.to>=addDays(today(),-30)).map(t=>({empId:t.empId,from:t.from,to:t.to})),
@@ -2648,7 +2656,8 @@ document.addEventListener('submit',async e=>{const f=e.target;
     if(await acceptPending()){await loadMembership();location.hash='#/schedule';route()}}
   else if(f.id==='empapp-form'){e.preventDefault()}});
 document.addEventListener('change',e=>{const f=e.target.closest('#paysvc-form');if(!f)return;const t=e.target;if(!t.name)return;S.settings[t.name]=t.value.trim();save();if(t.name==='paySvc')route();toast('Saved')});
-document.addEventListener('submit',e=>{if(e.target.id==='paysvc-form')e.preventDefault()});
+document.addEventListener('submit',e=>{if(e.target.id==='paysvc-form'||e.target.id==='custrem-form')e.preventDefault()});
+document.addEventListener('change',e=>{if(!e.target.closest('#custrem-form'))return;S.settings.custRemind=e.target.checked;save();toast(e.target.checked?'Customer reminders on':'Customer reminders off')});
 document.addEventListener('change',e=>{const f=e.target.closest('#empapp-form');if(!f)return;S.settings.requireLocation=f.requireLocation.checked;S.settings.showPay=f.showPay.checked;save();toast('Saved')});
 
 /* ---------- sample data ---------- */
