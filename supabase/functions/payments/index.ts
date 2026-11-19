@@ -63,7 +63,7 @@ async function stripeV2(path: string, body?: unknown, method = 'POST') {
 }
 // Card payments are on when the merchant configuration's card_payments capability is active.
 async function accountStatus(id: string) {
-  const a = await stripeV2(`core/accounts/${id}?include=configuration.merchant&include=requirements`, undefined, 'GET');
+  const a = await stripeV2(`core/accounts/${id}?include[0]=configuration.merchant&include[1]=requirements`, undefined, 'GET');
   const charges = a?.configuration?.merchant?.capabilities?.card_payments?.status === 'active';
   const due = (a?.requirements?.entries ?? []).some((e: any) => ['currently_due', 'past_due'].includes(e?.minimum_deadline?.status));
   return { charges_enabled: charges, details_submitted: charges || (!!a?.requirements && !due) };
@@ -176,7 +176,7 @@ Deno.serve(async (req) => {
       }
       const link = await stripeV2('core/account_links', {
         account: bill!.stripe_account_id,
-        use_case: { type: 'account_onboarding', account_onboarding: { configurations: ['merchant'], refresh_url: `${SITE}#/settings`, return_url: `${SITE}#/settings` } },
+        use_case: { type: 'account_onboarding', account_onboarding: { refresh_url: `${SITE}#/settings`, return_url: `${SITE}#/settings` } },
       });
       return json({ url: link.url });
     }
