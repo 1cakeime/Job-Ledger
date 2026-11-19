@@ -5,9 +5,6 @@ Job, crew and profit tracking for contractors. The same `index.html` runs as the
 Two people work on this repo, each with their own Claude Code. Repo is **public**: never
 commit secrets, API keys, passwords, personal emails or device IDs.
 
-Note: README.md is out of date. Data now lives in Supabase (accounts, companies, sync),
-not only on the device.
-
 ## Layout
 - `index.html` – the whole app: HTML, CSS, JS in one file, no build step. Large; read it in
   parts and search with grep rather than reading it whole.
