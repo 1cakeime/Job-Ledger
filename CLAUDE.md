@@ -34,6 +34,9 @@ not only on the device.
   approves on Crew & Pay, which calls `decide_time_fix()` (writes the punch) and updates the shift.
   Client side: `fixCard`, `fixDecide`, `fixForm` in index.html.
 - Breaks: crew Start/End break (`break_toggle()`, punches `break_min`/`break_at`); the shift's break comes from the punch.
+- Payroll files: Settings → Payroll service (`S.settings.paySvc`) picks the closed-period download layout in
+  `payExport()`: generic, Gusto, ADP RUN (##GENERIC## V2.0), Paychex Flex, QuickBooks (per-day timesheet list).
+  Layouts come from third-party docs, not official specs; fix them here if a real import complains.
 - Owner home (Schedule) shows `startCard` (getting-started checklist) and `attentionCard` (everything waiting on the owner).
 - `notify` also emails website-only owners (`RESEND_API_KEY`, requests sent with `email: true`) and sends
   "Still on the clock?" reminders when a pg_cron job calls it with `x-cron-key` = `CRON_SECRET` (see schema.sql).

@@ -891,6 +891,47 @@ const payRows=rec=>(rec.rows||[]).map(r=>{const regPay=r2(r.rate*r.reg),otPay=r2
 const PAY_COLS=['Employee','Payroll ID','Pay period start','Pay period end','Regular hours','Overtime hours','Hourly rate','Regular pay','Overtime pay','Gross pay'];
 const payTable=rec=>[PAY_COLS,...payRows(rec).map(r=>[r.name,r.payrollId,rec.from,rec.to,r.reg.toFixed(2),r.ot.toFixed(2),r.rate.toFixed(2),r.regPay.toFixed(2),r.otPay.toFixed(2),r.gross.toFixed(2)])];
 const payCSV=rec=>payTable(rec).map(l=>l.map(v=>{v=String(v??'');return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}).join(',')).join('\r\n')+'\r\n';
+// Payroll-service files. Layouts follow each service's hours import as described by other time-clock apps;
+// none of them publish a public spec, so the first import should be checked (see the note on the payroll card).
+const PAY_SVC={generic:'Spreadsheet (any payroll service)',gusto:'Gusto',adp:'ADP RUN',paychex:'Paychex Flex',quickbooks:'QuickBooks Payroll'};
+const csvOf=t=>t.map(l=>l.map(v=>{v=String(v??'');return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}).join(',')).join('\r\n')+'\r\n';
+const mdy=d=>{const [y,m,dd]=d.split('-');return `${m}/${dd}/${y}`};
+// One line per person (hours from every pay rate added together), for services that use the rate on file.
+function payPeople(rec){const by={};for(const r of payRows(rec)){const k=r.empId,o=by[k]=by[k]||{empId:k,name:r.name,payrollId:r.payrollId,reg:0,ot:0,rates:new Set()};o.reg=r2(o.reg+r.reg);o.ot=r2(o.ot+r.ot);o.rates.add(r.rate)}
+  return Object.values(by).sort((a,b)=>a.name.localeCompare(b.name))}
+const nameParts=n=>{const w=String(n||'').trim().split(/\s+/);return [w[0]||'',w.slice(1).join(' ')]};
+const hm12=t=>{if(!t)return '';const m=toMin(t),h=Math.floor(m/60)%24;return `${h%12||12}:${pad(m%60)} ${h<12?'AM':'PM'}`};
+function payExport(rec){const st=S.settings,svc=st.paySvc||'generic',tag=`${rec.from}-to-${rec.to}`;
+  if(svc==='gusto')return{name:`gusto-hours-${tag}.csv`,text:csvOf([['last_name','first_name','employee_id','regular_hours','overtime_hours','double_overtime_hours'],
+    ...payPeople(rec).map(p=>{const [f,l]=nameParts(p.name);return [l,f,p.payrollId,p.reg.toFixed(2),p.ot.toFixed(2),'0.00']})])};
+  if(svc==='adp'){const freq={weekly:'W',biweekly:'B',semimonthly:'S',monthly:'M'}[st.payFreq||'weekly'],iid=st.adpIid||'',rc=st.adpRate||'BASE',lines=[];
+    for(const p of payPeople(rec)){if(p.reg)lines.push([iid,freq,mdy(rec.from),mdy(rec.to),p.payrollId,st.adpReg||'REG',p.reg.toFixed(2),'','0','',rc,'']);
+      if(p.ot)lines.push([iid,freq,mdy(rec.from),mdy(rec.to),p.payrollId,st.adpOt||'OT',p.ot.toFixed(2),'','0','',rc,''])}
+    return{name:`adp-run-timesheet-${tag}.csv`,text:csvOf([['##GENERIC## V2.0','','','','','','','','','','',''],['IID','Pay Frequency','Pay Period Start','Pay Period End','Employee Id','Earnings Code','Pay Hours','Dollars','Separate Check','Department Number','Rate Code','Job Code'],...lines])}}
+  if(svc==='paychex'){const lines=[];
+    for(const p of payPeople(rec)){const many=p.rates.size>1;
+      for(const r of payRows(rec).filter(r=>r.empId===p.empId)){const rate=many?r.rate.toFixed(2):'';
+        if(r.reg)lines.push([st.pxClient||'',p.payrollId,'','',st.pxReg||'Hourly',rate,'',r.reg.toFixed(2),'',mdy(rec.to),'','','','','',''])
+        if(r.ot)lines.push([st.pxClient||'',p.payrollId,'','',st.pxOt||'Overtime',many?(r.rate*1.5).toFixed(2):'','',r.ot.toFixed(2),'',mdy(rec.to),'','','','','',''])}}
+    return{name:`paychex-hours-${tag}.csv`,text:csvOf([['Client ID','Worker ID','Org','Job Number','Pay Component','Rate','Rate Number','Hours','Units','Line Date','Amount','Check Seq Number','Override State','Override Local','Override Local Jurisdiction','Labor Assignment'],...lines])}}
+  if(svc==='quickbooks'){const ids=new Set(rec.shiftIds||[]),sh=S.shifts.filter(x=>ids.has(x.id)).sort((a,b)=>(emp(a.empId)?.name||'').localeCompare(emp(b.empId)?.name||'')||(a.date+a.start).localeCompare(b.date+b.start));
+    return{name:`quickbooks-timesheets-${tag}.csv`,text:csvOf([['Employee','Date','Customer','Job','Start','End','Break (min)','Hours','Notes'],
+      ...sh.map(x=>{const j=job(x.jobId);return [emp(x.empId)?.name||'Removed employee',mdy(x.date),j?.client||'',j?.name||'',hm12(x.start),hm12(x.end),num(x.breakMin),shiftHours(x).toFixed(2),x.note||'']}),
+      [],['Totals for the pay period (overtime is worked out by QuickBooks from the weekly hours)'],['Employee','Regular hours','Overtime hours'],...payPeople(rec).map(p=>[p.name,p.reg.toFixed(2),p.ot.toFixed(2)])])}}
+  return{name:`payroll-${tag}.csv`,text:payCSV(rec)}}
+const PAY_HOW={generic:'A spreadsheet with one row per person and pay rate: hours, rate and gross pay. Works with any payroll service or your accountant.',
+  gusto:'In Gusto: Run payroll → Upload a file (Smart Import) → choose this file. Gusto matches people by name; check the hours on the review screen.',
+  adp:'In RUN: Payroll → Import time sheet data (Time Sheet Import) → choose this file. Each person needs their ADP Employee ID in Blue Board, and your company code (IID) below.',
+  paychex:'In Paychex Flex: Payroll → Payroll Data Import (your account needs the Standard Payroll Import feature). Each person needs their Paychex Worker ID in Blue Board.',
+  quickbooks:'QuickBooks Payroll can\'t import hours from a file on most plans, so this lists every shift by day and job. Open it next to QuickBooks and type them into each person\'s weekly timesheet.'};
+function paySvcCard(){const st=S.settings,svc=st.paySvc||'generic';
+  return `<form class="card stack" id="paysvc-form"><h2>Payroll service</h2><p class="note">Pick who runs your payroll. When you close a pay period, Blue Board makes the file in their import layout.</p>
+    <div class="fields">${field('Payroll service',`<select name="paySvc">${Object.entries(PAY_SVC).map(([k,l])=>opt(k,l,svc)).join('')}</select>`,'full')}
+    ${svc==='adp'?`${field('ADP company code (IID)',inp('adpIid',st.adpIid||'','text','placeholder="From RUN → Company" autocomplete="off"'))}${field('Rate code',inp('adpRate',st.adpRate||'BASE','text','autocomplete="off"'))}
+      ${field('Regular earnings code',inp('adpReg',st.adpReg||'REG','text','autocomplete="off"'))}${field('Overtime earnings code',inp('adpOt',st.adpOt||'OT','text','autocomplete="off"'))}`:''}
+    ${svc==='paychex'?`${field('Paychex Client ID',inp('pxClient',st.pxClient||'','text','placeholder="Company → Summary" autocomplete="off"'),'full')}
+      ${field('Regular pay component',inp('pxReg',st.pxReg||'Hourly','text','autocomplete="off"'))}${field('Overtime pay component',inp('pxOt',st.pxOt||'Overtime','text','autocomplete="off"'))}`:''}</div>
+    <p class="note">${PAY_HOW[svc]}</p></form>`}
 async function saveFile(name,text,type){const blob=new Blob([text],{type});
   try{const file=new File([blob],name,{type});if(window.Capacitor?.isNativePlatform?.()&&navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title:name});return true}}
   catch(e){if(e?.name==='AbortError')return false}
@@ -1546,7 +1587,7 @@ function empForm(e){const isNew=!e;e=e||{burden:S.settings.burden,active:true,co
     body:`<div class="fields">${field('Name',inp('name',e.name,'text','required'),'full')}
       ${field('Role',inp('role',e.role,'text','placeholder="e.g. Lead carpenter"'))}${field('Phone',inp('phone',e.phone,'tel'))}
       ${field('Hourly pay',moneyInp('rate',e.rate,'required'))}${field('Labor burden %',moneyInp('burden',e.burden))}
-      ${field('Payroll ID (optional)',inp('payrollId',e.payrollId,'text','placeholder="Their ID in your payroll service" autocomplete="off"'),'full')}
+      ${field('Payroll ID (optional)',inp('payrollId',e.payrollId,'text','placeholder="ADP Employee ID, Paychex Worker ID…" autocomplete="off"'),'full')}
       ${field('Color',`<select name="color">${EMP_COLORS.map((c,i)=>opt(c,['Blue','Cyan','Orange','Purple','Rose','Indigo','Gold','Gray'][i],e.color)).join('')}</select>`)}
       <label class="check" style="align-self:end;min-height:42px"><input type="checkbox" name="active" ${e.active!==false?'checked':''}> Active on the crew</label></div>
       <p class="note">Labor burden covers payroll taxes, workers' comp and other costs on top of wages (often 15–30%). It's added to job costs so profit is real. A new pay rate applies to shifts added from now on.</p>`,
@@ -2077,8 +2118,12 @@ function payrollCard(from,to){const rec=payRec(from),closed=!!rec?.closedAt,per=
     ${rows.length?`<div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Employee</th><th class="n">Rate</th><th class="n">Regular</th><th class="n">Overtime</th><th class="n">Gross pay</th></tr></thead><tbody>
     ${rows.map(r=>`<tr><td>${esc(r.name)}${r.payrollId?`<small class="muted"> · ${esc(r.payrollId)}</small>`:''}</td><td class="n">${money2(r.rate)}</td><td class="n">${hrs(r.reg)}</td><td class="n">${r.ot?hrs(r.ot):'–'}</td><td class="n"><b>${money2(r.gross)}</b></td></tr>`).join('')}</tbody>
     <tfoot><tr><td colspan="2">Total</td><td class="n">${hrs(sum(rows,r=>r.reg))}</td><td class="n">${hrs(sum(rows,r=>r.ot))}</td><td class="n">${money2(sum(rows,r=>r.gross))}</td></tr></tfoot></table></div>`:emptyBox('No worked hours were in this pay period.')}
-    <div class="btns" style="margin-top:14px"><button class="btn primary" data-act="pp-csv">Download payroll file</button><button class="btn" data-act="pp-copy">Copy for a spreadsheet</button><button class="btn ghost" data-act="pp-reopen">Reopen</button></div>
-    <p class="note" style="margin-top:10px">The file is a CSV with one row per person and pay rate: ${PAY_COLS.join(', ')}. ${rows.some(r=>!r.payrollId)?'Add each person\'s Payroll ID (edit them below) so your payroll service matches them automatically.':''}</p>`}
+    ${(()=>{const svc=S.settings.paySvc||'generic',noId=[...new Set(rows.filter(r=>!r.payrollId).map(r=>r.name))],multi=svc==='adp'||svc==='gusto'?payPeople(rec).filter(p=>p.rates.size>1).map(p=>p.name):[];
+      return `<div class="btns" style="margin-top:14px"><button class="btn primary" data-act="pp-csv">${svc==='generic'?'Download payroll file':`Download for ${PAY_SVC[svc]}`}</button><button class="btn" data-act="pp-copy">Copy for a spreadsheet</button><button class="btn ghost" data-act="pp-reopen">Reopen</button></div>
+      ${(svc==='adp'||svc==='paychex')&&noId.length?`<div class="insight warn" style="margin-top:12px"><b>Missing ${svc==='adp'?'ADP Employee ID':'Paychex Worker ID'}</b><span>${noId.map(esc).join(', ')}. Add it with Edit on each person below, or ${PAY_SVC[svc]} won't know who the hours belong to.</span></div>`:''}
+      ${svc==='adp'&&!S.settings.adpIid?`<div class="insight warn" style="margin-top:12px"><b>Add your ADP company code</b><span>Set it under <a href="#/settings">Settings → Payroll service</a>.</span></div>`:''}
+      ${multi.length?`<div class="insight" style="margin-top:12px"><b>More than one pay rate</b><span>${multi.map(esc).join(', ')} worked at different rates this period. ${PAY_SVC[svc]} gets their total hours at the rate on file, so check their pay before you submit.</span></div>`:''}
+      <p class="note" style="margin-top:10px">${PAY_HOW[svc]} <a href="#/settings">Change payroll service</a>. The first time, compare the totals in ${svc==='generic'?'your payroll service':PAY_SVC[svc]} with this table before you submit payroll.</p>`})()}`}
   else{body=`${to>=T?`<div class="insight"><b>In progress</b><span>This pay period ends ${fmtDate(to)}. You can approve hours as you go. If a shift changes after you approve it, approve it again.</span></div>`:''}
     ${people.length?`<div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Employee</th><th class="n">Regular</th><th class="n">Overtime</th><th class="n">Gross pay</th><th class="n pp-act">Status</th></tr></thead><tbody>
     ${people.map(([id,p])=>{const e=emp(id),ok=rec?.approved?.[id],issue=p.open?`Still clocked in since ${fmtDate(ds(new Date(p.open.in_at)))}`:p.pending?`${p.pending} past shift${p.pending>1?'s':''} still Scheduled`:'';
@@ -2149,6 +2194,7 @@ function pageSettings(){const st=S.settings;const iOS=/iphone|ipad|ipod/i.test(n
     ${field('First day of a pay period (every 2 weeks only)',inp('payAnchor',st.payAnchor||weekStart(today()),'date'),'full')}</div>
     <p class="note">Every-2-weeks periods start on the Monday of the week you pick. Overtime is always counted by work week (Monday to Sunday), whatever the pay schedule.</p>
     <div><button class="btn primary" type="submit">Save settings</button></div></form>
+  ${paySvcCard()}
   ${isOwnerCloud()?`<form class="card stack" id="empapp-form"><h2>Employee app</h2><p class="note">What your crew sees when they sign in. They never see job prices, expenses, profits or anyone else's pay.</p>
     <label class="check"><input type="checkbox" name="showPay" ${st.showPay!==false?'checked':''}> Show employees their pay rate and earnings</label>
     <label class="check"><input type="checkbox" name="requireLocation" ${st.requireLocation?'checked':''}> Require location to clock in and out</label></form>`:''}
@@ -2239,7 +2285,7 @@ const ACT={
     save();route();toast(n?`Approved ${n} ${n>1?'people':'person'}${skip?`, ${skip} still need fixing`:''}`:skip?'Fix the flagged people first':'Everyone is already approved')},
   'pp-close':a=>{if(a.disabled||!armTwoStep(a,'Tap again to close and lock'))return;const [f,t]=periodOf(UI.pp||today());payClose(f,t);route();toast('Pay period closed')},
   'pp-reopen':a=>{if(!armTwoStep(a,'Tap again to reopen'))return;const r=payRec(UI.pp);if(r){delete r.closedAt;delete r.rows;delete r.shiftIds;save()}route();toast('Reopened. You can change these hours again.')},
-  'pp-csv':async()=>{const r=payRec(UI.pp);if(!r?.closedAt)return;const ok=await saveFile(`payroll-${r.from}-to-${r.to}.csv`,payCSV(r),'text/csv');if(ok){r.exportedAt=new Date().toISOString();save();toast('Payroll file ready')}},
+  'pp-csv':async()=>{const r=payRec(UI.pp);if(!r?.closedAt)return;const x=payExport(r);const ok=await saveFile(x.name,x.text,'text/csv');if(ok){r.exportedAt=new Date().toISOString();save();toast('Payroll file ready')}},
   'pp-copy':async()=>{const r=payRec(UI.pp);if(!r?.closedAt)return;const tsv=payTable(r).map(l=>l.join('\t')).join('\n');
     try{await navigator.clipboard.writeText(tsv);toast('Copied. Paste it into a spreadsheet or your payroll service.')}catch(e){toast('This device would not let Blue Board copy. Use Download payroll file instead.')}},
   'accent':a=>{S.profile.accent=a.dataset.v;save();route()},
@@ -2601,6 +2647,8 @@ document.addEventListener('submit',async e=>{const f=e.target;
   else if(f.id==='join-co'){e.preventDefault();const code=f.code.value.trim().toUpperCase();if(!code)return;LS.set('invite',code.replace(/[^A-Z0-9]/g,''));
     if(await acceptPending()){await loadMembership();location.hash='#/schedule';route()}}
   else if(f.id==='empapp-form'){e.preventDefault()}});
+document.addEventListener('change',e=>{const f=e.target.closest('#paysvc-form');if(!f)return;const t=e.target;if(!t.name)return;S.settings[t.name]=t.value.trim();save();if(t.name==='paySvc')route();toast('Saved')});
+document.addEventListener('submit',e=>{if(e.target.id==='paysvc-form')e.preventDefault()});
 document.addEventListener('change',e=>{const f=e.target.closest('#empapp-form');if(!f)return;S.settings.requireLocation=f.requireLocation.checked;S.settings.showPay=f.showPay.checked;save();toast('Saved')});
 
 /* ---------- sample data ---------- */
